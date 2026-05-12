@@ -115,91 +115,171 @@ Step 5: 输出 markdown 摘要：
 
 ---
 
-## M3. 学习材料 + 作业辅助
+## M3. 学习材料 + 作业辅助 + 启发式调度
 
-**目标**：从"看到信息"升级到"产出材料"。让用户能用自然语言指挥 agent 完成两类高频任务：写笔记、做作业。
+**目标**：从"看到信息"升级到"产出材料"。引入**启发式 skill 调度**作为元能力 —— agent 看任务画像 + 可用 skill 清单，自己挑工具组合完成异构产出（report / presentation / 题集 / 代码 / 视频...）。
+
+### M3 的两个层次
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Layer 2: Task                                            │
+│   tasks/do-homework.md   tasks/write-notes.md            │
+│   tasks/weekly-plan.md                                   │
+└──────────┬──────────────────────────────────────────────┘
+           │ 调用
+           ▼
+┌─────────────────────────────────────────────────────────┐
+│ Layer 1: Orchestrator (M3 核心新机制)                    │
+│   tasks/task-orchestrator.md                             │
+│     · 任务类型识别                                       │
+│     · 可用 skill 清单维护                                │
+│     · 启发式 skill 组合 + 调用顺序                       │
+└──────────┬──────────────────────────────────────────────┘
+           │ 调用
+           ▼
+┌─────────────────────────────────────────────────────────┐
+│ Layer 0: Tools (全部内置)                                │
+│   tools/paper-search.md       tools/figure-maker.md      │
+│   tools/pdf-renderer.md       tools/slide-maker.md       │
+│   tools/writing-helper.md     tools/proof-solver.md      │
+│   tools/code-writer.md        ...                        │
+└─────────────────────────────────────────────────────────┘
+```
+
+### tasks/task-orchestrator.md 设计
+
+**输入**：作业的描述 + 类型 hint + 用户的额外要求
+
+**输出**：一份执行计划（哪些 tool / 什么顺序 / 中间产物路径）+ 实际执行
+
+**核心机制**：
+
+```
+1. 任务画像
+   读取作业描述 + 评分标准 + 提交格式要求
+   输出：{type, deliverables, required_capabilities, deadline, scope}
+
+2. 能力匹配
+   读 tools/_index.md（所有内置 tool 的能力清单）
+   匹配：required_capabilities → [tool1, tool2, ...]
+
+3. 计划编排
+   决定调用顺序、中间产物如何流转
+   例（report 类）：
+     paper-search → figure-maker (并行) → writing-helper → pdf-renderer
+   例（presentation 类）：
+     paper-search → figure-maker → slide-maker → 渲染 PDF/PPTX
+
+4. 执行
+   逐个 tool 调用，把中间产物存到 data/homework/<course>/<hw>/
+   每个 tool 失败时清晰报告，不无脑重试
+
+5. 验收
+   产物完整性自检（页数、文件大小、必填章节）
+   提交前 AskUserQuestion 确认
+```
+
+**复用性**：M4 反问式学习也能调 orchestrator（"按这门课的薄弱点生成一套复习材料" → flashcards + mock_questions 多 tool 组合）。
 
 ### 新增 tasks
 
 | Task | 触发例句 | 主要动作 |
 |---|---|---|
-| `write-notes.md` | "给 Deep Learning lecture 3 写笔记" | 下载 slides → PDF 解析 → 生成 markdown 笔记 → 渲染 PDF |
-| `do-homework.md` | "帮我完成 DSAA2043 hw3" | 识别作业类型 → 软交互询问 → 完成 → API 提交 |
+| `task-orchestrator.md` | （内部调用，不直接面向用户） | 接收任务画像 → 编排 tool 调用 → 执行 |
+| `do-homework.md` | "帮我完成 DSAA2043 hw3" | 识别 → 询问意图 → 调 orchestrator → 提交 |
+| `write-notes.md` | "给 Deep Learning lecture 3 写笔记" | 下载 slides → 调 orchestrator（pdf-reader + writing-helper + pdf-renderer） |
 | `weekly-plan.md` | "帮我规划下周学习" | 综合 ddl + 评分占比 + 难度估计 → 生成日程 |
 
-### `do-homework.md` 的软交互流程（关键设计）
+### `do-homework.md` 软交互流程
 
-不是每步都卡用户，而是**两个询问点 + 中间连贯执行**：
+不是每步都卡用户，**只两个询问点**：
 
 ```
 用户："帮我完成 DSAA2043 hw3"
   ↓
 [A] Agent 找题 → 读懂题面 → 识别类型
-       (essay / problem set / coding / presentation / group)
   ↓
-[B] ★ 询问点 1：简短摘要 + 询问意图
+[B] ★ 询问点 1：摘要 + 询问意图
        "DSAA2043 hw3：5 道动态规划证明题 + 2 道 OJ 编程题，ddl 12-13 15:59。
         要我直接做吗？"
-       AskUserQuestion:
-         [是，全部做 / 只做某几题 / 不用]
+       AskUserQuestion: [是 / 只做某几题 / 不用]
   ↓
-[C] 用户同意 → agent 连贯完成（不再频繁打断）
+[C] 用户同意 → 调 task-orchestrator
+       orchestrator 内部完成 skill 调度 + 连贯执行
        中间只在遇到必须问的歧义时才中断
   ↓
-[D] 完成后：草稿展示 + 询问是否提交
+[D] 完成后：草稿展示
   ↓
 [E] ★ 询问点 2：提交确认
        AskUserQuestion: [API 自动提交 Canvas / 我先看 markdown / 取消]
   ↓
-[F] 用户确认 → 调 Canvas POST /api/v1/courses/:id/assignments/:aid/submissions
+[F] 用户确认 → 调 Canvas POST /api/v1/.../submissions
 ```
 
-**只有两个询问点**：[B] 开始前、[E] 提交前。中间执行不打断。
+### M3 第一个可演示子集：Report 流水线
 
-### 按作业类型分发
+M3 不可能一口气把所有产出能力做完。首发选 **Report** 类作业（最常见、价值高、风险低）：
 
-```
-do-homework.md (主入口)
-  ├─ 写作类  → tools/writing-helper.md
-  ├─ 理论题集 → tools/proof-solver.md
-  ├─ 编程题（Canvas 内）→ tools/code-writer.md（生成代码 → 渲染 → 提交）
-  ├─ 编程题（OJ 等第三方）→ 见下条"第三方链接处理"
-  ├─ Presentation → tools/slide-maker.md
-  └─ Group project → 拒绝代做，只能辅助单人贡献部分
-```
+**目标场景**：
+- DLED3020 Paper Critique（学术批判性 essay）
+- UCUG1809 Reflective Essay（反思性写作）
+
+**首发内置 tools**：
+| Tool | 能力 | 备注 |
+|---|---|---|
+| `tools/_index.md` | 维护可用 tool 清单 + 能力描述 | orchestrator 查这个 |
+| `tools/paper-search.md` | 文献搜索（先用 arxiv API / Google Scholar 链接生成） | M3 阶段不做全文抓取 |
+| `tools/figure-maker.md` | 数据可视化（matplotlib 代码生成 + 渲染） | 主要服务 report 中的图表 |
+| `tools/writing-helper.md` | essay 结构化生成（intro / body / conclusion） | 含引用格式（APA / IEEE） |
+| `tools/pdf-renderer.md` | Markdown → PDF（pandoc + xelatex，含中文字体 + callout.lua） | 抄 AutoPku 的踩坑经验 |
+
+**端到端验收**：
+- [ ] 用户说"帮我完成 DLED3020 Assessment Task 3 (Paper Critique)"
+- [ ] agent 识别为 report 类，summary 给用户确认
+- [ ] orchestrator 调度：paper-search 找参考文献 → writing-helper 起草 → pdf-renderer 出 PDF
+- [ ] 用户审核后通过 Canvas API 提交（或本地保存）
+- [ ] 全程只有 [B][E] 两个 AskUserQuestion
+
+### 后续场景（M3 内逐步加）
+
+完成 Report 后再加 tools 支持其他场景：
+
+| 场景 | 新增 tool | 示例作业 |
+|---|---|---|
+| Presentation | `tools/slide-maker.md` (marp/reveal-md) | UCUG1077 group presentation |
+| 理论题集 | `tools/proof-solver.md` + `tools/math-renderer.md` | DSAA2043 / DSAA3051 |
+| 代码作业 (Canvas 内) | `tools/code-writer.md` | DSAA2012 project |
+| 多模态视频 | `tools/video-maker.md` (ffmpeg + manim) | 未来选修课用得到 |
+
+每加一个 tool，orchestrator 自动获得新能力 —— 因为它读的是 `tools/_index.md`，不写死类型。
 
 ### 第三方链接（OJ / 外部表单）处理原则
 
-**默认路径（推荐）**：让学生把题目内容**存到本地**，agent 在本地完成解题，输出给学生手动复制粘贴到第三方站点。
+**默认路径（推荐）**：让学生把题目内容**存到本地**，agent 在本地完成解题，输出给学生手动复制粘贴。
 
-**可选路径（需用户明确同意）**：playwright 模拟浏览器操作第三方站点。但默认建议**不走这条路** —— 涉及未知站点的认证、风控、合规风险。skill 提示用户时要明确标注"不推荐"。
+**可选路径（需用户明确同意）**：playwright 模拟浏览器操作。但默认建议**不走** —— 涉及未知站点的认证、风控、合规风险。
 
-写到 SKILL.md 的安全规则里：
-> 涉及第三方站点（OJ、外部表单）时，默认建议学生把题目保存到本地由 agent 辅助。
-> 自动化第三方操作必须 AskUserQuestion 明确告知风险后才能进行。
+写到 SKILL.md 的安全规则里。
 
 ### Canvas API 自动提交（M3 验证项）
 
-需要验证 `POST /api/v1/courses/:id/assignments/:aid/submissions` 在 HKUST(GZ) 实例上可用 + 支持的 submission_type（online_upload / online_text_entry / online_url）。
+需要验证 `POST /api/v1/courses/:id/assignments/:aid/submissions` 在 HKUST(GZ) 实例上可用 + 支持的 submission_type。
 
 **安全规则**：
 - 不自动选择最新作业（必须用户在 [B] 明确指定）
 - 提交前必须 [E] 确认
 - 失败时清晰提示，不重试
 
-### 新增 tools
-
-- `tools/pdf-renderer.md` — Markdown → PDF（学 AutoPku 的 pandoc + xelatex + callout.lua）
-- `tools/writing-helper.md` — essay / reflection / annotated bib 的结构化生成
-- `tools/proof-solver.md` — 数学证明、复杂度分析的解题模板
-- `tools/code-writer.md` — 代码生成 + 单元测试 + 注释
-- `tools/slide-maker.md` — Markdown → marp/reveal.js → PDF/PPTX
-
 ### 设计要点
 
-- **不自动假设"全部代写"**：[B] 给用户"只做某几题"的选项，尊重学生想自己做部分的需求
-- **生成内容沉淀到本地**：每份草稿存到 `data/homework/<course>/<hw>/`，不是丢在 chat session 里
-- **群组作业拒绝代做**：识别到 group 类型时主动告知"这类作业涉及组员协作，不适合 agent 全权代做"
+- **不假设"全部代写"**：[B] 给用户"只做某几题"的选项，尊重学生想自己做部分的需求
+- **产物沉淀本地**：每份草稿存到 `data/homework/<course>/<hw>/`，不是丢在 chat session
+- **群组作业拒绝代做**：识别到 group 类型时主动告知"这类涉及组员协作，不适合 agent 全权代做"
+- **Tool 之间用文件传递**：orchestrator 不把 tool 当函数调用，而是把中间产物落地到 `data/homework/.../intermediate/`，每个 tool 读写文件。这样：
+  - tool 单独可测试
+  - 失败可断点续跑
+  - 用户可以中途接管某一步
 
 ---
 
@@ -300,11 +380,18 @@ data/mastery/
 ## 当前位置
 
 ```
-[M1 ✅] ──→ [M2 🎯] ──→ [M3] ──→ [M4] ──→ [M5]
-              ↑
-            你在这里
+[M1 ✅] ──→ [M2 ✅] ──→ [M3 🎯] ──→ [M4] ──→ [M5]
+                         ↑
+                       准备进入
 ```
 
-**下一步**：决定 M2 的具体范围 —— 是先做"同步状态"一个 task 跑通端到端，还是先把目录结构搭起来再填内容？
+**M2 已落锁**（commit `7e6725e`），验证了 agent 看着 skill.md 能跑通 sync-status 任务。
 
-我推荐前者：**先做窄而完整的切片，让 skill 真的能被 load 起来用，再扩展。**
+**M3 下一步**：先实现 `task-orchestrator.md` + `tools/_index.md` 调度框架，配合 Report 流水线的 4 个内置 tool（paper-search / figure-maker / writing-helper / pdf-renderer），端到端跑通一个 DLED3020 paper critique。
+
+**M3 推荐起步顺序**：
+1. 写 `tools/_index.md` 框架（即使只有一个 tool）—— 让 orchestrator 有东西可读
+2. 写 `tools/pdf-renderer.md` —— 最稳的纯工具，任何 task 都用
+3. 写 `tasks/task-orchestrator.md` 骨架 —— 接收任务画像，简单版只调 pdf-renderer 就能演示
+4. 写 `tasks/do-homework.md` —— 用 orchestrator 跑通一个真实作业
+5. 补 writing-helper / paper-search / figure-maker，逐步覆盖 report 类完整流水线
