@@ -1,0 +1,9 @@
+我现在想要在hkustgz的语境下做一个项目，参考这个仓库，最终以skill的形式呈现：https://github.com/ICUlizhi/AutoPku
+
+我希望我们最终也是以skill的形式，可以让大家直接就在claudecode或者codex上load这个skill。
+这会是我们的最终目的。
+你现在先帮我拆解一下autopku的这个形式和设计，如果有可以直接参考的部分可以列出来。
+
+接下来我需要你帮我输出一个简短干净可读的设计roadmap。
+
+同时你可以参考AutoStudy.pdf，里面有一部分我的设计理念。
