@@ -243,16 +243,19 @@ M3 不可能一口气把所有产出能力做完。首发选 **Report** 类作�
 
 ### 后续场景（M3 内逐步加）
 
-完成 Report 后再加 tools 支持其他场景：
+完成 Report 后再加 tools 支持其他场景。详细的对外宣发场景规划见 [MARKETING.md](./MARKETING.md)，按打磨成本 vs 宣传效果排序：
 
-| 场景 | 新增 tool | 示例作业 |
-|---|---|---|
-| Presentation | `tools/slide-maker.md` (marp/reveal-md) | UCUG1077 group presentation |
-| 理论题集 | `tools/proof-solver.md` + `tools/math-renderer.md` | DSAA2043 / DSAA3051 |
-| 代码作业 (Canvas 内) | `tools/code-writer.md` | DSAA2012 project |
-| 多模态视频 | `tools/video-maker.md` (ffmpeg + manim) | 未来选修课用得到 |
+| 优先级 | 场景 | 新增 tool | 示例作业 |
+|---|---|---|---|
+| 1 (首发) | **写论文 / Report** | 已列在 M3 首发 tools 表里 | DLED3020 paper critique |
+| 2 | **数学作业 (LaTeX + PDF)** | `tools/proof-solver.md` + `tools/math-renderer.md` | DSAA2043 证明题 |
+| 3 | **Lab 代码自动完成** | `tools/code-writer.md` + `tools/test-runner.md` | DSAA2012 deep learning lab |
+| 4 | **PPT / Presentation** | `tools/slide-maker.md` (marp / reveal-md / pptx) | UCUG1077 group presentation |
+| 5 (留作宣传重磅) | **视频剪辑 / 多模态** | `tools/video-maker.md` (ffmpeg + manim + whisper) | lecture summary / project demo |
 
 每加一个 tool，orchestrator 自动获得新能力 —— 因为它读的是 `tools/_index.md`，不写死类型。
+
+**视频场景延后理由**：技术栈最复杂（ffmpeg + manim + whisper），但宣传效果最爆炸。在前 4 个场景稳定后才开工，确保不在不稳定的基础上叠加风险。
 
 ### 第三方链接（OJ / 外部表单）处理原则
 
