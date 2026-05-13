@@ -16,23 +16,24 @@ You sync Canvas data and present a clean markdown summary. **Do not dump raw JSO
 ## Preconditions
 
 Before running, check:
-1. `.venv/` exists and `playwright` is installed
-2. `.auth/canvas_state.json` exists
+1. `.venv/` exists with `canvascli` installed (test: `.venv/bin/canvascli --version`)
+2. A saved session exists (test: `.venv/bin/canvascli whoami` returns 0)
 
-If either is missing, redirect to `scraper-setup.md`. Do NOT proceed silently.
+If either is missing, redirect to `canvascli-setup.md`. Do NOT proceed silently.
 
 ## Execution flow
 
 ### Step 1: Refresh data
 
-Run these two scrapers (sequential is fine; they're fast):
+Call canvascli twice. Capture JSON to disk for the rest of the flow:
 
 ```bash
-.venv/bin/python -m scraper.fetch_courses
-.venv/bin/python -m scraper.fetch_announcements
+.venv/bin/canvascli courses > data/courses.json
+.venv/bin/canvascli assignments > data/assignments.json
+.venv/bin/canvascli announcements > data/announcements.json
 ```
 
-If either returns `401`, the cookie expired — direct the user to re-run `scraper.login` and stop.
+If any returns exit code 2 with "session expired" on stderr, the cookie's gone — direct the user to re-run `canvascli init` and stop.
 
 ### Step 2: Read the JSON
 
@@ -114,9 +115,9 @@ Keep tone informative but not noisy. The user wants to scan in 5 seconds.
 
 ## Pitfalls
 
-- **Do not use `enrollment_state=active`** — `fetch_courses` already filters correctly client-side
-- **Do not dump raw JSON to the user** — the user wants a summary, not data
-- **Do not auto-download files** — separate confirmation needed (point to `scraper-api.md` download section)
+- **Don't dump raw JSON to the user** — the user wants a summary, not data
+- **Don't auto-download files** — separate confirmation needed (point to `canvascli-api.md` download section)
 - **Time zone**: `due_at` is UTC in JSON. Display in user's local time (assume Asia/Shanghai unless user said otherwise)
 - **Sorting tuples of `(datetime, dict)`**: Python falls back to comparing the dict if datetimes match, which raises `TypeError`. Always sort with `key=lambda x: x[0]`.
 - **Don't show ancient overdue items**: assignments overdue by more than 30 days are usually past-term residue. Cap the overdue window.
+- **Use `.venv/bin/canvascli`** explicitly — system PATH might not have it.

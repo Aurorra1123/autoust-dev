@@ -30,7 +30,19 @@ git clone https://github.com/<your-org>/AutoStudy.git
 cd AutoStudy
 ```
 
-### 2. 让 Claude Code 加载这个 skill
+### 2. 装外部工具 canvascli
+
+Canvas 数据层是独立的 CLI 工具：
+
+```bash
+git clone https://github.com/<your-org>/canvascli.git ~/workspace/canvascli
+python3 -m venv .venv
+.venv/bin/pip install -e ~/workspace/canvascli
+.venv/bin/playwright install chromium
+.venv/bin/canvascli init   # 一次性 SSO 登录
+```
+
+### 3. 让 Claude Code 加载这个 skill
 
 在 Claude Code 里告诉它：
 
@@ -40,7 +52,7 @@ cd AutoStudy
 
 agent 会读取 `skill.md`，了解项目结构和能力清单。
 
-### 3. 用自然语言下达任务
+### 4. 用自然语言下达任务
 
 ```
 "帮我同步课程状态"
@@ -71,24 +83,24 @@ AutoStudy/
 ├── skill.md                    # Claude Code 入口
 ├── README.md                   # 你正在读的
 ├── ROADMAP.md                  # 分阶段路线图
+├── MARKETING.md                # 对外宣发场景
 ├── PITFALLS.md                 # 踩坑记录（重要）
 ├── AutoStudy.pdf               # 原始设计理念
 ├── sub-skills/
 │   ├── tools/
-│   │   ├── scraper-setup.md   # 安装 + 首次登录
-│   │   └── scraper-api.md     # scraper 模块手册
+│   │   ├── canvascli-setup.md  # 安装外部工具 + 首次登录
+│   │   ├── canvascli-api.md    # canvascli 命令手册
+│   │   ├── _index.md           # M3 tool 注册表
+│   │   └── pdf-renderer.md     # markdown → PDF
 │   └── tasks/
-│       └── sync-status.md     # 同步状态任务
-└── scraper/                    # Python 包
-    ├── api.py                 # CanvasClient
-    ├── login.py               # SSO 登录
-    ├── fetch_courses.py
-    ├── fetch_announcements.py
-    ├── fetch_modules.py
-    ├── fetch_files.py
-    ├── fetch_quizzes_discussions.py
-    └── download.py            # 按文件夹下载 + 状态管理
+│       ├── sync-status.md      # 同步状态任务
+│       └── task-orchestrator.md # M3 调度器
+└── data/                       # 拉到的 JSON + 下载的文件（gitignored）
 ```
+
+Canvas 数据层（抓取器）抽出来了 —— 是独立仓库 [`canvascli`](https://github.com/<your-org>/canvascli)。
+通过 `.venv/bin/pip install -e ~/workspace/canvascli` 装到 AutoStudy 的 venv 里。
+设计思路对应 AutoPku 的 `pku3b`：把数据底座做成可被任何 agent shell out 调用的独立工具。
 
 ---
 

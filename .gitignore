@@ -5,3 +5,6 @@
 data/
 __pycache__/
 *.pyc
+
+# Reference checkouts (not part of AutoStudy)
+pku3b/

@@ -14,38 +14,44 @@ Try natural language. Common intents:
 | User says... | What happens |
 |---|---|
 | "看看这周作业" / "what's due" / "同步课程状态" | → `tasks/sync-status.md` |
-| "下载 DSAA2043 的 midterm 资料" / "fetch course files" | → use `scraper.download` (see `tools/scraper-api.md`) |
-| "登录失败了" / "重新登录" | → `tools/scraper-setup.md` step 2 |
-| (first time using AutoStudy) | → `tools/scraper-setup.md` from step 1 |
+| "下载 DSAA2043 的 midterm 资料" / "fetch course files" | → use `canvascli download` (see `tools/canvascli-api.md`) |
+| "登录失败了" / "重新登录" | → `tools/canvascli-setup.md` step 3 |
+| (first time using AutoStudy) | → `tools/canvascli-setup.md` from step 1 |
 
-For anything not listed: read the request, decide if it's a Canvas-related query you can answer with the scraper. If not, say so clearly.
+For anything not listed: read the request, decide if it's a Canvas-related query you can answer with canvascli. If not, say so clearly.
 
 ## First-time setup check
 
 Before doing anything else, verify the environment:
 
 ```bash
-ls .venv .auth/canvas_state.json 2>&1
+.venv/bin/canvascli version > /dev/null 2>&1 && .venv/bin/canvascli whoami > /dev/null 2>&1 && echo OK || echo NEEDS_SETUP
 ```
 
-- If both exist → proceed to the task
-- If `.venv` missing or `canvas_state.json` missing → invoke `tools/scraper-setup.md` first
-- If a scraper call returns `401` mid-task → cookies expired, redirect to `tools/scraper-setup.md` step 2
+- If `OK` → proceed to the task
+- If `NEEDS_SETUP` → invoke `tools/canvascli-setup.md` first
+- If a canvascli call returns "session expired" / 401 mid-task → cookies expired, redirect to `tools/canvascli-setup.md` step 3
 
 ## Architecture (so you know what to read)
 
 ```
-skill.md (this file)         ← entry point, intent routing
+skill.md (this file)              ← entry point, intent routing
 sub-skills/
 ├── tools/
-│   ├── scraper-setup.md     ← one-time install + login
-│   └── scraper-api.md       ← module reference, CLI flags, JSON shapes
+│   ├── canvascli-setup.md        ← one-time install + login
+│   ├── canvascli-api.md          ← command reference, JSON shapes
+│   ├── _index.md                 ← tool registry (M3 orchestrator reads this)
+│   └── pdf-renderer.md           ← markdown → PDF
 └── tasks/
-    └── sync-status.md       ← M2 flagship task
-scraper/                     ← Python package, run via `python -m scraper.<name>`
-data/                        ← JSON snapshots + downloaded files (gitignored)
-.auth/                       ← session cookie (gitignored, sensitive)
+    ├── sync-status.md            ← M2 flagship task
+    └── task-orchestrator.md      ← M3 pipeline composer
+data/                             ← JSON snapshots + downloaded files (gitignored)
 ```
+
+Note: the Canvas data layer lives in a separate repo,
+[canvascli](https://github.com/<your-org>/canvascli), installed into AutoStudy's `.venv`.
+Same philosophy as AutoPku's `pku3b` — keep the data acquisition tool independent so it
+can serve other agents too.
 
 This skill is at milestone M2. See `ROADMAP.md` for what's coming next (notes generation, homework helper, etc.).
 
@@ -53,11 +59,11 @@ This skill is at milestone M2. See `ROADMAP.md` for what's coming next (notes ge
 
 These apply to every task in this skill:
 
-1. **Never echo or log `.auth/canvas_state.json`** or any cookie value. It's a session credential.
+1. **Never echo or log canvascli's saved session** (`~/Library/Application Support/canvascli/state.json`). It's a credential.
 2. **Never auto-download or auto-submit anything.** Use `AskUserQuestion` to confirm scope first.
 3. **Never auto-pick "the latest" assignment, file, or course.** The user picks explicitly.
-4. **On `401` from any scraper command**: treat as session expired, redirect to `scraper-setup.md` step 2. Do not retry.
-5. **Don't parse `fetch_*` stdout** — parse the JSON files in `data/`.
+4. **On session expiration / 401 from any canvascli command**: redirect to `canvascli-setup.md` step 3. Do not retry.
+5. **Capture canvascli's JSON to disk** (e.g. `canvascli courses > data/courses.json`), then read and summarize. Don't try to summarize from stdout buffers directly.
 6. **`AskUserQuestion` only** for interactive flow. The Claude Code `!` bash channel has no TTY — Python `input()` will EOF immediately. See `PITFALLS.md` if curious why.
 
 ## Telling the user what just happened
