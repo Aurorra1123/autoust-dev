@@ -1,0 +1,244 @@
+[
+  {
+    "id": "M1-CANVASCLI",
+    "category": "data-layer",
+    "priority": "P0",
+    "description": "Canvas 抓取器：从 AutoStudy 内嵌的 scraper/ 抽离为独立 canvascli 仓库",
+    "acceptance": [
+      "canvascli 是独立 git 仓库（~/workspace/canvascli/）",
+      "提供 11 个 typer 顶层命令（init/version/whoami/courses/assignments/assignment/announcements/files/folders/download/submit）",
+      "默认 JSON 输出，--pretty 切换人类可读",
+      "Playwright 一次性 SSO 登录 + cookie 持久化，不存明文密码",
+      "AutoStudy .venv pip install -e canvascli 后命令可用",
+      "AutoStudy 删除自带 scraper/，所有 sub-skills 引用 canvascli 命令",
+      "submit 实现 Canvas 三步上传协议"
+    ],
+    "evidence": [
+      "AutoStudy commit 90072ac",
+      "canvascli commit 0385f54",
+      "sub-skills/tools/canvascli-setup.md + canvascli-api.md"
+    ],
+    "status": "passing"
+  },
+  {
+    "id": "M2-SYNC-STATUS",
+    "category": "skill-task",
+    "priority": "P0",
+    "description": "最小可 load skill：sync-status 任务端到端可用",
+    "acceptance": [
+      "skill.md 主入口 + 意图路由 + 安全规则",
+      "sub-skills/tools/canvascli-setup.md + canvascli-api.md",
+      "sub-skills/tasks/sync-status.md 完整任务流程",
+      "陌生 agent 看 skill.md 能跑通 sync-status 并产生 5 段式 markdown 摘要",
+      "30 天阈值过滤过期 overdue",
+      "全程使用 AskUserQuestion 而非 input()"
+    ],
+    "evidence": [
+      "AutoStudy commit 7e6725e",
+      "独立 agent session 验证截图（用户口头确认）",
+      "PITFALLS.md #1-#3, #11-#14"
+    ],
+    "status": "passing"
+  },
+  {
+    "id": "M3-FOUNDATION",
+    "category": "architecture",
+    "priority": "P0",
+    "description": "M3 三层架构骨架：task → orchestrator → tools",
+    "acceptance": [
+      "sub-skills/tools/_index.md 能力清单 + verb 词表",
+      "sub-skills/tasks/task-orchestrator.md 调度器骨架",
+      "sub-skills/tools/pdf-renderer.md 第一个生产级 tool",
+      "端到端跑通：任务画像 → orchestrator → pdf-renderer → 真 PDF"
+    ],
+    "evidence": [
+      "AutoStudy commit 37b7daf",
+      "data/homework/test/output.pdf（48KB，%PDF-1.5）"
+    ],
+    "status": "passing"
+  },
+  {
+    "id": "M3-DO-HOMEWORK",
+    "category": "skill-task",
+    "priority": "P0",
+    "description": "do-homework.md：第一个真实端到端作业 task",
+    "acceptance": [
+      "sub-skills/tasks/do-homework.md 完整流程",
+      "[A] canvascli 拉作业 description + rubric",
+      "[B] AskUserQuestion 询问意图（是 / 只做某几题 / 不用）",
+      "[C] 调 task-orchestrator 执行",
+      "[E] AskUserQuestion 询问是否提交",
+      "[F] canvascli submit 完成提交",
+      "在一个真实 HKUST(GZ) 作业上端到端跑通（建议 DLED3020 Paper Critique 或 UCUG1809 Reflective Essay）"
+    ],
+    "evidence": [],
+    "status": "pending"
+  },
+  {
+    "id": "M3-WRITING-HELPER",
+    "category": "skill-tool",
+    "priority": "P0",
+    "description": "writing-helper.md：让 [D] 草稿真有质量",
+    "acceptance": [
+      "sub-skills/tools/writing-helper.md spec",
+      "支持 essay / report / reflection 三种结构",
+      "支持引用格式（APA / IEEE）",
+      "在 do-homework 流水线中被 orchestrator 调用，产物可读"
+    ],
+    "evidence": [],
+    "status": "pending"
+  },
+  {
+    "id": "M3-PAPER-SEARCH",
+    "category": "skill-tool",
+    "priority": "P1",
+    "description": "paper-search.md：文献搜索 + 引用条目生成",
+    "acceptance": [
+      "sub-skills/tools/paper-search.md spec",
+      "用 arxiv API 或 Google Scholar 链接生成（不抓全文）",
+      "输出标准 bib 条目供 writing-helper 引用"
+    ],
+    "evidence": [],
+    "status": "pending"
+  },
+  {
+    "id": "M3-FIGURE-MAKER",
+    "category": "skill-tool",
+    "priority": "P1",
+    "description": "figure-maker.md：数据可视化",
+    "acceptance": [
+      "sub-skills/tools/figure-maker.md spec",
+      "matplotlib 代码生成 + 渲染成 PDF/PNG",
+      "输出路径符合 orchestrator 的 work_dir 约定"
+    ],
+    "evidence": [],
+    "status": "pending"
+  },
+  {
+    "id": "M3-REPORT-E2E",
+    "category": "validation",
+    "priority": "P0",
+    "description": "Report 流水线完整端到端验证",
+    "acceptance": [
+      "选一个真实 HKUST(GZ) 作业（建议 DLED3020 Assessment Task 3）",
+      "全程只在 [B][E] 两点 AskUserQuestion",
+      "orchestrator 调度 paper-search → writing-helper → figure-maker → pdf-renderer",
+      "用户审核草稿满意",
+      "canvascli submit 完成提交并返回 submission 对象"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "blocked_by": ["M3-DO-HOMEWORK", "M3-WRITING-HELPER", "M3-PAPER-SEARCH", "M3-FIGURE-MAKER"]
+  },
+  {
+    "id": "M3-MATH-PROOF",
+    "category": "skill-tool",
+    "priority": "P1",
+    "description": "数学作业流水线（proof-solver + math-renderer）",
+    "acceptance": [
+      "sub-skills/tools/proof-solver.md spec",
+      "sub-skills/tools/math-renderer.md spec（专注 LaTeX + tikz）",
+      "在 DSAA2043 或 AIAA2711 真实证明题上跑通"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "blocked_by": ["M3-DO-HOMEWORK"]
+  },
+  {
+    "id": "M3-LAB-CODE",
+    "category": "skill-tool",
+    "priority": "P1",
+    "description": "Lab 代码自动完成（code-writer + test-runner）",
+    "acceptance": [
+      "sub-skills/tools/code-writer.md spec",
+      "sub-skills/tools/test-runner.md spec",
+      "在 DSAA2012 lab 上跑通"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "blocked_by": ["M3-DO-HOMEWORK"]
+  },
+  {
+    "id": "M3-SLIDES",
+    "category": "skill-tool",
+    "priority": "P2",
+    "description": "Presentation / Slides（slide-maker）",
+    "acceptance": [
+      "sub-skills/tools/slide-maker.md spec（marp 或 reveal-md）",
+      "在 UCUG1077 group presentation 上跑通"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "blocked_by": ["M3-DO-HOMEWORK"]
+  },
+  {
+    "id": "M3-VIDEO",
+    "category": "skill-tool",
+    "priority": "P2",
+    "description": "视频剪辑 / 多模态（video-maker，宣传重磅）",
+    "acceptance": [
+      "sub-skills/tools/video-maker.md spec（ffmpeg + manim + whisper）",
+      "至少一个公开可分享的 demo 视频"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "blocked_by": ["M3-LAB-CODE"]
+  },
+  {
+    "id": "M4-TUTOR",
+    "category": "skill-task",
+    "priority": "P1",
+    "description": "反问式学习助手（Interactive Tutor，AutoPku 没有的差异化）",
+    "acceptance": [
+      "sub-skills/tasks/tutor-session.md",
+      "sub-skills/tasks/weakness-review.md",
+      "data/mastery/<course>.json 持久化掌握程度",
+      "Socratic 提问梯度：reveal-hint → partial → full",
+      "默认不给完整答案，写进 skill.md safety"
+    ],
+    "evidence": [],
+    "status": "pending"
+  },
+  {
+    "id": "M5-RUNTIME-MULTI",
+    "category": "infra",
+    "priority": "P2",
+    "description": "多 runtime 适配（Codex / Kimi Code 在 AutoStudy 也能跑）",
+    "acceptance": [
+      "sub-skills/runtime/_detect.md",
+      "sub-skills/runtime/codex-subagent.md",
+      "sub-skills/runtime/kimi-team.md",
+      "在 Codex CLI 上跑通 sync-status"
+    ],
+    "evidence": [],
+    "status": "pending"
+  },
+  {
+    "id": "M5-PROACTIVE",
+    "category": "skill-feature",
+    "priority": "P2",
+    "description": "主动提醒（SessionStart hook 检查 ddl，CronCreate 定时检查）",
+    "acceptance": [
+      "Claude Code hook 配置示例",
+      "ddl < 48h 高亮提醒",
+      "用户能开启 / 关闭主动提醒"
+    ],
+    "evidence": [],
+    "status": "pending"
+  },
+  {
+    "id": "DOCS-HARNESS-LIGHT",
+    "category": "docs-foundation",
+    "priority": "P1",
+    "description": "采用 harness-best-practice 的最小切片（AGENTS.md + progress + feature-list）",
+    "acceptance": [
+      "AGENTS.md 开发者视角入口",
+      "docs/progress/agent-progress.md 会话交接日志",
+      "docs/plans/feature-list.json 结构化 backlog"
+    ],
+    "evidence": [
+      "本次 commit (待生成)"
+    ],
+    "status": "in_progress"
+  }
+]
