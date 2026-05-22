@@ -40,10 +40,10 @@ Don't close out a session without:
 
 | What | Where |
 |---|---|
-| Roadmap (the big picture) | [ROADMAP.md](./ROADMAP.md) at repo root |
+| Roadmap (the big picture) | [docs/ROADMAP.md](./docs/ROADMAP.md) |
 | Skill entry for end-users | [skill.md](./skill.md) at repo root |
-| Marketing scenarios | [MARKETING.md](./MARKETING.md) at repo root |
-| Burnt-once pitfalls | [PITFALLS.md](./PITFALLS.md) at repo root |
+| Marketing scenarios | [docs/MARKETING.md](./docs/MARKETING.md) |
+| Burnt-once pitfalls | [docs/PITFALLS.md](./docs/PITFALLS.md) |
 | Backlog with status | `docs/plans/feature-list.json` |
 | Session handoff notes | `docs/progress/agent-progress.md` |
 | Skill tool/task docs | `sub-skills/{tools,tasks}/*.md` |
@@ -53,7 +53,7 @@ We're deliberately **not** maintaining `docs/standards/` or `docs/adr/` yet. ROA
 ## Rules of thumb
 
 - **Verification before "passing"**: never flip a feature from in-progress to passing without something concrete to point to (a commit, a tested artifact, a screenshot).
-- **Pitfalls go to PITFALLS.md or the relevant sub-skill `.md`**, not into chat or commit messages. The next agent won't read your commit body.
+- **Pitfalls go to `docs/PITFALLS.md` or the relevant sub-skill `.md`**, not into chat or commit messages. The next agent won't read your commit body.
 - **Don't write features that require canvascli changes without confirming the canvascli repo state first.** They evolve together.
 - **Repo > chat**: anything worth knowing twice goes to a file, not the conversation.
 

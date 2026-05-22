@@ -180,7 +180,7 @@ Confidence < 0.7? Hand back to caller and ask the user explicitly.
 1. **Don't make this an `Agent` tool call (sub-agent).** Sub-agents are expensive; the orchestrator is plain markdown + the main agent executing it. Keep it cheap.
 2. **Don't extend capability vocabulary ad-hoc.** New verbs go into `_index.md` first, then tools reference them.
 3. **Don't bake course-specific logic here.** If "DSAA2043 wants final.pdf in single column" — that goes in `do-homework.md`'s task-profile construction, not here.
-4. **File paths with Chinese / spaces are common** (see `PITFALLS.md` #10). Always quote paths in shell calls.
+4. **File paths with Chinese / spaces are common** (see `docs/PITFALLS.md` #10). Always quote paths in shell calls.
 
 ## Minimum viable version (M3 start)
 
@@ -209,4 +209,4 @@ This is the first end-to-end smoke test target.
 
 ## Future: parallelization
 
-When two tools have no data dependency (e.g. `make-figure` and `paper-search` in the report pipeline), they can run in parallel. M3 first version runs sequential; parallel comes later when we add runtime detection (M5a, see ROADMAP).
+When two tools have no data dependency (e.g. `make-figure` and `paper-search` in the report pipeline), they can run in parallel. M3 first version runs sequential; parallel comes later when we add runtime detection (M5a, see `docs/ROADMAP.md`).

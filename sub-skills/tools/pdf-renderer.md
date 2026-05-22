@@ -124,7 +124,7 @@ Callouts require a Lua filter. Save this once as `data/tools/callout.lua`:
 ```lua
 -- Recognizes "> [!NOTE]", "> [!TIP]", "> [!WARN]", "> [!EX]" in blockquotes
 -- and converts them to tcolorbox environments.
--- Source: adapted from AutoPku's callout.lua (see PITFALLS.md for the bugs we hit).
+-- Source: adapted from AutoPku's callout.lua (see docs/PITFALLS.md for the bugs we hit).
 
 local LABELS = {
   NOTE = "[NOTE]", TIP = "[TIP]", WARN = "[WARN]", EX = "[EX]",

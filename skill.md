@@ -53,7 +53,7 @@ Note: the Canvas data layer lives in a separate repo,
 Same philosophy as AutoPku's `pku3b` — keep the data acquisition tool independent so it
 can serve other agents too.
 
-This skill is at milestone M2. See `ROADMAP.md` for what's coming next (notes generation, homework helper, etc.).
+This skill is at milestone M2. See `docs/ROADMAP.md` for what's coming next (notes generation, homework helper, etc.).
 
 ## Safety rules (non-negotiable)
 
@@ -64,7 +64,7 @@ These apply to every task in this skill:
 3. **Never auto-pick "the latest" assignment, file, or course.** The user picks explicitly.
 4. **On session expiration / 401 from any canvascli command**: redirect to `canvascli-setup.md` step 3. Do not retry.
 5. **Capture canvascli's JSON to disk** (e.g. `canvascli courses > data/courses.json`), then read and summarize. Don't try to summarize from stdout buffers directly.
-6. **`AskUserQuestion` only** for interactive flow. The Claude Code `!` bash channel has no TTY — Python `input()` will EOF immediately. See `PITFALLS.md` if curious why.
+6. **`AskUserQuestion` only** for interactive flow. The Claude Code `!` bash channel has no TTY — Python `input()` will EOF immediately. See `docs/PITFALLS.md` if curious why.
 
 ## Telling the user what just happened
 
@@ -76,6 +76,6 @@ Be concise. The user can read the diff themselves; don't recap files.
 
 ## When in doubt
 
-- Check `PITFALLS.md` — most surprising behaviors have been documented
-- Check `ROADMAP.md` — feature is probably planned for a later milestone
+- Check `docs/PITFALLS.md` — most surprising behaviors have been documented
+- Check `docs/ROADMAP.md` — feature is probably planned for a later milestone
 - If a feature truly isn't covered, say "this isn't in the current scope" rather than improvising

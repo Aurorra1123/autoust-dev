@@ -72,7 +72,7 @@ agent 会读取 `skill.md`，了解项目结构和能力清单。
 - ✅ 主 skill.md + sub-skills 三层架构（runtime/tools/tasks）
 - ✅ `tasks/sync-status.md` — 同步状态 + 摘要
 
-下一步（M3）：笔记生成、作业辅助（含设计审核环节）。详见 [ROADMAP.md](./ROADMAP.md)。
+下一步（M3）：笔记生成、作业辅助（含设计审核环节）。详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
 
 ---
 
@@ -80,12 +80,17 @@ agent 会读取 `skill.md`，了解项目结构和能力清单。
 
 ```
 AutoStudy/
-├── skill.md                    # Claude Code 入口
+├── skill.md                    # Claude Code 入口（用户侧）
+├── AGENTS.md                   # 开发者入口
 ├── README.md                   # 你正在读的
-├── ROADMAP.md                  # 分阶段路线图
-├── MARKETING.md                # 对外宣发场景
-├── PITFALLS.md                 # 踩坑记录（重要）
-├── AutoStudy.pdf               # 原始设计理念
+├── docs/
+│   ├── ROADMAP.md              # 分阶段路线图
+│   ├── MARKETING.md            # 对外宣发场景
+│   ├── PITFALLS.md             # 踩坑记录（重要）
+│   ├── AutoStudy.pdf           # 原始设计理念
+│   ├── plan.md                 # 项目最初的 brief
+│   ├── plans/feature-list.json # 结构化 backlog
+│   └── progress/agent-progress.md  # 会话交接日志
 ├── sub-skills/
 │   ├── tools/
 │   │   ├── canvascli-setup.md  # 安装外部工具 + 首次登录
@@ -128,4 +133,4 @@ Canvas 数据层（抓取器）抽出来了 —— 是独立仓库 [`canvascli`]
 
 ## 反馈 / 贡献
 
-issue 和 PR 欢迎。先看 [ROADMAP.md](./ROADMAP.md) 了解当前阶段范围。
+issue 和 PR 欢迎。先看 [docs/ROADMAP.md](./docs/ROADMAP.md) 了解当前阶段范围。
