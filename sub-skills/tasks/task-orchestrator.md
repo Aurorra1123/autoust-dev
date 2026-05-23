@@ -22,7 +22,7 @@ This task is **not user-facing**. End-users say "帮我完成 hw3", which routes
 The calling task hands you a structured description:
 
 ```yaml
-type: report | slides | proof | code | video | notes | mixed
+type: paper | slides | math | lab | video | notes | mixed
 deliverables:
   - path: data/homework/<course>/<hw>/final.pdf  # what file to produce
     format: pdf | pptx | html | mp4 | ipynb | md
@@ -75,30 +75,38 @@ write_essay / solve_proof / write_code  →  (consumes intermediates)
 render_pdf / render_slides / edit_video →  (produces final deliverable)
 ```
 
-Concretely for the three flagship pipelines:
+Concretely for the four MVP pipelines (see `tools/_index.md` "Scenario → Tool chain"):
 
-**Report pipeline** (type: report):
+**Paper pipeline** (type: paper):
 ```
-1. paper-search    → work_dir/references.json + work_dir/refs.bib
-2. make-figure     → work_dir/figures/fig{1..N}.pdf  (in parallel)
-3. writing-helper  → work_dir/draft.md  (uses references + figures)
+1. paper-search    → work_dir/references.bib + references.json
+2. figure-maker    → work_dir/figures/fig_N.pdf  (parallel-eligible; opt)
+3. writing-helper  → work_dir/draft.md  (consumes references + figures)
 4. pdf-renderer    → work_dir/final.pdf
 ```
 
 **Slides pipeline** (type: slides):
 ```
-1. make-figure     → work_dir/figures/...
-2. slide-maker     → work_dir/slides.md  (marp/reveal)
-3. slide-maker → final.pdf  or  final.pptx
+1. figure-maker    → work_dir/figures/...  (opt)
+2. slide-maker     → work_dir/slides.tex → work_dir/slides.pdf  (one tool, two phases: write .tex + compile via tectonic)
 ```
 
-**Math homework pipeline** (type: proof):
+**Math pipeline** (type: math):
 ```
-1. pdf-reader      → work_dir/problems.json  (parsed from assignment PDF)
-2. proof-solver    → work_dir/solutions.json
-3. writing-helper  → work_dir/draft.md  (Markdown with LaTeX math)
-4. pdf-renderer    → work_dir/final.pdf
+1. writing-helper  → work_dir/draft.md  (Markdown with inline LaTeX math via $...$)
+2. pdf-renderer    → work_dir/solution.pdf
 ```
+
+**Lab pipeline** (type: lab):
+```
+1. code-writer     → work_dir/src/*.py + work_dir/src/test_*.py
+2. test-runner     → work_dir/test_report.md
+3. writing-helper  → work_dir/draft.md  (lab report, embeds test_report excerpt)
+4. pdf-renderer    → work_dir/report.pdf
+```
+
+**Video pipeline** (type: video):
+Out of scope for AutoStudy MVP. A separate video skill will handle this. If a calling task constructs a profile with `type: video`, return early with a friendly "video pipeline lives in a different skill" message.
 
 ### Step 3: Execute
 
@@ -156,15 +164,22 @@ The calling task uses this summary to present the result to the user.
 
 If the calling task is unsure of the task type, use these signals from the assignment description:
 
-| Signals in description | Inferred type |
+| Signals in description / rubric | Inferred type |
 |---|---|
-| "essay", "report", "review", "critique", "paper", "annotated bibliography", "reflection" | `report` |
+| "essay", "report", "review", "critique", "paper", "annotated bibliography", "reflection" | `paper` |
 | "presentation", "slides", "PPT", "deck", "pitch", "demo" | `slides` |
-| "prove", "show that", "derive", "complexity analysis", math expressions | `proof` |
-| "implement", "code", "write a function", "OJ", "submit code", `.py` / `.cpp` / `.ipynb` files | `code` |
-| "video", "screencast", "demo recording", "summary video" | `video` |
-| "notes", "study guide", "summarize the lecture" | `notes` |
+| "prove", "show that", "derive", "complexity analysis", math expressions (`$...$` density) | `math` |
+| "implement", "code", "write a function", "OJ", "submit code", `.py` / `.cpp` / `.ipynb` files | `lab` |
+| "video", "screencast", "demo recording", "summary video" | `video` (→ defer to video skill) |
+| "notes", "study guide", "summarize the lecture" | `notes` (→ falls back to `paper` pipeline) |
 | Multiple of the above | `mixed` — pick the highest-weight one or run sub-orchestrations |
+
+Real examples from the 4 MVP validation runs:
+
+- **DLED3020 Paper Critique** — description says "critically evaluate this paper" → `paper` (essay structure, citation_style=APA)
+- **UCUG1077 Group presentation** — submission_types includes "online_upload" + description mentions "PPT" → `slides`
+- **DSAA2043 Lab-Assignment 1** — title contains "Lab" + description has "prove that... Big-O" → split: `math` for the proof portion, `lab` for the code portion. Default to `math` if mixed and rubric weights theory > implementation.
+- **DSAA2012 Project Report** — description says "report" + "implementation" + "experiments" → `lab` (because the code is the core; the report is one section of the deliverable)
 
 Confidence < 0.7? Hand back to caller and ask the user explicitly.
 
@@ -182,30 +197,18 @@ Confidence < 0.7? Hand back to caller and ask the user explicitly.
 3. **Don't bake course-specific logic here.** If "DSAA2043 wants final.pdf in single column" — that goes in `do-homework.md`'s task-profile construction, not here.
 4. **File paths with Chinese / spaces are common** (see `docs/PITFALLS.md` #10). Always quote paths in shell calls.
 
-## Minimum viable version (M3 start)
+## MVP scenarios validated
 
-The first version of this orchestrator only needs to support **one capability**: `render_pdf`. That alone validates the three-layer architecture works end-to-end (task profile → orchestrator → tool → real PDF on disk).
+The orchestrator was validated end-to-end on 4 real HKUST(GZ) assignments:
 
-The minimum trace:
+| type | Assignment | Tool chain | Deliverable |
+|---|---|---|---|
+| `paper` | DLED3020 Paper Critique | paper-search → writing-helper → pdf-renderer | `final.pdf` |
+| `slides` | UCUG1077 Group presentation | slide-maker (tectonic) | `slides.pdf` |
+| `math` | DSAA2043 Lab-Assignment 1 | writing-helper → pdf-renderer | `solution.pdf` |
+| `lab` | DSAA2012 Project Report | code-writer → test-runner → writing-helper → pdf-renderer | `src/` + `report.pdf` |
 
-```yaml
-# task profile
-type: notes
-required_capabilities: [render_pdf]
-deliverables:
-  - path: data/homework/test/output.pdf
-    format: pdf
-work_dir: data/homework/test/
-```
-
-Orchestrator:
-1. Matches `render_pdf` → `pdf-renderer.md`
-2. Constructs the minimal pandoc invocation (see pdf-renderer.md "Minimal call")
-3. Runs it on a sample `work_dir/input.md`
-4. Verifies `output.pdf` exists, is >1 KB, has `%PDF` magic
-5. Returns success summary
-
-This is the first end-to-end smoke test target.
+Earlier smoke test (M3 foundation, before MVP) used `type: notes` with only `render_pdf` to validate the three-layer architecture skeleton. That trace lives at `data/homework/test/`.
 
 ## Future: parallelization
 

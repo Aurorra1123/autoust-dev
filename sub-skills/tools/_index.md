@@ -7,7 +7,7 @@ description: Index of available tools. The task-orchestrator reads this to decid
 
 This is the **capability registry** for AutoStudy. The `task-orchestrator` reads this file to discover what tools exist and what each one can do. Tool implementation lives in `sub-skills/tools/<name>.md` — each markdown file contains the spec + shell/Python snippets the agent will execute directly (no separate `.py` files; same philosophy as AutoPku).
 
-The one exception is `scraper/`, which is a real Python package — it's our equivalent of AutoPku's `pku3b` external CLI.
+The data-acquisition layer is a separate concern: `canvascli` is a sister CLI repo (`~/workspace/canvascli/`), installed into `.venv` via `pip install -e`. It is NOT a tool listed here — its commands are invoked directly by tasks (e.g. `do-homework.md` calls `canvascli assignment`).
 
 ## How orchestrator uses this
 
@@ -21,6 +21,12 @@ The one exception is `scraper/`, which is a real Python package — it's our equ
 | Tool | File | Capabilities | Inputs | Outputs | Stability |
 |---|---|---|---|---|---|
 | **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | `render_pdf` (markdown→PDF), supports Chinese, LaTeX math, callouts | markdown file path, options (font, geometry, callouts) | PDF file path | 🟢 stable |
+| **writing-helper** | [writing-helper.md](./writing-helper.md) | `write_essay` (assignment + rubric → structured draft.md: essay/report/reflection) | task_profile.yaml, assignment.json, references.bib (opt) | draft.md (pandoc-friendly) | 🟡 experimental |
+| **paper-search** | [paper-search.md](./paper-search.md) | `search_papers` (topic keywords → bib + json via arxiv API) | topic keywords, max_results | references.bib, references.json | 🟡 experimental |
+| **figure-maker** | [figure-maker.md](./figure-maker.md) | `make_figure` (line/bar/scatter via matplotlib) | figure_spec dict | fig_N.pdf + fig_N.png in work_dir/figures/ | 🟡 experimental |
+| **code-writer** | [code-writer.md](./code-writer.md) | `write_code` (lab spec → src/*.py + tests + README) | task_profile.yaml, assignment.json | work_dir/src/*.py | 🟡 experimental |
+| **test-runner** | [test-runner.md](./test-runner.md) | `run_tests` (pytest + entry point → markdown report) | work_dir/src/ | test_report.md + test_report.json | 🟡 experimental |
+| **slide-maker** | [slide-maker.md](./slide-maker.md) | `render_slides` (slide spec → beamer .tex → PDF via tectonic) | task_profile.yaml, assignment.json, figures/ | slides.tex + slides.pdf | 🟡 experimental |
 
 > 🟢 stable · 🟡 experimental · 🔴 work-in-progress
 
@@ -58,6 +64,7 @@ To keep the orchestrator's matching simple, use these verbs when describing what
 | `write_essay` | draft structured prose (intro/body/conclusion) |
 | `solve_proof` | mathematical proof / derivation |
 | `write_code` | generate code with tests |
+| `run_tests` | execute tests + entry point, capture results |
 | `edit_video` | video editing / clipping / subtitles |
 | `transcribe_audio` | speech-to-text |
 
@@ -67,8 +74,22 @@ If you need a verb not in this list, add it here when you add the tool, so futur
 
 To avoid scope creep:
 
-- ❌ Anything in `scraper/` — that's data acquisition, not task production
+- ❌ Anything that talks to Canvas — that's `canvascli` (data layer, separate repo)
 - ❌ One-off shell snippets the orchestrator can write inline
 - ❌ Things that depend on services without a stable API (e.g. some unstable LLM-only hack)
 - ✅ Anything that produces a tangible artifact (PDF / PPT / video / code / figure)
 - ✅ Anything reused across multiple homework / task types
+
+## Scenario → Tool chain
+
+`do-homework.md` consults this table to populate `required_capabilities` per task type. Each row is a full pipeline from blank work_dir to deliverable.
+
+| Scenario | type | Tool chain (in order) | Final deliverable |
+|---|---|---|---|
+| **paper** (essay / critique / report) | `paper` | `search_papers` → `make_figure` (opt) → `write_essay` → `render_pdf` | `final.pdf` |
+| **slides** (group presentation, talk) | `slides` | `make_figure` (opt) → `render_slides` | `slides.pdf` |
+| **math** (proof, problem set) | `math` | `write_essay` (with LaTeX math) → `render_pdf` | `solution.pdf` |
+| **lab** (programming assignment) | `lab` | `write_code` → `run_tests` → `write_essay` (lab report) → `render_pdf` | `src/` + `report.pdf` |
+| **video** (presentation video) | `video` | _(out of scope for AutoStudy MVP — implemented by a separate video skill, see `docs/ROADMAP.md` M3-VIDEO)_ | — |
+
+**Math note**: MVP doesn't ship a dedicated `proof-solver` or `math-renderer` — the agent writes LaTeX directly inside the `draft.md` markdown source, and `pdf-renderer`'s existing `xelatex` / `tectonic` toolchain handles compilation. If a future course needs tikz-heavy diagrams or symbolic CAS work, add `proof-solver.md` then.
