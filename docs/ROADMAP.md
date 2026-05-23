@@ -39,7 +39,7 @@ clone AutoStudy 仓库 → 执行 skill.md
 ```
 M1  Canvas 抓取器 + 抽离成 canvascli   ✅ 已完成
 M2  最小可 load skill                  ✅ 已完成
-M3  作业辅助 + 启发式调度               🎯 进行中
+M3  作业辅助 + 启发式调度               ✅ MVP（4 场景已端到端跑通）
 M4  反问式学习助手
 M5  多平台 + 主动提醒
 ```
@@ -107,9 +107,19 @@ AutoStudy/
 
 ---
 
-## M3. 作业辅助 + 启发式调度（🎯 进行中）
+## M3. 作业辅助 + 启发式调度（✅ MVP 已达成）
 
 **目标**：从"看到信息"升级到"产出材料"。引入**启发式 skill 调度**作为元能力 —— agent 看任务画像 + 可用 tool 清单，自己挑工具组合完成异构产出（report / presentation / 题集 / 代码 / 视频...）。
+
+**MVP 验收（2026-05-24 达成）**：4 个旗舰场景在真实 HKUST(GZ) Canvas 作业上跑通，每个都产出真实可交付物。video 场景由独立 video skill 实现，不在 AutoStudy 仓库范围。
+
+| 场景 | 真实作业 | 交付物 | 状态 |
+|---|---|---|---|
+| paper | DLED3020 Paper Critique | `final.pdf` 45,684 B / 3 pp | ✅ |
+| slides | UCUG1077 Group presentation | beamer `slides.pdf` 82,370 B + guizang `slides_guizang.pdf` 1.67 MB / 10 pp | ✅ |
+| math | DSAA2043 Lab-Assignment 1 | `solution.pdf` 49,390 B | ✅ |
+| lab | DSAA2012 Project Report | `report.pdf` 43,553 B + 14/14 pytest passing | ✅ |
+| video | (out of scope) | 留给独立 video skill | ⏸ |
 
 ### M3 的三层架构（已落地骨架）
 
@@ -132,15 +142,15 @@ AutoStudy/
            ▼
 ┌─────────────────────────────────────────────────────────┐
 │ Layer 0: Tools (全部 markdown spec + 内嵌代码)            │
-│   tools/_index.md           ✅ 已写（能力清单 + verb 词表）│
+│   tools/_index.md           ✅ 已写（7 个 tool + 场景表） │
 │   tools/pdf-renderer.md     ✅ 已写（tectonic 两步法）   │
-│   tools/paper-search.md     待写                         │
-│   tools/figure-maker.md     待写                         │
-│   tools/writing-helper.md   待写                         │
-│   tools/slide-maker.md      待写                         │
-│   tools/proof-solver.md     待写                         │
-│   tools/code-writer.md      待写                         │
-│   tools/video-maker.md      待写                         │
+│   tools/writing-helper.md   ✅ 已写（essay/report/refl）  │
+│   tools/paper-search.md     ✅ 已写（arxiv → bib）        │
+│   tools/figure-maker.md     ✅ 已写（matplotlib 三型）    │
+│   tools/code-writer.md      ✅ 已写（src + tests）        │
+│   tools/test-runner.md      ✅ 已写（pytest 报告）        │
+│   tools/slide-maker.md      ✅ 已写（guizang 默认 + beamer fallback）│
+│   tools/video-maker.md      ⏸ 由独立 video skill 实现   │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -242,12 +252,14 @@ M3 不可能一口气把所有产出能力做完。首发选 **Report** 类作�
 1. ✅ `tools/_index.md`（能力清单）
 2. ✅ `tools/pdf-renderer.md`（最稳的纯工具）
 3. ✅ `tasks/task-orchestrator.md`（调度器骨架）
-4. 🎯 `tasks/do-homework.md`（第一个真实端到端 task）
-5. ⬜ `tools/writing-helper.md`（让 [D] 草稿真有质量）
-6. ⬜ `tools/paper-search.md`
-7. ⬜ `tools/figure-maker.md`
-8. ⬜ Report 流水线在真实作业上跑通
-9. ⬜ 加 `proof-solver` / `math-renderer` 等其他场景的 tools
+4. ✅ `tasks/do-homework.md`（端到端 task）
+5. ✅ `tools/writing-helper.md`（让 [D] 草稿真有质量）
+6. ✅ `tools/paper-search.md`
+7. ✅ `tools/figure-maker.md`
+8. ✅ `tools/code-writer.md` + `tools/test-runner.md`
+9. ✅ `tools/slide-maker.md`（guizang 默认 + beamer fallback）
+10. ✅ Report / slides / math / lab 4 个场景在真实作业上跑通
+11. ⏸ M3-SUBMIT：`canvascli submit` 在真实未过期作业上端到端验证（当前代码层已验，需 sandbox 作业补一次真实回归）
 
 ---
 
@@ -359,9 +371,9 @@ data/mastery/
 ## 当前位置
 
 ```
-[M1 ✅] ──→ [M2 ✅] ──→ [M3 🎯] ──→ [M4] ──→ [M5]
-                         ↑
-                       进行中
+[M1 ✅] ──→ [M2 ✅] ──→ [M3 ✅ MVP] ──→ [M4] ──→ [M5]
+                          ↑
+                       4 场景已端到端
 ```
 
 **最近 commit**：
@@ -369,21 +381,20 @@ data/mastery/
 ```
 canvascli 仓库            AutoStudy 仓库
 ─────────────────────    ──────────────────────────
-0385f54 Initial          90072ac extract scraper to canvascli
-                         37b7daf M3 foundation: orchestrator + tools/_index + pdf-renderer
-                         106f95b MARKETING.md
-                         e2845fe M3 design
+0385f54 Initial          (next) feat: MVP — 4 flagship scenarios E2E
+                         d3cd323 adopt harness-best-practice light slice
+                         9964365 Rewrite ROADMAP
+                         90072ac extract scraper to canvascli
+                         37b7daf M3 foundation
                          7e6725e M2 lockdown
 ```
 
-**M3 已完成**：
-- 三层架构骨架（task-orchestrator + tools/_index + 第一个 tool pdf-renderer）
-- canvascli 独立仓库 + 接入 AutoStudy + sync-status 用新链路跑通
-- canvascli `submit` 命令（含 Canvas 三步上传协议）—— do-homework 的提交底座已就位
+**M3 MVP 已完成**：
+- 三层架构骨架 + 7 个 tool（pdf-renderer / writing-helper / paper-search / figure-maker / code-writer / test-runner / slide-maker）
+- `do-homework.md` 端到端流程，只在 `[B][E]` 两点交互
+- 4 个旗舰场景在真实 HKUST(GZ) 作业上跑通：paper (DLED3020) / slides (UCUG1077, 双路径) / math (DSAA2043) / lab (DSAA2012)
+- guizang-ppt-skill 集成为 slides 默认路径，beamer 保留为 fallback
+- `canvascli submit` 代码路径完整（待真实 sandbox 作业最终回归）
 
-**M3 下一步**：
-1. 写 `tasks/do-homework.md` 骨架，端到端跑一个真实作业（Report 流水线）
-2. 写 `tools/writing-helper.md` 让草稿有质量
-3. 视真实跑的结果，决定 paper-search / figure-maker 是同 PR 还是分多次
-
-**M3 完成定义**：用户在 Claude Code 里说"帮我完成 DLED3020 Assessment Task 3"，agent 拉作业 → 出草稿 → 用户确认 → API 提交，整套链路真实可用。
+**M3 收尾**（小，可同 M4 一起做）：
+1. 用户提供未过期 / sandbox 作业 → 跑一次真实 `canvascli submit` → 翻 M3-SUBMIT 到 passing

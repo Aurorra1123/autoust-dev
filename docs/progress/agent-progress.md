@@ -2,6 +2,72 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-05-23 / 24 — MVP day: 4 flagship scenarios E2E + guizang slides + docs
+
+### What changed
+
+Pushed AutoStudy to **MVP (M3 core)**: the four flagship homework scenarios — **paper / slides / math / lab** — each ran end-to-end on a real HKUST(GZ) Canvas assignment and produced a real deliverable. Plus integrated the upstream [guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill) as the default slides path.
+
+### Real-assignment evidence (under `data/homework/`, gitignored)
+
+| Scenario | Course / assignment | Deliverable | Bytes / pages |
+|---|---|---|---|
+| **paper** | DLED3020 Paper Critique (id 14250) | `DLED3020/paper-critique/final.pdf` | 45,684 B / 3 pp / PDF v1.5 |
+| **slides (beamer)** | UCUG1077 Group presentation (id 14297) | `UCUG1077/group-presentation/slides.pdf` | 82,370 B / 10 pp |
+| **slides (guizang)** | same | `UCUG1077/group-presentation/guizang/{index.html, slides_guizang.pdf}` | 47,443 B HTML (Style A · Kraft Paper · 10 sections) + 1,674,228 B PDF (1600×900) |
+| **math** | DSAA2043 Lab-Assignment 1 (id 17284) | `DSAA2043/lab-assignment-1/solution.pdf` | 49,390 B / PDF v1.5 |
+| **lab** | DSAA2012 Project Report (id 18361) | `DSAA2012/project-report/{src/*.py, tests/, test_report.md, report.pdf}` | report.pdf 43,553 B / 3 pp; pytest 14/14 pass / exit=0 |
+
+### New + updated skill files
+
+- `sub-skills/tasks/do-homework.md` — flagship MVP task: `[A]` canvascli fetch → `[B]` AskUserQuestion intent → `[C]` task profile + orchestrator → `[D]` deliverable → `[E]` AskUserQuestion submit → `[F]` `canvascli submit`. Only two interaction points.
+- `sub-skills/tools/writing-helper.md` — agent writes essay / report / reflection drafts directly. `[CITATION NEEDED]` placeholders enforced when references.bib is missing entries.
+- `sub-skills/tools/paper-search.md` — arxiv Python package wrapped as a templated script (`scripts/run_paper_search.py`) → references.bib + references.json.
+- `sub-skills/tools/figure-maker.md` — matplotlib line/bar/scatter with CJK font config.
+- `sub-skills/tools/code-writer.md` + `test-runner.md` — Python source + pytest with `test_report.{md,json}`.
+- `sub-skills/tools/slide-maker.md` — **rewritten**: default path wraps guizang-ppt-skill (HTML magazine / Swiss + Playwright PDF print); LaTeX-beamer kept as fallback for strict-PDF academic work.
+- `sub-skills/tools/_index.md` — tool registry expanded to 7 entries; new `run_tests` verb; new "Scenario → Tool chain" table; video row marked OUT OF SCOPE.
+- `sub-skills/tasks/task-orchestrator.md` — type vocabulary aligned (`paper | slides | math | lab | video | notes | mixed`); MVP scenarios validated table replaces the "minimum viable" placeholder.
+
+### Submit interface (M3-SUBMIT)
+
+`canvascli/canvascli/resources/submit.py` — the 3-step Canvas upload protocol is implemented at the code layer:
+
+1. POST `/api/v1/courses/:cid/assignments/:aid/submissions/self/files` → `{upload_url, upload_params}`
+2. POST `upload_url` with multipart (`upload_params` + file), handles 302 redirect confirm
+3. POST `/api/v1/courses/:cid/assignments/:aid/submissions` with `submission[submission_type]=online_upload` + `submission[file_ids][]=<file_id>`
+
+Code path verified by reading the file. **Not yet exercised against a real unexpired assignment.** Flipping `M3-SUBMIT` from `partially-verified` → `passing` requires the user to provide a sandbox / unexpired assignment for one real round-trip.
+
+### Dependencies installed
+
+- AutoStudy `.venv`: `matplotlib`, `numpy`, `arxiv`, `pytest` (via Tsinghua mirror — the default proxy at 127.0.0.1:6666 had SSL EOF errors against pypi.org).
+- `~/.claude/skills/guizang-ppt-skill/` — git clone from op7418's upstream. Shared across all decks the agent makes.
+- `tectonic` (brew, pre-existing) — used by both pdf-renderer and the slides beamer fallback.
+- Playwright + chromium (pre-existing in `.venv`) — used by the new guizang PDF export.
+
+### Pitfalls burned in this push (added inline to relevant `.md`)
+
+1. `pip install` via the user's default proxy (127.0.0.1:6666) hit `SSLError(SSLEOFError)` against pypi.org. Workaround: `pip install -i https://pypi.tuna.tsinghua.edu.cn/simple`.
+2. `data/` is gitignored — `git commit -f` against it was rejected (correctly). Evidence lives in commit messages + `feature-list.json` `evidence[]` arrays + (eventually) `docs/verification/` if it gets substantial enough.
+3. `$\LaTeX$` inside a markdown `- [ ]` checkbox list breaks tectonic with `\spacefactor in math mode` (the `\LaTeX` macro calls `\@` which clashes with math mode). Fix: write plain text "LaTeX".
+4. `\bm` from the `bm` package overflows tectonic's mathchar range under certain font setups. Fix: use `\mathbf{}` instead, drop the `bm` package.
+5. Subprocess-launched sub-agents in a sandboxed environment can't `git clone` (network blocked) or write to `~/.claude/skills/`. The parent agent must do the install outside the sandbox.
+6. guizang Playwright PDF export needs `localStorage.setItem('guizang-ppt-low-power','1')` *before* navigation completes, otherwise WebGL canvases fight the print loop and produce black pages.
+
+### Where to look next
+
+- `M3-SUBMIT` → ask user for a sandbox assignment id, run one real `canvascli submit`, flip status to `passing`.
+- `M4-TUTOR` is the next milestone — Interactive Tutor with persistent `data/mastery/<course>.json`. AutoStudy.pdf has the design.
+- `M3-VIDEO` is OUT OF SCOPE for this repo — user is building a separate video skill.
+
+### Open uncertainties
+
+- guizang Style B (Swiss) integration hasn't been exercised — only Style A was used. Should work since slide-maker.md documents both paths.
+- The lab scenario built a representative numpy project (regression + clustering); the real DSAA2012 assignment is in an attached PDF the agent didn't have access to. `[TODO: align with actual project spec]` markers are in `src/`.
+
+---
+
 ## 2026-05-14 — Docs harness adoption (light)
 
 ### What changed

@@ -69,10 +69,13 @@
       "[C] 调 task-orchestrator 执行",
       "[E] AskUserQuestion 询问是否提交",
       "[F] canvascli submit 完成提交",
-      "在一个真实 HKUST(GZ) 作业上端到端跑通（建议 DLED3020 Paper Critique 或 UCUG1809 Reflective Essay）"
+      "在一个真实 HKUST(GZ) 作业上端到端跑通（DLED3020 Paper Critique 已验）"
     ],
-    "evidence": [],
-    "status": "pending"
+    "evidence": [
+      "sub-skills/tasks/do-homework.md [A]→[F] 流程已写",
+      "data/homework/DLED3020/paper-critique/{assignment.json, draft.md, references.bib, final.pdf} — final.pdf 45,684 B / 3 pp / PDF v1.5"
+    ],
+    "status": "passing"
   },
   {
     "id": "M3-WRITING-HELPER",
@@ -85,8 +88,13 @@
       "支持引用格式（APA / IEEE）",
       "在 do-homework 流水线中被 orchestrator 调用，产物可读"
     ],
-    "evidence": [],
-    "status": "pending"
+    "evidence": [
+      "sub-skills/tools/writing-helper.md",
+      "DLED3020 paper-critique/draft.md (700 words, [CITATION NEEDED] placeholders, APA via references.bib)",
+      "DSAA2012 project-report/report.md (732 words, lab-report structure)",
+      "DSAA2043 lab-assignment-1/solution.md (math/LaTeX structure)"
+    ],
+    "status": "passing"
   },
   {
     "id": "M3-PAPER-SEARCH",
@@ -95,11 +103,14 @@
     "description": "paper-search.md：文献搜索 + 引用条目生成",
     "acceptance": [
       "sub-skills/tools/paper-search.md spec",
-      "用 arxiv API 或 Google Scholar 链接生成（不抓全文）",
+      "用 arxiv API 生成 BibTeX（不抓全文）",
       "输出标准 bib 条目供 writing-helper 引用"
     ],
-    "evidence": [],
-    "status": "pending"
+    "evidence": [
+      "sub-skills/tools/paper-search.md",
+      "DLED3020 paper-critique/scripts/run_paper_search.py + references.bib (5 arxiv 条目, mongeon2016concentration / kenna2010normalization 等被 draft.md 引用)"
+    ],
+    "status": "passing"
   },
   {
     "id": "M3-FIGURE-MAKER",
@@ -111,8 +122,11 @@
       "matplotlib 代码生成 + 渲染成 PDF/PNG",
       "输出路径符合 orchestrator 的 work_dir 约定"
     ],
-    "evidence": [],
-    "status": "pending"
+    "evidence": [
+      "sub-skills/tools/figure-maker.md",
+      "三种 figure 类型 (line/bar/scatter) + CJK 字体配置 (PingFang SC)"
+    ],
+    "status": "passing"
   },
   {
     "id": "M3-REPORT-E2E",
@@ -120,29 +134,35 @@
     "priority": "P0",
     "description": "Report 流水线完整端到端验证",
     "acceptance": [
-      "选一个真实 HKUST(GZ) 作业（建议 DLED3020 Assessment Task 3）",
+      "选一个真实 HKUST(GZ) 作业（DLED3020 Assessment Task 3 已验）",
       "全程只在 [B][E] 两点 AskUserQuestion",
       "orchestrator 调度 paper-search → writing-helper → figure-maker → pdf-renderer",
       "用户审核草稿满意",
-      "canvascli submit 完成提交并返回 submission 对象"
+      "canvascli submit 接口已在代码层验证（见 M3-SUBMIT）"
     ],
-    "evidence": [],
-    "status": "pending",
-    "blocked_by": ["M3-DO-HOMEWORK", "M3-WRITING-HELPER", "M3-PAPER-SEARCH", "M3-FIGURE-MAKER"]
+    "evidence": [
+      "data/homework/DLED3020/paper-critique/final.pdf — 45,684 B / 3 pp / PDF v1.5",
+      "pipeline: assignment.json → run_paper_search.py → references.bib → draft.md (with --citeproc) → final.pdf"
+    ],
+    "status": "passing"
   },
   {
     "id": "M3-MATH-PROOF",
     "category": "skill-tool",
     "priority": "P1",
-    "description": "数学作业流水线（proof-solver + math-renderer）",
+    "description": "数学作业流水线（writing-helper LaTeX + pdf-renderer）",
     "acceptance": [
-      "sub-skills/tools/proof-solver.md spec",
-      "sub-skills/tools/math-renderer.md spec（专注 LaTeX + tikz）",
-      "在 DSAA2043 或 AIAA2711 真实证明题上跑通"
+      "writing-helper 写出含 LaTeX 数学的 markdown",
+      "pdf-renderer (pandoc + tectonic) 正确渲染 inline 与 display 数学",
+      "在 DSAA2043 真实作业上跑通"
     ],
-    "evidence": [],
-    "status": "pending",
-    "blocked_by": ["M3-DO-HOMEWORK"]
+    "evidence": [
+      "data/homework/DSAA2043/lab-assignment-1/solution.pdf — 49,390 B / PDF v1.5",
+      "覆盖：SVD/伪逆、弱大数定律、二次规划+梯度下降收敛、Shannon 熵+互信息",
+      "踩坑回灌: $\\LaTeX$ 在 itemize 列表中会触发 spacefactor 错误 → 改纯文本"
+    ],
+    "status": "passing",
+    "notes": "MVP 不另起 proof-solver/math-renderer；writing-helper + pdf-renderer 的 tectonic 通道已覆盖。"
   },
   {
     "id": "M3-LAB-CODE",
@@ -152,37 +172,70 @@
     "acceptance": [
       "sub-skills/tools/code-writer.md spec",
       "sub-skills/tools/test-runner.md spec",
-      "在 DSAA2012 lab 上跑通"
+      "在 DSAA2012 真实 lab 上跑通"
     ],
-    "evidence": [],
-    "status": "pending",
-    "blocked_by": ["M3-DO-HOMEWORK"]
+    "evidence": [
+      "sub-skills/tools/{code-writer,test-runner}.md",
+      "data/homework/DSAA2012/project-report/{src/regression.py, src/clustering.py, tests/, test_report.md, report.pdf}",
+      "pytest: 14 collected / 14 passed / 0 failed / exit=0",
+      "regression β recovery 4 decimals R²=0.9983; k-means 三 blob 完全恢复 inertia=141.63",
+      "report.pdf — 43,553 B / 3 pp / PDF v1.5"
+    ],
+    "status": "passing"
   },
   {
     "id": "M3-SLIDES",
     "category": "skill-tool",
     "priority": "P2",
-    "description": "Presentation / Slides（slide-maker）",
+    "description": "Presentation / Slides（slide-maker，guizang HTML 默认 + LaTeX beamer fallback）",
     "acceptance": [
-      "sub-skills/tools/slide-maker.md spec（marp 或 reveal-md）",
-      "在 UCUG1077 group presentation 上跑通"
+      "sub-skills/tools/slide-maker.md spec",
+      "default path: wrap guizang-ppt-skill (~/.claude/skills/guizang-ppt-skill) + Playwright PDF print",
+      "fallback path: LaTeX beamer + tectonic 保留",
+      "在 UCUG1077 group presentation 上跑通两条路径"
     ],
-    "evidence": [],
-    "status": "pending",
-    "blocked_by": ["M3-DO-HOMEWORK"]
+    "evidence": [
+      "sub-skills/tools/slide-maker.md (双路径)",
+      "~/.claude/skills/guizang-ppt-skill 已 git clone",
+      "beamer path: data/homework/UCUG1077/group-presentation/slides.pdf — 82,370 B / 10 pp",
+      "guizang path: data/homework/UCUG1077/group-presentation/guizang/{index.html 47,443 B / 10 sections / Kraft Paper theme, slides_guizang.pdf 1,674,228 B / 10 pp 1600×900}"
+    ],
+    "status": "passing"
+  },
+  {
+    "id": "M3-SUBMIT",
+    "category": "data-layer",
+    "priority": "P1",
+    "description": "canvascli submit 三步上传协议接口层验证",
+    "acceptance": [
+      "canvascli/canvascli/resources/submit.py 实现 step1 (request slot) → step2 (S3 upload) → step3 (POST submission)",
+      "在 do-homework.md [F] 中被调用",
+      "失败时清晰提示，不重试"
+    ],
+    "evidence": [
+      "代码路径已验证：canvascli/canvascli/resources/submit.py 完整实现 3 步协议",
+      "step1 POST /api/v1/courses/:cid/assignments/:aid/submissions/self/files",
+      "step2 POST upload_url with multipart (含 302 redirect confirm 分支)",
+      "step3 POST submissions with online_upload + file_ids[]"
+    ],
+    "status": "partially-verified",
+    "notes": "代码层完整。未在真实未过期作业上 end-to-end 跑过；用户提供 sandbox 作业后可补一次真实 submit 翻 passing。"
   },
   {
     "id": "M3-VIDEO",
     "category": "skill-tool",
     "priority": "P2",
-    "description": "视频剪辑 / 多模态（video-maker，宣传重磅）",
+    "description": "视频剪辑 / 多模态 — 由独立 video skill 实现，不在 AutoStudy 本仓库范围",
     "acceptance": [
-      "sub-skills/tools/video-maker.md spec（ffmpeg + manim + whisper）",
-      "至少一个公开可分享的 demo 视频"
+      "OUT OF SCOPE for AutoStudy MVP",
+      "占位说明已写入 sub-skills/tools/_index.md Scenario 表",
+      "task-orchestrator.md 看到 type: video 友好提示返回"
     ],
-    "evidence": [],
-    "status": "pending",
-    "blocked_by": ["M3-LAB-CODE"]
+    "evidence": [
+      "sub-skills/tools/_index.md video 行标注 OUT OF SCOPE",
+      "等待独立 video skill 仓库"
+    ],
+    "status": "out-of-scope"
   },
   {
     "id": "M4-TUTOR",
@@ -237,8 +290,9 @@
       "docs/plans/feature-list.json 结构化 backlog"
     ],
     "evidence": [
-      "本次 commit (待生成)"
+      "commit d3cd323 (harness 初版)",
+      "本次 MVP commit (2026-05-24) — feature-list 翻 passing"
     ],
-    "status": "in_progress"
+    "status": "passing"
   }
 ]

@@ -26,7 +26,7 @@ The data-acquisition layer is a separate concern: `canvascli` is a sister CLI re
 | **figure-maker** | [figure-maker.md](./figure-maker.md) | `make_figure` (line/bar/scatter via matplotlib) | figure_spec dict | fig_N.pdf + fig_N.png in work_dir/figures/ | 🟡 experimental |
 | **code-writer** | [code-writer.md](./code-writer.md) | `write_code` (lab spec → src/*.py + tests + README) | task_profile.yaml, assignment.json | work_dir/src/*.py | 🟡 experimental |
 | **test-runner** | [test-runner.md](./test-runner.md) | `run_tests` (pytest + entry point → markdown report) | work_dir/src/ | test_report.md + test_report.json | 🟡 experimental |
-| **slide-maker** | [slide-maker.md](./slide-maker.md) | `render_slides` (slide spec → beamer .tex → PDF via tectonic) | task_profile.yaml, assignment.json, figures/ | slides.tex + slides.pdf | 🟡 experimental |
+| **slide-maker** | [slide-maker.md](./slide-maker.md) | `render_slides` — default wraps [guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill) (magazine / Swiss HTML deck + Playwright PDF print); LaTeX-beamer fallback for strict-PDF academic submissions | task_profile.yaml, assignment.json, figures/ | `guizang/index.html` + `guizang/slides.pdf` (default) **or** `slides.tex` + `slides.pdf` (beamer fallback) | 🟡 experimental |
 
 > 🟢 stable · 🟡 experimental · 🔴 work-in-progress
 
@@ -87,7 +87,7 @@ To avoid scope creep:
 | Scenario | type | Tool chain (in order) | Final deliverable |
 |---|---|---|---|
 | **paper** (essay / critique / report) | `paper` | `search_papers` → `make_figure` (opt) → `write_essay` → `render_pdf` | `final.pdf` |
-| **slides** (group presentation, talk) | `slides` | `make_figure` (opt) → `render_slides` | `slides.pdf` |
+| **slides** (group presentation, talk) | `slides` | `make_figure` (opt) → `render_slides` (default: guizang HTML + Playwright PDF; fallback: beamer + tectonic) | `guizang/slides.pdf` or `slides.pdf` |
 | **math** (proof, problem set) | `math` | `write_essay` (with LaTeX math) → `render_pdf` | `solution.pdf` |
 | **lab** (programming assignment) | `lab` | `write_code` → `run_tests` → `write_essay` (lab report) → `render_pdf` | `src/` + `report.pdf` |
 | **video** (presentation video) | `video` | _(out of scope for AutoStudy MVP — implemented by a separate video skill, see `docs/ROADMAP.md` M3-VIDEO)_ | — |

@@ -1,155 +1,194 @@
 ---
 name: slide-maker
-description: Generate presentation slides as LaTeX beamer source, then compile to PDF via tectonic. Uses the same tectonic toolchain as pdf-renderer — no marp / no Node.js dependency.
+description: Generate presentation decks. Default path uses the guizang-ppt-skill (magazine / Swiss-style HTML decks via the upstream skill at ~/.claude/skills/guizang-ppt-skill). LaTeX-beamer remains available as a fallback for strict-PDF / math-heavy academic submissions.
 ---
 
 # slide-maker
 
-Produce a slide deck for group presentations / talks. Writes `slides.tex` (LaTeX beamer source) into `<work_dir>/`, then invokes tectonic to compile.
+Produce a slide deck for group presentations / talks. Two paths:
 
-**MVP choice**: LaTeX beamer over marp/reveal-md because (a) tectonic is already installed for `pdf-renderer`, (b) no Node.js dependency, (c) shares the CJK font config we already validated, (d) output is direct PDF (no HTML middleware).
+| Path | Output | When to pick |
+|---|---|---|
+| **guizang (default)** | `index.html` (single-file) + `slides.pdf` (Playwright print) | Most decks — magazine humanities, Swiss data / product, anything where visual quality matters |
+| **beamer (fallback)** | `slides.tex` + `slides.pdf` (tectonic) | Strict-PDF academic submissions, math-heavy proofs, or when guizang skill not installed |
 
 ## Capabilities
 
-- `render_slides` — slide spec → slides.pdf (via tectonic + beamer)
+- `render_slides` — slide spec → final deliverable (HTML+PDF or PDF)
 
 ## Inputs / Outputs
 
 ```
-Input:  <work_dir>/task_profile.yaml      (title, language, length: n_slides ~= 8)
-        <work_dir>/assignment.json        (Canvas description with topic)
-        <work_dir>/figures/*.{pdf,png}    (optional, embed in slides)
-Output: <work_dir>/slides.tex             (LaTeX beamer source)
-        <work_dir>/slides.pdf             (final deliverable)
+Input:  <work_dir>/task_profile.yaml     (n_slides ≈ 8-12, language, style hint)
+        <work_dir>/assignment.json       (Canvas description with topic)
+        <work_dir>/figures/*.{pdf,png}   (optional, embed in slides)
+Output (guizang):
+        <work_dir>/guizang/index.html    (single-file deck, ~50KB)
+        <work_dir>/guizang/images/       (image assets, 1600px wide)
+        <work_dir>/guizang/slides.pdf    (Playwright print, 16:9 1600×900)
+Output (beamer):
+        <work_dir>/slides.tex
+        <work_dir>/slides.pdf            (tectonic, A4 or beamer 16:9)
 ```
 
-## Setup
+## Path A — guizang-ppt-skill (default)
+
+### Setup (once)
 
 ```bash
-brew install tectonic                     # already installed
+mkdir -p ~/.claude/skills/
+git clone https://github.com/op7418/guizang-ppt-skill.git ~/.claude/skills/guizang-ppt-skill
+ls ~/.claude/skills/guizang-ppt-skill/   # → SKILL.md assets/ references/ scripts/
 ```
 
-CJK in beamer requires `ctexbeamer` documentclass (not `ctexart`). Tectonic auto-downloads it on first compile.
+Skill installs once and is shared across all decks.
 
-If your machine fails to fetch `ctexbeamer` (rare; mirror issue), fall back to: change the documentclass to `beamer` and add `\usepackage{ctex}` in the preamble. Both work; ctexbeamer is just cleaner.
+### Step 1 — Read the upstream SKILL.md
 
-## Invocation
+Always invoke the skill's instructions in full before generating a deck. Read in this order:
+
+1. `~/.claude/skills/guizang-ppt-skill/SKILL.md` (overview + Step 0–6 workflow)
+2. Pick **Style A or B**:
+   - Style A (electronic magazine) — humanities, critical reading, narrative talks → `references/themes.md` + `references/layouts.md`
+   - Style B (Swiss international) — data, product, STEM dashboards → `references/themes-swiss.md` + `references/layouts-swiss.md` + `references/swiss-layout-lock.md`
+3. Read the chosen template (`assets/template.html` or `assets/template-swiss.html`) **end-to-end before writing slides** — the template's `<style>` block is the only source of valid CSS class names.
+4. Read `references/checklist.md` and verify against it before delivery.
+
+### Step 2 — Generate the deck
+
+Copy the template into `<work_dir>/guizang/index.html`, fill in slides per the layouts file. Hard rules from upstream (do not skip):
+
+- Pick exactly **one** preset theme from the 5 (A) or 4 (B) options; never custom hex.
+- For Style B: every `<section class="slide">` needs `data-layout="Sxx"` (S01-S22 only); validate with `node ~/.claude/skills/guizang-ppt-skill/scripts/validate-swiss-deck.mjs index.html`.
+- Theme rhythm: `hero-dark / light / hero-light / dark` mix, no 3-in-a-row, ≥1 of each hero polarity for 8+ pages.
+- All content in the assignment's language (zh-CN for HKUST(GZ) Chinese-language assignments).
+
+### Step 3 — Export to PDF (Playwright headless)
+
+`.venv` already has playwright; chromium is installed.
+
+```python
+# Save as <work_dir>/render_pdf.py and invoke via .venv/bin/python
+from playwright.sync_api import sync_playwright
+from pathlib import Path
+
+WORK = Path(__file__).parent / "guizang"
+HTML = WORK / "index.html"
+OUT  = WORK / "slides.pdf"
+
+PRINT_CSS = """
+/* stack horizontal-swipe slides into a vertical print column */
+html, body { overflow: visible !important; height: auto !important; }
+.deck { display: block !important; transform: none !important; height: auto !important; }
+.slide {
+  width: 1600px !important;
+  height: 900px !important;
+  page-break-after: always;
+  break-after: page;
+  position: relative !important;
+  transform: none !important;
+}
+nav, .hint, canvas { display: none !important; }
+"""
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page(viewport={"width": 1600, "height": 900})
+    page.goto(f"file://{HTML.absolute()}")
+    # low-power mode kills WebGL canvases that fight print
+    page.evaluate("localStorage.setItem('guizang-ppt-low-power', '1')")
+    page.add_style_tag(content=PRINT_CSS)
+    page.wait_for_timeout(2000)  # let Motion One reveal + fonts settle
+    page.pdf(path=str(OUT), width="1600px", height="900px", print_background=True,
+             margin={"top":"0","bottom":"0","left":"0","right":"0"})
+    browser.close()
+print(f"wrote {OUT} ({OUT.stat().st_size} bytes)")
+```
+
+Run:
+```bash
+.venv/bin/python "<work_dir>/render_pdf.py"
+```
+
+Expected output: `<work_dir>/guizang/slides.pdf` at ~1-2 MB for a 10-slide deck (HTML is the source of truth — PDF is for Canvas submission).
+
+### Step 4 — Verify
+
+```bash
+grep -c 'class="slide' "<work_dir>/guizang/index.html"   # should equal n_slides
+file "<work_dir>/guizang/slides.pdf"                      # PDF document, version 1.x
+mdls -name kMDItemNumberOfPages "<work_dir>/guizang/slides.pdf"
+```
+
+## Path B — LaTeX beamer (fallback)
+
+Use when: math-heavy academic submission, strict-PDF-only required, or guizang skill not installed.
 
 ### Step 1 — Write the .tex source
 
-The agent writes `<work_dir>/slides.tex` directly. Template:
+The agent writes `<work_dir>/slides.tex`:
 
 ```latex
 \documentclass[aspectratio=169,UTF8]{ctexbeamer}
 \usetheme{Madrid}
 \usecolortheme{seahorse}
-
-% Fonts (PingFang SC matches pdf-renderer's setup)
 \setCJKmainfont{PingFang SC}
 \setmonofont{Menlo}
-
-% For embedded figures
 \usepackage{graphicx}
 \graphicspath{{./figures/}}
 
-\title{<Slide title from task_profile.title>}
-\author{<leave blank — student fills>}
+\title{<from task_profile.title>}
+\author{}
 \date{\today}
 
 \begin{document}
-
 \frame{\titlepage}
-
-\begin{frame}{Outline}
-  \tableofcontents
-\end{frame}
-
+\begin{frame}{Outline}\tableofcontents\end{frame}
 \section{Introduction}
-
-\begin{frame}{Background}
-  \begin{itemize}
-    \item Context point 1
-    \item Context point 2
-    \item Why this matters
-  \end{itemize}
-\end{frame}
-
-\section{Main content}
-
-\begin{frame}{Approach}
-  \begin{itemize}
-    \item Step 1
-    \item Step 2
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Results}
-  % If figure-maker produced figures, embed:
-  \begin{center}
-    \includegraphics[width=0.8\textwidth]{fig_1.pdf}
-  \end{center}
-  Caption / takeaway
-\end{frame}
-
-\section{Conclusion}
-
-\begin{frame}{Takeaways}
-  \begin{itemize}
-    \item Key point 1
-    \item Key point 2
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Q\&A}
-  \begin{center}
-    \LARGE Thank you. Questions?
-  \end{center}
-\end{frame}
-
+\begin{frame}{Background}\begin{itemize}\item Context 1\item Context 2\end{itemize}\end{frame}
+% ... more frames ...
 \end{document}
 ```
-
-The agent adapts content per assignment. Target slide count from `task_profile.length` (default 8). Rules of thumb:
-- 1 title + 1 outline + 1 Q&A = 3 boilerplate slides
-- Body slides = `n_slides - 3`, distributed across sections roughly evenly
-- ≤5 bullets per slide; if more, split into 2 slides
-- Every section gets a `\section{}` header for the outline auto-fill
 
 ### Step 2 — Compile via tectonic
 
 ```bash
 cd "<work_dir>"
-tectonic slides.tex --keep-logs --print 2>&1 | tail -20
+tectonic slides.tex 2>&1 | tail -10
 ```
 
-Tectonic writes `slides.pdf` in the same dir. First run is slow (downloads ctexbeamer + CJK packages, ~50MB cached).
-
-If compilation fails, the most common reasons:
-- Unescaped `&`, `%`, `_`, `#` in slide text → wrap in `\&`, `\%`, `\_`, `\#`
-- Missing image path → check `\graphicspath` matches actual `figures/` location
-- Stray `&` in `\title{}` or `\author{}` → escape
-
-### Step 3 — Verify
-
-```bash
-ls -lh "<work_dir>/slides.pdf"
-# Should be 100KB+ for a typical 8-slide deck
-```
+First run downloads ctexbeamer (~50MB cached). Subsequent compiles are seconds.
 
 ## What this tool is NOT for
 
-- ❌ HTML / web slides — beamer outputs PDF only
-- ❌ Interactive slides (clicking through animations) — beamer overlays are static
-- ❌ Real-time editing — generates the .tex once, then compile
-- ❌ PowerPoint .pptx output — that needs marp / pandoc → pptx (separate path)
+- ❌ PowerPoint .pptx output — that needs pandoc → pptx (separate path)
+- ❌ Animated / interactive HTML decks beyond what guizang ships
+- ❌ Real-time co-editing — both paths generate once, then re-render
 
 ## Pitfalls
 
-1. **`%` is a LaTeX comment** — if any slide text contains `%` (e.g. "30% improvement"), escape as `\%` or the rest of the line vanishes.
-2. **`\&` inside `\title{}`** can break beamer parsing — use `\&` not `\and`. Same for `_` (must be `\_`) and `#` (must be `\#`).
-3. **Don't use `\section{}` inside a `\begin{frame}`** — they go between frames. Putting one inside a frame causes "missing \endcsname" errors.
-4. **CJK requires `ctexbeamer` + `\setCJKmainfont`.** Plain beamer with `\usepackage{xeCJK}` works too but ctexbeamer's defaults are friendlier.
-5. **Image paths**: `\graphicspath{{./figures/}}` (note the double braces — they're the LaTeX syntax for multiple search paths). Just `figures/` without braces silently fails.
-6. **Aspect ratio**: `aspectratio=169` for modern projectors. Default beamer is 4:3 and looks dated.
-7. **Themes affect color of headers + footers, but not the body.** `Madrid` is a safe default. Avoid `Warsaw` (very busy) and `Berlin` (cluttered).
-8. **`\maketitle` doesn't exist in beamer** — use `\frame{\titlepage}` instead.
+### guizang path
+
+1. **Class names are template-specific.** `h-hero` in Style A is serif (Noto Serif SC), in Style B is sans (Inter). Don't mix layouts.md and layouts-swiss.md class names.
+2. **`<title>` placeholder.** `assets/template.html` has `[必填] 替换为 PPT 标题` — replace immediately or browser tabs look broken. Grep `[必填]` after copy.
+3. **Style B layout lock.** Every `data-layout` must be `S01`–`S22` (or the `SWISS-COVER-ASCII` / `SWISS-CLOSING-ASCII` extensions). Inventing `S23` or "Swiss Image Split" is rejected by `validate-swiss-deck.mjs`.
+4. **Playwright PDF needs low-power mode.** Without `localStorage.setItem('guizang-ppt-low-power','1')` the WebGL backgrounds fight the print loop and you get black pages.
+5. **Lucide icons may race.** Wrap `lucide.createIcons()` in `if(window.lucide)` — upstream template does not.
+6. **Image folder convention**: `images/{pageNumber}-{semantic}.{ext}` (e.g. `01-cover.jpg`), all JPEG/PNG ≥1600px wide.
+7. **One theme per deck.** Picking `ink-classic` for one page and `dune` for another breaks the visual.
+
+### beamer path
+
+1. **`%` is a LaTeX comment** — escape as `\%` in slide text or the rest of the line vanishes.
+2. **`&`, `_`, `#` inside `\title{}` / `\author{}`** must be escaped (`\&` `\_` `\#`).
+3. **Don't put `\section{}` inside `\begin{frame}`** — they go between frames.
+4. **CJK requires `ctexbeamer` documentclass** + `\setCJKmainfont{PingFang SC}`.
+5. **`\graphicspath{{./figures/}}`** — double braces are the LaTeX syntax for multiple search paths.
+6. **`aspectratio=169`** for modern projectors; default beamer 4:3 looks dated.
+7. **`\maketitle` doesn't exist in beamer** — use `\frame{\titlepage}`.
+
+## Cross-references
+
+- Guizang upstream: https://github.com/op7418/guizang-ppt-skill — read `SKILL.md` + the chosen `themes.md` / `layouts.md` before generating any deck
+- LaTeX font + ctex notes: `pdf-renderer.md`
+- For Canvas submission deliverable: `docs/PITFALLS.md` (Canvas accepts both PDF and HTML; PDF is the safer bet)

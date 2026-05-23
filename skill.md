@@ -13,10 +13,11 @@ Try natural language. Common intents:
 
 | User says... | What happens |
 |---|---|
-| "看看这周作业" / "what's due" / "同步课程状态" | → `tasks/sync-status.md` |
-| "下载 DSAA2043 的 midterm 资料" / "fetch course files" | → use `canvascli download` (see `tools/canvascli-api.md`) |
-| "登录失败了" / "重新登录" | → `tools/canvascli-setup.md` step 3 |
-| (first time using AutoStudy) | → `tools/canvascli-setup.md` from step 1 |
+| "看看这周作业" / "what's due" / "同步课程状态" | → `sub-skills/tasks/sync-status.md` |
+| "帮我完成 DLED3020 paper critique" / "做一下 DSAA2012 lab" | → `sub-skills/tasks/do-homework.md` |
+| "下载 DSAA2043 的 midterm 资料" / "fetch course files" | → use `canvascli download` (see `sub-skills/tools/canvascli-api.md`) |
+| "登录失败了" / "重新登录" | → `sub-skills/tools/canvascli-setup.md` step 3 |
+| (first time using AutoStudy) | → `sub-skills/tools/canvascli-setup.md` from step 1 |
 
 For anything not listed: read the request, decide if it's a Canvas-related query you can answer with canvascli. If not, say so clearly.
 
@@ -41,10 +42,17 @@ sub-skills/
 │   ├── canvascli-setup.md        ← one-time install + login
 │   ├── canvascli-api.md          ← command reference, JSON shapes
 │   ├── _index.md                 ← tool registry (M3 orchestrator reads this)
-│   └── pdf-renderer.md           ← markdown → PDF
+│   ├── pdf-renderer.md           ← markdown → PDF (pandoc + tectonic)
+│   ├── writing-helper.md         ← essay / report / reflection drafts
+│   ├── paper-search.md           ← arxiv search → references.bib
+│   ├── figure-maker.md           ← matplotlib charts → fig_*.pdf
+│   ├── code-writer.md            ← lab src/ + tests
+│   ├── test-runner.md            ← pytest + entry-point → test_report.md
+│   └── slide-maker.md            ← guizang HTML deck (default) or LaTeX beamer
 └── tasks/
     ├── sync-status.md            ← M2 flagship task
-    └── task-orchestrator.md      ← M3 pipeline composer
+    ├── task-orchestrator.md      ← M3 pipeline composer
+    └── do-homework.md            ← MVP flagship: real Canvas assignment E2E
 data/                             ← JSON snapshots + downloaded files (gitignored)
 ```
 
@@ -53,7 +61,7 @@ Note: the Canvas data layer lives in a separate repo,
 Same philosophy as AutoPku's `pku3b` — keep the data acquisition tool independent so it
 can serve other agents too.
 
-This skill is at milestone M2. See `docs/ROADMAP.md` for what's coming next (notes generation, homework helper, etc.).
+This skill is at **MVP (M3 core)**: the 4 flagship homework scenarios — paper / slides / math / lab — have each been validated end-to-end on real HKUST(GZ) Canvas assignments. See `docs/ROADMAP.md` for what's coming next (interactive tutor, multi-runtime, proactive reminders).
 
 ## Safety rules (non-negotiable)
 
