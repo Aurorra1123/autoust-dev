@@ -15,11 +15,14 @@ The paper/report/reflection workhorse. Reads a `task_profile.yaml` + the origina
 
 ```
 Input:  <work_dir>/task_profile.yaml      (constraints: length, citation_style, language, partial_scope)
-        <work_dir>/assignment.json        (Canvas assignment description + rubric)
+        <work_dir>/problem.md             (PRIMARY: grounded problem text from problem-extractor)
+        <work_dir>/assignment.json        (metadata only: due_at, rubric, points, submission_types)
         <work_dir>/references.bib         (optional, from paper-search)
         <work_dir>/figures/*.{pdf,png}    (optional, from figure-maker)
 Output: <work_dir>/draft.md               (pandoc-friendly markdown with YAML frontmatter)
 ```
+
+**Read `problem.md` first, completely, before writing anything.** The `## Attached:` sections contain the actual problems / prompts / paper content. The `## Inline description` section is usually just metadata noise (an attachment link rendered as text). If `problem.md` is missing or < 1 KB, refuse to proceed and write a single `[CLARIFICATION NEEDED: problem statement was not grounded; do-homework [A3] failed]` marker — do NOT pad it with template content.
 
 ## Setup
 
@@ -45,9 +48,9 @@ The agent runs this entirely in-context — no shell commands required for conte
 
 ### Step 1 — Pick the structure from the rubric
 
-Read `assignment.json` `description` and `rubric`. Match against the three supported structures:
+Read `problem.md` end-to-end. Then read `assignment.json` rubric. Match the assignment against the three supported structures:
 
-| Structure | Cues in rubric/description | Typical sections |
+| Structure | Cues in problem.md / rubric | Typical sections |
 |---|---|---|
 | `essay` | "argue", "critique", "analyze", "thesis", "evaluate"  | Intro (with thesis) → 2-4 body paragraphs → Conclusion |
 | `report` | "results", "methodology", "discussion", "lab", "experiment" | Abstract → Introduction → Methods → Results → Discussion → Conclusion → References |
@@ -78,11 +81,18 @@ Cite the figure in-text (`see Figure 1`).
 
 ### Step 5 — Write the draft
 
-Produce `<work_dir>/draft.md`. Quality bar:
-- Every section has a topic sentence
-- No "As an AI" / "I will discuss" filler
-- Use rubric criteria as section emphasis (if rubric says "30% argument quality", make the argument explicit)
-- Match the user's chosen language (`en` / `zh`) — if `zh`, the draft is in Chinese, but the YAML frontmatter stays English keys
+Produce `<work_dir>/draft.md`. Quality bar (non-negotiable):
+
+- **Every assertion is grounded in `problem.md`.** If the assignment asks "critique this paper X", the draft engages with X's actual arguments (as found in `problem.md`'s `## Attached:` section), not with a generic "the paper makes some claims" gloss.
+- **Specific problems get specific answers.** If `problem.md` lists Problem 1 (prove BST height bound), Problem 2 (solve recurrence), Problem 3 (DP table), the draft has a section per problem with a real proof / derivation — NOT a `[PROBLEM N]` placeholder.
+- **For papers/critiques**: name the paper. Name its authors. Quote (with citation) at least one specific claim from the paper. Generic "this paper discusses..." sentences fail the quality bar.
+- **No `[PROBLEM N]` / `[TODO: ...]` / `[此处填入...]` placeholders.** The only acceptable markers:
+  - `[CITATION NEEDED: <topic>]` — when `references.bib` lacks a needed entry. Surfaced at [E].
+  - `[CLARIFICATION NEEDED: <specific question about problem.md>]` — when `problem.md` is genuinely ambiguous on a specific point. Surfaced at [E].
+- Every section has a topic sentence.
+- No "As an AI" / "I will discuss" filler.
+- Use rubric criteria as section emphasis (if rubric says "30% argument quality", make the argument explicit).
+- Match the user's chosen language (`en` / `zh`) — if `zh`, the draft is in Chinese, but the YAML frontmatter stays English keys.
 
 ### Step 6 — Hand off
 
@@ -98,8 +108,10 @@ After writing, the orchestrator calls `pdf-renderer` with `<work_dir>/draft.md` 
 ## Pitfalls
 
 1. **Don't fake citations.** If you write `(Smith, 2023)` without a real `references.bib` entry, the bibliography is broken. Use `[CITATION NEEDED]` placeholders instead.
-2. **Match the language.** If `assignment.json` description is in Chinese and rubric mentions "中文写作", the draft must be Chinese — `pdf-renderer` ctexart handles both, but mismatched language gets points off.
-3. **HTML tags in `description` are noise.** Don't paraphrase the HTML markup; extract the meaning. Words like "<p>", "<br>" should never appear in `draft.md`.
+2. **Match the language.** If `problem.md` is in Chinese and rubric mentions "中文写作", the draft must be Chinese — `pdf-renderer` ctexart handles both, but mismatched language gets points off.
+3. **`problem.md` is the source of truth, NOT `assignment.json.description`.** The description is HTML and often just a file link. Reading it directly produces "the assignment is about X" template content. Always read `problem.md`'s `## Attached:` sections for the real prompt.
 4. **`partial_scope` is binding.** If the user said "only problem 2 and 4", do NOT write 1 and 3 even if the rubric says they're required. The user knows what they want.
 5. **Don't auto-conclude with "In conclusion, ..." for short reflections.** Reflections are personal — let the structure follow the rubric, not a rigid 5-paragraph template.
 6. **Frontmatter `date: \today`** — keep the backslash; pdf-renderer's LaTeX will resolve it. Don't replace with a literal date unless the user asked.
+7. **Engage with specific content.** A paper critique that doesn't name the paper, its authors, or quote a single sentence from it is failing the quality bar regardless of word count.
+8. **If `problem.md` is missing or thin** (< 1 KB), STOP. Write a single-line draft.md containing `[CLARIFICATION NEEDED: problem.md was not grounded — do-homework [A3] failed or extraction yielded no text]` and return. Do not pad with template content.

@@ -23,8 +23,13 @@ The calling task hands you a structured description:
 
 ```yaml
 type: paper | slides | math | lab | video | notes | mixed
+work_dir: data/homework/DSAA2043/hw3/
+source:
+  problem_md: data/homework/DSAA2043/hw3/problem.md         # PRIMARY — grounded problem text (from problem-extractor)
+  attachments_dir: data/homework/DSAA2043/hw3/attachments/  # raw + per-file .txt
+  assignment_json: data/homework/DSAA2043/hw3/assignment.json  # metadata only (due_at, rubric, points)
 deliverables:
-  - path: data/homework/<course>/<hw>/final.pdf  # what file to produce
+  - path: data/homework/DSAA2043/hw3/final.pdf
     format: pdf | pptx | html | mp4 | ipynb | md
 required_capabilities:    # verbs from tools/_index.md
   - search_papers
@@ -44,10 +49,11 @@ constraints:
 user_overrides:          # optional, things the user said specifically
   - "skip question 4, I'll do it myself"
   - "no charts, just text"
-work_dir: data/homework/DSAA2043/hw3/
 ```
 
 The `work_dir` is the orchestrator's filesystem playground. All intermediates and the final deliverable live there.
+
+**Important: `source.problem_md` is the ground truth.** Every deliverable tool (`writing-helper`, `code-writer`, `slide-maker`) MUST read `problem_md` for the actual problem content. They MUST NOT read `assignment_json.description` directly — that's HTML, frequently just an attachment link, and is the cause of "template content" failures. `assignment_json` exists only for metadata (due_at, rubric, points, submission_types).
 
 ## Execution flow
 
@@ -162,9 +168,9 @@ The calling task uses this summary to present the result to the user.
 
 ## Heuristics for type inference
 
-If the calling task is unsure of the task type, use these signals from the assignment description:
+If the calling task is unsure of the task type, use these signals from `problem.md` (NOT from `assignment.json.description` — that's HTML and often just a file link):
 
-| Signals in description / rubric | Inferred type |
+| Signals in problem.md / rubric | Inferred type |
 |---|---|
 | "essay", "report", "review", "critique", "paper", "annotated bibliography", "reflection" | `paper` |
 | "presentation", "slides", "PPT", "deck", "pitch", "demo" | `slides` |
@@ -176,19 +182,21 @@ If the calling task is unsure of the task type, use these signals from the assig
 
 Real examples from the 4 MVP validation runs:
 
-- **DLED3020 Paper Critique** — description says "critically evaluate this paper" → `paper` (essay structure, citation_style=APA)
-- **UCUG1077 Group presentation** — submission_types includes "online_upload" + description mentions "PPT" → `slides`
-- **DSAA2043 Lab-Assignment 1** — title contains "Lab" + description has "prove that... Big-O" → split: `math` for the proof portion, `lab` for the code portion. Default to `math` if mixed and rubric weights theory > implementation.
-- **DSAA2012 Project Report** — description says "report" + "implementation" + "experiments" → `lab` (because the code is the core; the report is one section of the deliverable)
+- **DLED3020 Paper Critique** — `problem.md` says "critically evaluate this paper" → `paper` (essay structure, citation_style=APA)
+- **UCUG1077 Group presentation** — submission_types includes "online_upload" + `problem.md` mentions "PPT" → `slides`
+- **DSAA2043 Lab-Assignment 1** — title contains "Lab" + `problem.md` has "prove that... Big-O" → split: `math` for the proof portion, `lab` for the code portion. Default to `math` if mixed and rubric weights theory > implementation.
+- **DSAA2012 Project Report** — `problem.md` says "report" + "implementation" + "experiments" → `lab` (because the code is the core; the report is one section of the deliverable)
 
 Confidence < 0.7? Hand back to caller and ask the user explicitly.
 
 ## Safety rules
 
 1. **No tool runs without user approval at the calling-task level.** The orchestrator assumes the calling task has already done [B] confirmation.
-2. **Stop on first failure, do not silently fall back.** A missing capability or a tool error must be surfaced, not papered over.
-3. **No tool may write outside `work_dir`** (one exception: `pdf-renderer` writing the final PDF to a path explicitly in `deliverables`).
-4. **Don't cache stale intermediates.** If the calling task re-invokes orchestrator with the same work_dir, regenerate everything unless the caller passes `resume: true`.
+2. **`source.problem_md` must exist and be non-trivial.** Before running any deliverable tool, check that `<work_dir>/problem.md` exists and is > 1 KB. If not, stop and tell the caller — the caller's `[A3]/[A4]` skipped grounding. Do NOT run tools against a missing or empty problem.md (they'll produce template content).
+3. **Stop on first failure, do not silently fall back.** A missing capability or a tool error must be surfaced, not papered over.
+4. **No tool may write outside `work_dir`** (one exception: `pdf-renderer` writing the final PDF to a path explicitly in `deliverables`).
+5. **Don't cache stale intermediates.** If the calling task re-invokes orchestrator with the same work_dir, regenerate everything unless the caller passes `resume: true`.
+6. **Surface `[CLARIFICATION NEEDED: ...]` markers** from any tool back to the calling task as part of the Step 5 summary. They are signals that `problem.md` was ambiguous on a specific point — the caller decides whether to interrupt the user inline or batch them for [E].
 
 ## Pitfalls
 

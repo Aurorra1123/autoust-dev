@@ -180,3 +180,52 @@ Submit a file to a Canvas assignment via `online_upload`.
 - **HTTP 404 on quizzes/modules/discussions is normal** — that course turned the feature off. canvascli returns `[]` in those cases.
 - **Tuples of `(datetime, dict)`** aren't sortable in Python (dict isn't comparable) — when sorting by `due_at`, always use `key=lambda x: x["due_at"]`.
 - **Filenames with Chinese / spaces are common.** Always quote paths in shell calls.
+- **`assignment.description` is HTML and often just an attachment link.** The real problem text lives in the linked PDF. See the Recipes section below.
+
+## Recipes
+
+### Extract the real problem text from an assignment with PDF attachments
+
+Canvas's `description` field on many assignments is just an `<a>...pdf</a>` link wrapping the real problem statement. Reading `description` directly is the most common cause of agents producing template / placeholder content.
+
+**Don't write your own extractor inline** — use `sub-skills/tools/problem-extractor.md`. It:
+
+1. Scans `description` HTML for file IDs in two embedding styles (`href="...files/<id>"` and `data-api-endpoint="...files/<id>"`)
+2. Calls `canvascli download <fid> -o <work_dir>/attachments/<filename>` for each
+3. Extracts text (PDF → `pdftotext` or `pdfminer.six`)
+4. Writes `<work_dir>/problem.md` with frontmatter + inline plain-text description + per-attachment `## Attached:` sections + rubric
+
+Downstream tools (`writing-helper`, `code-writer`, `slide-maker`) consume `problem.md`, not `assignment.json.description`. This is the spec's only guarantee against `[PROBLEM N]` template output.
+
+### One-liner: list file IDs embedded in a description
+
+If you need a quick lookup without running the full extractor:
+
+```bash
+python -c '
+import json, re, sys
+d = json.load(open(sys.argv[1]))
+desc = d.get("description") or ""
+ids = set(re.findall(r"/files/(\d+)", desc))
+print(*sorted(ids), sep="\n")
+' data/homework/<COURSE>/<HW>/assignment.json
+```
+
+### Download a single attachment by ID with the real filename
+
+`canvascli download` writes to the path you give. To preserve the original filename, pull the title from the description HTML first:
+
+```python
+import json, re
+data = json.load(open("assignment.json"))
+desc = data["description"] or ""
+# Title and ID often appear together in a link tag
+for m in re.finditer(r'title="([^"]+)"[^>]*?/files/(\d+)', desc):
+    print(m.group(2), m.group(1))   # → "475078 DSAA2043_Assignment_1.pdf"
+```
+
+Then:
+
+```bash
+.venv/bin/canvascli download 475078 -o attachments/DSAA2043_Assignment_1.pdf
+```

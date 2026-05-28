@@ -20,7 +20,8 @@ Produce a slide deck for group presentations / talks. Two paths:
 
 ```
 Input:  <work_dir>/task_profile.yaml     (n_slides ≈ 8-12, language, style hint)
-        <work_dir>/assignment.json       (Canvas description with topic)
+        <work_dir>/problem.md            (PRIMARY: presentation topic / brief from problem-extractor)
+        <work_dir>/assignment.json       (metadata only: due_at, rubric, points)
         <work_dir>/figures/*.{pdf,png}   (optional, embed in slides)
 Output (guizang):
         <work_dir>/guizang/index.html    (single-file deck, ~50KB)
@@ -30,6 +31,10 @@ Output (beamer):
         <work_dir>/slides.tex
         <work_dir>/slides.pdf            (tectonic, A4 or beamer 16:9)
 ```
+
+**Read `problem.md` first, completely.** The `## Attached:` sections contain the presentation brief — the assigned topic, required content, length, audience. The assignment title alone (e.g. "Group presentation") tells you nothing. If `problem.md` says "present on classroom motivation theory X applied to case Y", that's what the deck must cover — by name, with engagement. Do NOT fall back to a generic "topic overview / methods / findings" template.
+
+For group presentations specifically: if `problem.md` requires the *group* to choose a sub-topic (e.g. "each group picks one motivation theory"), and the user has not specified which sub-topic, write `[CLARIFICATION NEEDED: which sub-topic? options from problem.md: A / B / C]` in slide 2 and continue with the most general framing — surfaced at do-homework [E]. Do NOT leave `[此处由小组成员填入选题]` placeholders littered through the deck.
 
 ## Path A — guizang-ppt-skill (default)
 
@@ -169,13 +174,14 @@ First run downloads ctexbeamer (~50MB cached). Subsequent compiles are seconds.
 
 ### guizang path
 
-1. **Class names are template-specific.** `h-hero` in Style A is serif (Noto Serif SC), in Style B is sans (Inter). Don't mix layouts.md and layouts-swiss.md class names.
-2. **`<title>` placeholder.** `assets/template.html` has `[必填] 替换为 PPT 标题` — replace immediately or browser tabs look broken. Grep `[必填]` after copy.
-3. **Style B layout lock.** Every `data-layout` must be `S01`–`S22` (or the `SWISS-COVER-ASCII` / `SWISS-CLOSING-ASCII` extensions). Inventing `S23` or "Swiss Image Split" is rejected by `validate-swiss-deck.mjs`.
-4. **Playwright PDF needs low-power mode.** Without `localStorage.setItem('guizang-ppt-low-power','1')` the WebGL backgrounds fight the print loop and you get black pages.
-5. **Lucide icons may race.** Wrap `lucide.createIcons()` in `if(window.lucide)` — upstream template does not.
-6. **Image folder convention**: `images/{pageNumber}-{semantic}.{ext}` (e.g. `01-cover.jpg`), all JPEG/PNG ≥1600px wide.
-7. **One theme per deck.** Picking `ink-classic` for one page and `dune` for another breaks the visual.
+1. **Ground every slide in `problem.md`.** A presentation deck that doesn't name the actual topic, doesn't engage with the assigned content, and instead leaves `[此处由小组成员填入选题]` / `[此处填入论点]` placeholders is failing the quality bar — even if the visual is pretty. Acceptable placeholder: `[CLARIFICATION NEEDED: which sub-topic from problem.md options A/B/C]` (one per ambiguous decision, surfaced at do-homework [E]).
+2. **Class names are template-specific.** `h-hero` in Style A is serif (Noto Serif SC), in Style B is sans (Inter). Don't mix layouts.md and layouts-swiss.md class names.
+3. **`<title>` placeholder.** `assets/template.html` has `[必填] 替换为 PPT 标题` — replace immediately or browser tabs look broken. Grep `[必填]` after copy.
+4. **Style B layout lock.** Every `data-layout` must be `S01`–`S22` (or the `SWISS-COVER-ASCII` / `SWISS-CLOSING-ASCII` extensions). Inventing `S23` or "Swiss Image Split" is rejected by `validate-swiss-deck.mjs`.
+5. **Playwright PDF needs low-power mode.** Without `localStorage.setItem('guizang-ppt-low-power','1')` the WebGL backgrounds fight the print loop and you get black pages.
+6. **Lucide icons may race.** Wrap `lucide.createIcons()` in `if(window.lucide)` — upstream template does not.
+7. **Image folder convention**: `images/{pageNumber}-{semantic}.{ext}` (e.g. `01-cover.jpg`), all JPEG/PNG ≥1600px wide.
+8. **One theme per deck.** Picking `ink-classic` for one page and `dune` for another breaks the visual.
 
 ### beamer path
 
