@@ -58,7 +58,7 @@ data/                             ← JSON snapshots + downloaded files (gitigno
 ```
 
 Note: the Canvas data layer lives in a separate repo,
-[canvascli](https://github.com/<your-org>/canvascli), installed into AutoStudy's `.venv`.
+[canvascli](https://github.com/Aurorra1123/canvascli), installed into AutoStudy's `.venv`.
 Same philosophy as AutoPku's `pku3b` — keep the data acquisition tool independent so it
 can serve other agents too.
 

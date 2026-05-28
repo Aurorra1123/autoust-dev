@@ -26,7 +26,7 @@ agent: 列文件夹 → 询问范围 → 下载到本地
 ### 1. Clone 仓库
 
 ```bash
-git clone https://github.com/<your-org>/AutoStudy.git
+git clone https://github.com/Aurorra1123/autoust-dev.git
 cd AutoStudy
 ```
 
@@ -35,7 +35,7 @@ cd AutoStudy
 Canvas 数据层是独立的 CLI 工具：
 
 ```bash
-git clone https://github.com/<your-org>/canvascli.git ~/workspace/canvascli
+git clone https://github.com/Aurorra1123/canvascli.git ~/workspace/canvascli
 python3 -m venv .venv
 .venv/bin/pip install -e ~/workspace/canvascli
 .venv/bin/playwright install chromium
@@ -103,7 +103,7 @@ AutoStudy/
 └── data/                       # 拉到的 JSON + 下载的文件（gitignored）
 ```
 
-Canvas 数据层（抓取器）抽出来了 —— 是独立仓库 [`canvascli`](https://github.com/<your-org>/canvascli)。
+Canvas 数据层（抓取器）抽出来了 —— 是独立仓库 [`canvascli`](https://github.com/Aurorra1123/canvascli)。
 通过 `.venv/bin/pip install -e ~/workspace/canvascli` 装到 AutoStudy 的 venv 里。
 设计思路对应 AutoPku 的 `pku3b`：把数据底座做成可被任何 agent shell out 调用的独立工具。
 

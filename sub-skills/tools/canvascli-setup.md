@@ -5,7 +5,7 @@ description: One-time setup for canvascli, the Canvas LMS command-line client Au
 
 # canvascli setup
 
-AutoStudy talks to Canvas through [`canvascli`](https://github.com/<your-org>/canvascli), an external command-line tool. It's a separate git repository so it can be reused by other agents (Codex, Kimi Code, anything that shells out).
+AutoStudy talks to Canvas through [`canvascli`](https://github.com/Aurorra1123/canvascli), an external command-line tool. It's a separate git repository so it can be reused by other agents (Codex, Kimi Code, anything that shells out).
 
 This skill installs canvascli and walks the user through one-time SSO login.
 
@@ -19,7 +19,7 @@ This skill installs canvascli and walks the user through one-time SSO login.
 
 ```bash
 # 1. Clone the canvascli repo somewhere predictable
-git clone https://github.com/<your-org>/canvascli.git ~/workspace/canvascli
+git clone https://github.com/Aurorra1123/canvascli.git ~/workspace/canvascli
 
 # 2. Create AutoStudy's venv if it doesn't exist
 test -d .venv || python3 -m venv .venv
