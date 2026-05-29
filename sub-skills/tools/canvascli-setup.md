@@ -1,53 +1,73 @@
 ---
 name: canvascli-setup
-description: One-time setup for canvascli, the Canvas LMS command-line client AutoStudy depends on. Use when canvascli isn't installed, or when the saved session has expired.
+description: Bootstrap canvascli (the Canvas LMS CLI AutoStudy depends on) and walk the user through one-time SSO. Run this when canvascli is missing or when a saved session has expired.
 ---
 
 # canvascli setup
 
-AutoStudy talks to Canvas through [`canvascli`](https://github.com/Aurorra1123/canvascli), an external command-line tool. It's a separate git repository so it can be reused by other agents (Codex, Kimi Code, anything that shells out).
+AutoStudy talks to Canvas through [`canvascli`](https://github.com/Aurorra1123/canvascli) — a separate open-source Python CLI. This skill installs canvascli into AutoStudy's local venv and gets the user logged in.
 
-This skill installs canvascli and walks the user through one-time SSO login.
+**This skill is meant to be executed by the agent**, not read by the user. Each step is a concrete shell action; only Step 3 (`canvascli init`) requires the user to do something themselves (interact with the SSO browser window).
 
 ## When to run this
 
-- First time using AutoStudy in a fresh clone
-- `canvascli --version` is "command not found"
-- Any `canvascli` call returns "Canvas session expired" or HTTP 401
+Invoke this skill if any of the following is true:
 
-## Step 1: Clone canvascli + install in the AutoStudy venv
+- A fresh clone of AutoStudy (no `.venv/` yet)
+- `which canvascli` and `.venv/bin/canvascli version` both fail
+- Any `canvascli` call returns "Canvas session expired" or HTTP 401 → jump to **Step 3** only
+
+## Step 0: Detect what's missing
+
+Run this first so you know which steps to skip:
 
 ```bash
-# 1. Clone the canvascli repo somewhere predictable
-git clone https://github.com/Aurorra1123/canvascli.git ~/workspace/canvascli
-
-# 2. Create AutoStudy's venv if it doesn't exist
-test -d .venv || python3 -m venv .venv
-
-# 3. Install canvascli (editable) into AutoStudy's venv
-.venv/bin/pip install --upgrade pip
-.venv/bin/pip install -e ~/workspace/canvascli
+test -d .venv && echo "venv: ok" || echo "venv: MISSING"
+.venv/bin/canvascli version 2>/dev/null && echo "canvascli: ok" || echo "canvascli: MISSING"
+.venv/bin/canvascli whoami >/dev/null 2>&1 && echo "session: ok" || echo "session: MISSING"
 ```
 
-After installation, `canvascli` is on PATH for any process started inside that venv. Test it:
+Branch:
+
+- All three `ok` → setup is already done, return to the calling task.
+- `venv: MISSING` → start at Step 1.
+- `canvascli: MISSING` → start at Step 2.
+- `session: MISSING` only → jump to Step 3.
+
+## Step 1: Create AutoStudy's venv
 
 ```bash
-.venv/bin/canvascli version
-.venv/bin/canvascli --help
+python3 -m venv .venv
+.venv/bin/pip install --upgrade pip --quiet
 ```
 
-**Note**: `canvascli` uses `version` as a subcommand (not `--version` flag), following typer convention.
+That's it. Python 3.9+ is required; macOS/Linux ship with one.
 
-## Step 2: Install Chromium for the SSO login flow
+## Step 2: Install canvascli + Chromium
 
-canvascli's `init` command launches a real browser to handle SSO. It depends on Playwright; Chromium needs to be installed once:
+One pip command pulls canvascli straight from GitHub. Playwright is a transitive dep; Chromium needs a separate one-shot install.
 
 ```bash
-.venv/bin/pip install playwright    # if not already pulled in as dependency
+.venv/bin/pip install "git+https://github.com/Aurorra1123/canvascli" --quiet
 .venv/bin/playwright install chromium
 ```
 
-**If pulls are slow** (Mainland China), set HTTP proxy env vars before `playwright install`:
+**Verify:**
+
+```bash
+.venv/bin/canvascli version    # should print "canvascli 0.1.0" or higher
+```
+
+### If `pip install` or `playwright install` is slow (Mainland China)
+
+Try the Tsinghua PyPI mirror for pip:
+
+```bash
+.venv/bin/pip install "git+https://github.com/Aurorra1123/canvascli" \
+    -i https://pypi.tuna.tsinghua.edu.cn/simple --quiet
+```
+
+For Chromium, set an HTTP proxy before `playwright install` (replace with whatever proxy the user actually has):
 
 ```bash
 export http_proxy=http://127.0.0.1:6666 https_proxy=http://127.0.0.1:6666 \
@@ -55,22 +75,41 @@ export http_proxy=http://127.0.0.1:6666 https_proxy=http://127.0.0.1:6666 \
 .venv/bin/playwright install chromium
 ```
 
+### Pitfall: `chromium_headless_shell` is not enough
+
+`playwright install chromium` may install only `chromium_headless_shell`, which can't pop a real window for SSO. If `canvascli init` later complains about a missing browser, re-run:
+
+```bash
+.venv/bin/playwright install chromium --with-deps
+```
+
+This installs the full headed Chromium build alongside the headless one.
+
 ## Step 3: One-time SSO login
 
-Run this in your **own terminal** (not via Claude Code's `!` prefix — `init` opens a browser and that needs a real TTY environment):
+`canvascli init` launches a real browser, waits for the user to complete HKUST(GZ) SSO, and saves a cookie. **This step needs a real terminal — Claude Code's `!` bash channel has no TTY**, but `init` doesn't use `input()` (it polls), so you can still launch it from the agent. The user just has to be at their keyboard when the browser pops.
+
+Before launching:
+
+```
+✋ The next command opens a Chromium window for HKUST(GZ) SSO.
+   Complete the login in that window — it auto-detects success and closes itself.
+```
+
+Then:
 
 ```bash
 .venv/bin/canvascli init
 ```
 
-What happens:
-1. Chromium opens to `https://hkust-gz.instructure.com/`
-2. You complete SSO
-3. Script polls `/api/v1/users/self` every 2s, auto-detects login
-4. Saves cookie to `~/Library/Application Support/canvascli/state.json` (macOS) or `~/.config/canvascli/state.json` (Linux)
-5. Closes the browser
+What you'll see in stderr:
 
-You should see (in stderr): `logged in as <Your Name> (id=<uid>)` and `session saved to <path>`.
+- `Opening browser at https://hkust-gz.instructure.com/ ...`
+- (user finishes SSO in the window)
+- `logged in as <Name> (id=<uid>)`
+- `session saved to ~/Library/Application Support/canvascli/state.json`
+
+The cookie lives outside the repo, in the user's OS-standard config dir (`~/Library/Application Support/canvascli/` on macOS, `~/.config/canvascli/` on Linux), so it can never accidentally leak into a git commit.
 
 ## Step 4: Verify
 
@@ -78,34 +117,31 @@ You should see (in stderr): `logged in as <Your Name> (id=<uid>)` and `session s
 .venv/bin/canvascli whoami --pretty
 ```
 
-Should print your Canvas user info as JSON. If you see "No saved session" — Step 3 didn't succeed; re-run it.
+Should print the user's Canvas profile. If it says "No saved session" or HTTP 401 — Step 3 didn't actually finish. Re-run it.
+
+Once `whoami` is happy, return to the calling task.
 
 ## Cookie expiration
 
-When a `canvascli` call fails with "Canvas session expired" or HTTP 401:
+When `canvascli` returns "Canvas session expired" or HTTP 401:
 
-- Tell the user "your Canvas session has expired"
-- Re-run Step 3
-- **Do NOT silently retry or attempt to refresh.** Canvas cookies expire when the SAML assertion at the school IdP expires; only a new SSO can re-issue them.
+1. Tell the user: "Your Canvas session has expired — I'll re-run the login."
+2. Jump straight to **Step 3**.
+3. **Never silently retry** — Canvas cookies expire when the school's SAML assertion does, and only a fresh SSO can re-issue them.
 
 ## Files this skill creates
 
 | Path | Purpose | Sensitive? |
 |---|---|---|
-| `~/workspace/canvascli/` | Source of the CLI tool | No (public repo) |
-| `.venv/` | Python virtualenv for AutoStudy | No |
-| `~/Library/Application Support/canvascli/state.json` | Canvas session cookie | **YES — never log, never commit** |
-| `~/Library/Caches/ms-playwright/` | Chromium binary | No |
+| `.venv/` (in the AutoStudy working dir) | Python virtualenv | No |
+| `~/Library/Caches/ms-playwright/` (macOS) | Chromium binary | No |
+| `~/Library/Application Support/canvascli/state.json` (macOS)<br>or `~/.config/canvascli/state.json` (Linux) | Canvas session cookie | **YES — never echo, never commit** |
 
-AutoStudy's `.gitignore` already excludes `.venv/`. The cookie lives outside the repo (in the user's home Application Support dir), so it can never accidentally leak into git.
+`.gitignore` already excludes `.venv/`, and the cookie lives outside the repo, so neither can leak into git.
 
 ## Pitfalls
 
-1. **Don't run `canvascli init` from Claude Code's `!` bash channel.** That bash has no TTY (`/dev/tty` returns "Device not configured"), but `init` is fine because it uses Playwright polling instead of `input()`. However: the browser window still needs the user to interact, so the user runs `init` themselves in their terminal — the agent doesn't drive `init`.
-2. **Don't use `enrollment_state=active`** — canvascli already filters client-side by term name.
-3. **Treat HTTP 404 as "feature disabled".** Some courses turn off Quizzes / Modules / Discussions; canvascli returns empty arrays rather than failing.
-
-## What's not covered here
-
-- Multi-instance Canvas support (e.g. HKUST main campus, overseas) — explicitly out of scope; canvascli hardcodes `hkust-gz.instructure.com` for now.
-- Token-based API auth (Canvas does support personal access tokens but we use cookie SSO instead).
+1. **Don't `pip install -e` a clone.** That was the old developer flow. End users install from GitHub directly via `pip install "git+https://github.com/Aurorra1123/canvascli"` — no clone needed, no path assumptions.
+2. **Don't drive `canvascli init` non-interactively.** The user must actually be at their machine to complete SSO; the `init` command can't be automated end-to-end.
+3. **HKUST(GZ) only.** canvascli hardcodes `hkust-gz.instructure.com`. Multi-instance support is explicitly out of scope.
+4. **Treat HTTP 404 from canvascli as "feature disabled"**, not as an error. Some HKUST(GZ) courses turn off Quizzes / Modules / Discussions; canvascli returns empty arrays in that case.

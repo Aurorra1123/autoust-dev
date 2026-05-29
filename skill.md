@@ -23,15 +23,19 @@ For anything not listed: read the request, decide if it's a Canvas-related query
 
 ## First-time setup check
 
-Before doing anything else, verify the environment:
+Before doing anything else, verify the environment by running this in the AutoStudy working directory:
 
 ```bash
-.venv/bin/canvascli version > /dev/null 2>&1 && .venv/bin/canvascli whoami > /dev/null 2>&1 && echo OK || echo NEEDS_SETUP
+test -d .venv && .venv/bin/canvascli version > /dev/null 2>&1 \
+  && .venv/bin/canvascli whoami > /dev/null 2>&1 \
+  && echo OK || echo NEEDS_SETUP
 ```
 
-- If `OK` → proceed to the task
-- If `NEEDS_SETUP` → invoke `tools/canvascli-setup.md` first
-- If a canvascli call returns "session expired" / 401 mid-task → cookies expired, redirect to `tools/canvascli-setup.md` step 3
+- If `OK` → proceed to the task.
+- If `NEEDS_SETUP` → **invoke `sub-skills/tools/canvascli-setup.md`** and execute every step that's missing (it has a Step 0 detection block that tells you exactly which steps to skip). Come back here when `whoami` succeeds.
+- If a canvascli call returns "session expired" / 401 mid-task → only Step 3 of `canvascli-setup.md` is needed. Do not retry the failed call until the user has re-logged in.
+
+The setup involves one user-facing step (`canvascli init` opens a real browser for HKUST(GZ) SSO). Everything else — venv creation, `pip install git+https://github.com/Aurorra1123/canvascli`, Chromium download — the agent runs end-to-end via `Bash`.
 
 ## Architecture (so you know what to read)
 
@@ -58,7 +62,8 @@ data/                             ← JSON snapshots + downloaded files (gitigno
 ```
 
 Note: the Canvas data layer lives in a separate repo,
-[canvascli](https://github.com/Aurorra1123/canvascli), installed into AutoStudy's `.venv`.
+[canvascli](https://github.com/Aurorra1123/canvascli) (open source, MIT). It's installed
+into the local `.venv` with `pip install git+https://github.com/Aurorra1123/canvascli`.
 Same philosophy as AutoPku's `pku3b` — keep the data acquisition tool independent so it
 can serve other agents too.
 

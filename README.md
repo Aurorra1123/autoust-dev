@@ -23,56 +23,64 @@ agent: 列文件夹 → 询问范围 → 下载到本地
 
 ## 快速开始
 
-### 1. Clone 仓库
+### 第一步：把 skill 扔给 agentic AI
 
-```bash
-git clone https://github.com/Aurorra1123/autoust-dev.git
-cd AutoStudy
-```
-
-### 2. 装外部工具 canvascli
-
-Canvas 数据层是独立的 CLI 工具：
-
-```bash
-git clone https://github.com/Aurorra1123/canvascli.git ~/workspace/canvascli
-python3 -m venv .venv
-.venv/bin/pip install -e ~/workspace/canvascli
-.venv/bin/playwright install chromium
-.venv/bin/canvascli init   # 一次性 SSO 登录
-```
-
-### 3. 让 Claude Code 加载这个 skill
-
-在 Claude Code 里告诉它：
+打开 Claude Code（或未来支持的 Codex / Kimi Code），告诉它：
 
 ```
-执行这个 skill: ./skill.md
+下载 https://github.com/Aurorra1123/autoust-dev，并执行这个 skill
 ```
 
-agent 会读取 `skill.md`，了解项目结构和能力清单。
+它会自己 `git clone` 这个仓库、读取 `skill.md`、检测环境、自动装好 canvascli 和 Chromium。
 
-### 4. 用自然语言下达任务
+### 第二步：完成一次 SSO 登录
+
+agent 会在合适的时机让你扫码 / 登录学校 SSO（一次性，cookie 持久化在 `~/Library/Application Support/canvascli/`）。这是整个流程里**唯一**需要你动手的步骤。
+
+### 第三步：下达命令
 
 ```
-"帮我同步课程状态"
 "看看这周有什么作业"
-"下载 DSAA2043 的 Midterm 资料"
+"帮我同步课程状态"
+"下载 DSAA2043 的 midterm 资料"
+"帮我完成 DSAA2043 Lab-Assignment 1"
 ```
 
-首次使用时，agent 会引导你完成 SSO 登录（只需一次，cookie 持久化）。
+剩下的去做别的，相信 agent。
+
+> 提示：Claude Code 不会主动激活之前加载过的 skill，下次开新会话时你需要再提一句"参考 autoust-dev 这个 skill"。
+
+---
+
+## 它在做什么（透明版）
+
+如果你想知道 agent 在背后跑了什么：
+
+1. **环境检测**：检查当前目录有没有 `.venv/`，`canvascli` 是否能跑、Canvas session 是否有效
+2. **首次安装**（缺什么补什么）：
+   ```bash
+   python3 -m venv .venv
+   .venv/bin/pip install "git+https://github.com/Aurorra1123/canvascli"
+   .venv/bin/playwright install chromium
+   .venv/bin/canvascli init   # ← 你登录的地方
+   ```
+3. **跑实际任务**：根据你的意图路由到 `sub-skills/tasks/` 下的某个 task spec，由 task spec 调度 `sub-skills/tools/` 下的工具链产出 deliverable
 
 ---
 
 ## 当前阶段
 
-**M2** — 最小可 load skill。已完成：
-- ✅ Canvas 抓取器（课程 / 作业 / 公告 / 课件 / Quiz / 讨论）
-- ✅ 按文件夹下载 + 增量跳过
+**MVP（M3 核心）** — 4 个旗舰作业场景（paper / slides / math / lab）已在真实的 HKUST(GZ) Canvas 作业上端到端验证。
+
+已完成：
+- ✅ Canvas 抓取器（课程 / 作业 / 公告 / 课件 / Quiz / 讨论）+ 增量下载
 - ✅ 主 skill.md + sub-skills 三层架构（runtime/tools/tasks）
 - ✅ `tasks/sync-status.md` — 同步状态 + 摘要
+- ✅ `tasks/do-homework.md` — 作业端到端（含 problem-extractor 数据接地）
+- ✅ `tasks/task-orchestrator.md` — 工具链调度
+- ✅ 8 个工具 sub-skill（pdf-renderer / writing-helper / paper-search / figure-maker / code-writer / test-runner / slide-maker / problem-extractor）
 
-下一步（M3）：笔记生成、作业辅助（含设计审核环节）。详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
+下一步：交互式澄清回合、submission 接口验证、多 runtime（Codex / Kimi）。详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
 
 ---
 
@@ -103,8 +111,7 @@ AutoStudy/
 └── data/                       # 拉到的 JSON + 下载的文件（gitignored）
 ```
 
-Canvas 数据层（抓取器）抽出来了 —— 是独立仓库 [`canvascli`](https://github.com/Aurorra1123/canvascli)。
-通过 `.venv/bin/pip install -e ~/workspace/canvascli` 装到 AutoStudy 的 venv 里。
+Canvas 数据层（抓取器）抽出来了 —— 是独立仓库 [`canvascli`](https://github.com/Aurorra1123/canvascli)，MIT 开源。AutoStudy 通过 `pip install "git+https://github.com/Aurorra1123/canvascli"` 一行装到本地 venv 里。
 设计思路对应 AutoPku 的 `pku3b`：把数据底座做成可被任何 agent shell out 调用的独立工具。
 
 ---
