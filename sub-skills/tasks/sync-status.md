@@ -25,7 +25,7 @@ If either is missing, redirect to `canvascli-setup.md`. Do NOT proceed silently.
 
 ### Step 1: Refresh data
 
-Call canvascli twice. Capture JSON to disk for the rest of the flow:
+Call canvascli. Capture JSON to disk for the rest of the flow:
 
 ```bash
 .venv/bin/canvascli courses > data/courses.json
@@ -33,13 +33,16 @@ Call canvascli twice. Capture JSON to disk for the rest of the flow:
 .venv/bin/canvascli announcements > data/announcements.json
 ```
 
+These default to the latest active Canvas term. If the user explicitly asks for a
+semester, pass the same `--term "<term name>"` to all three commands.
+
 If any returns exit code 2 with "session expired" on stderr, the cookie's gone — direct the user to re-run `canvascli init` and stop.
 
 ### Step 2: Read the JSON
 
 Use the `Read` tool on:
-- `data/courses.json` — current-term enrollment list
-- `data/assignments.json` — flat list of all assignments
+- `data/courses.json` — latest active-term enrollment list, or the requested term
+- `data/assignments.json` — flat list of assignments for the same term
 - `data/announcements.json` — announcements (often empty for HKUST(GZ))
 
 ### Step 3: Compute the summary
@@ -94,7 +97,7 @@ What would you like to do next?
 ### 📣 New announcements (last 7 days)
 - 11-14 · DSAA2043 · "Midterm makeup details"
 
-### 📚 Courses (current term)
+### 📚 Courses (selected term)
 | Course | Total assignments | Unsubmitted |
 |---|---|---|
 | DSAA2043 | 9 | 1 |
@@ -120,4 +123,5 @@ Keep tone informative but not noisy. The user wants to scan in 5 seconds.
 - **Time zone**: `due_at` is UTC in JSON. Display in user's local time (assume Asia/Shanghai unless user said otherwise)
 - **Sorting tuples of `(datetime, dict)`**: Python falls back to comparing the dict if datetimes match, which raises `TypeError`. Always sort with `key=lambda x: x[0]`.
 - **Don't show ancient overdue items**: assignments overdue by more than 30 days are usually past-term residue. Cap the overdue window.
+- **Don't reimplement term filtering here**: canvascli owns latest-active-term detection and explicit `--term` selection.
 - **Use `.venv/bin/canvascli`** explicitly — system PATH might not have it.

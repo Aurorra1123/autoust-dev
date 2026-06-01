@@ -31,14 +31,18 @@
       "sub-skills/tasks/sync-status.md 完整任务流程",
       "陌生 agent 看 skill.md 能跑通 sync-status 并产生 5 段式 markdown 摘要",
       "30 天阈值过滤过期 overdue",
+      "默认学期范围由 canvascli latest-active-term contract 提供，显式历史学期通过 --term 传递",
       "全程使用 AskUserQuestion 而非 input()"
     ],
     "evidence": [
       "AutoStudy commit 7e6725e",
       "独立 agent session 验证截图（用户口头确认）",
-      "PITFALLS.md #1-#3, #11-#14"
+      "PITFALLS.md #1-#3, #11-#14",
+      "2026-06-01 docs sync with canvascli latest-active-term contract",
+      "2026-06-01 real Canvas rerun: default flow 7 Spring courses / 57 assignments / 5 announcements; explicit --term Spring 7 courses / 57 assignments"
     ],
-    "status": "passing"
+    "status": "passing",
+    "notes": "Term-scope behavior now lives in canvascli; AutoStudy sync-status uses the simple CLI flow and passes on real Canvas after session refresh."
   },
   {
     "id": "M3-FOUNDATION",

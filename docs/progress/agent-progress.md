@@ -2,6 +2,10 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-01 — Split term-scope fix across canvascli + AutoStudy docs
+
+Reviewed the `eca80a5` AutoStudy hardening commit and moved the root fix back to the data layer: `canvascli` now owns default latest-active-term selection plus explicit `--term` overrides. AutoStudy docs were updated to keep `sync-status` simple (`courses` / `assignments` / `announcements`) and document the CLI contract instead of reimplementing term filtering in skill flow. Verification after refreshing `canvascli init`: default AutoStudy flow returned 7 Spring courses / 57 assignments / 5 announcements; explicit `--term "2025-26 Spring"` returned 7 courses / 57 assignments.
+
 ## 2026-05-23 / 24 — MVP day: 4 flagship scenarios E2E + guizang slides + docs
 
 ### What changed

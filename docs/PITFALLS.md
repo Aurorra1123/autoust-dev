@@ -58,7 +58,7 @@ export http_proxy=http://127.0.0.1:6666 https_proxy=http://127.0.0.1:6666 \
 
 **根因**：未知 —— 可能是 HKUST(GZ) 的 enrollment 数据状态不符合 Canvas 默认的 active 判定。
 
-**解法**：**不要传 `enrollment_state`**，拉全量后在客户端按 `workflow_state == "available"` + term name 过滤。
+**解法**：**不要传 `enrollment_state`**。拉全量后在客户端按 `workflow_state == "available"` 过滤。默认学期范围属于 `canvascli` 数据层的 CLI contract，AutoStudy 不应在 skill/task 文档里重写这套判断；用户明确要查历史学期时，用 `--term`。
 
 ```python
 # 错
@@ -67,8 +67,7 @@ courses = client.paginate("/api/v1/courses", {"enrollment_state": "active"})
 # 对
 all_courses = client.paginate("/api/v1/courses", {"include[]": "term"})
 courses = [c for c in all_courses
-           if c.get("workflow_state") == "available"
-           and (c.get("term") or {}).get("name") == "2025-26 Fall"]
+           if c.get("workflow_state") == "available"]
 ```
 
 ### 6. 不能假设每门课都开了 Canvas 全部功能

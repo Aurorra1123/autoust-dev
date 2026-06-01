@@ -17,6 +17,22 @@ If you only read `skill.md`, you'd think the repo is a runtime tool. Reading thi
 
 The Canvas data layer (`canvascli`) lives at **`~/workspace/canvascli/`** (or wherever the user cloned it). It's a separate git repo, installed into AutoStudy's `.venv` via `pip install -e`. When you change Canvas access behavior, that work belongs in `canvascli/`, not here.
 
+For the full three-project workflow, branch policy, verification rules, and
+documentation-sync checklist, read `docs/COLLABORATION.md`.
+
+Layer boundary:
+
+- `canvascli` is the data layer: Canvas login/session, REST API calls, pagination, course/assignment/file/announcement/submission commands, and stable JSON output.
+- `autoust` is the application layer: skill routing, task orchestration, study/homework workflows, user confirmation points, and documentation for agents.
+
+When a bug or feature request touches both, land the data-layer change in `canvascli` first, then update AutoStudy docs/tasks against the new CLI contract. For rapid development, keep both repos on the user's long-lived update branch (`codex/deepwisdom-updates`) and commit there; open a PR only when the user asks for review or release.
+
+## Reference project
+
+Canvas Copilot is the design reference for this project. Prefer the local clone at **`/Users/deepwisdom/Desktop/project/canvas_copilot`** when it exists; otherwise use the public repo [X-isdoingreat/Canvas_pilot_public](https://github.com/X-isdoingreat/Canvas_pilot_public). Before inventing a new Canvas workflow, inspect how Canvas Copilot solved similar problems, especially around deep assignment reconnaissance, submission safeguards, hooks, tests, and recurring automation.
+
+AutoStudy's distilled notes live in `docs/canvas-pilot-reference.md`. Treat that file as the first stop for "what should we borrow from Canvas Copilot?" and go to the source repo when implementation details matter.
+
 ## Start-of-session checklist
 
 Run through these before touching code:

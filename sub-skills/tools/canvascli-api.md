@@ -58,12 +58,17 @@ Verify current session. Returns user object.
 ```
 
 ### `courses`
-List enrolled courses. Defaults to current term.
+List enrolled courses. Defaults to the latest active Canvas term.
 ```bash
-.venv/bin/canvascli courses                  # current term, JSON
+.venv/bin/canvascli courses                  # latest active term, JSON
 .venv/bin/canvascli courses --pretty         # human-readable
 .venv/bin/canvascli courses --all-terms      # include past/future terms
+.venv/bin/canvascli courses --term "2025-26 Spring"
 ```
+
+Default term selection is owned by canvascli. AutoStudy treats it as a CLI
+contract: call the default command for the normal current semester, and pass
+`--term` only when the user explicitly asks for another semester.
 
 Output shape (per item):
 ```json
@@ -76,10 +81,11 @@ Output shape (per item):
 ```
 
 ### `assignments`
-List assignments. Defaults to all current-term courses.
+List assignments. Defaults to all courses in the latest active Canvas term.
 ```bash
 .venv/bin/canvascli assignments
 .venv/bin/canvascli assignments --course-id 2151
+.venv/bin/canvascli assignments --term "2025-26 Spring"
 ```
 
 Output shape (per item):
@@ -104,17 +110,19 @@ Full detail of one assignment (description HTML, rubric, submission state).
 ```
 
 ### `announcements`
-List announcements across all current-term courses.
+List announcements across all courses in the latest active Canvas term.
 ```bash
 .venv/bin/canvascli announcements
+.venv/bin/canvascli announcements --term "2025-26 Spring"
 ```
 
 Note: HKUST(GZ) instructors rarely use Canvas announcements (often 0).
 
 ### `files [--course-id <cid>]`
-List files (no download). Defaults to all current-term courses, optionally scoped.
+List files (no download). Defaults to all courses in the latest active Canvas term, optionally scoped.
 ```bash
 .venv/bin/canvascli files --course-id 2151
+.venv/bin/canvascli files --term "2025-26 Spring"
 ```
 
 ### `folders <course-id>`
@@ -177,6 +185,7 @@ Submit a file to a Canvas assignment via `online_upload`.
 ## Common pitfalls
 
 - **Run via `.venv/bin/canvascli`, not bare `canvascli`** — system PATH might not have the venv binary.
+- **Term scope belongs in canvascli.** AutoStudy tasks should call `courses`, `assignments`, and `announcements` directly unless the user explicitly asks for a semester, in which case pass `--term`.
 - **HTTP 404 on quizzes/modules/discussions is normal** — that course turned the feature off. canvascli returns `[]` in those cases.
 - **Tuples of `(datetime, dict)`** aren't sortable in Python (dict isn't comparable) — when sorting by `due_at`, always use `key=lambda x: x["due_at"]`.
 - **Filenames with Chinese / spaces are common.** Always quote paths in shell calls.
