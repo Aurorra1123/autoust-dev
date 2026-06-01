@@ -4,7 +4,7 @@
 
 ## 2026-06-01 — Clarified Canvas login/session mental model
 
-Validated that `canvascli init` is a login/refresh command, not a session health check: it always opens Chromium and writes a new `state.json` after successful SSO. The correct health check is `.venv/bin/canvascli whoami`, which returned the Canvas user from the current saved session without requiring browser login. Docs now distinguish `state.json` (canvascli's saved Canvas API cookie) from the SSO "remember login" checkbox (controls how smooth the next SSO refresh is), and explicitly tell agents not to run `init` just to test status.
+Validated that `canvascli init` is a login/refresh command, not a session health check: it always opens Chromium and writes a new `state.json` after successful SSO. The correct health check is `.venv/bin/canvascli whoami`, which returned the Canvas user from the current saved session without requiring browser login. Docs now distinguish `state.json` (canvascli's saved Canvas API cookie) from the SSO "remember login" checkbox (controls how smooth the next SSO refresh is), and explicitly tell agents not to run `init` just to test status. Reran the documented flow after the docs change: Step 0 reported `venv: ok`, `canvascli: ok`, `session: ok`; then `courses` returned 7 Spring courses, `assignments` returned 57 assignments across 6 courses, and `announcements` returned 5 items, all without running `init`.
 
 ## 2026-06-01 — Split term-scope fix across canvascli + AutoStudy docs
 
