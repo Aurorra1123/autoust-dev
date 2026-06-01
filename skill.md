@@ -16,7 +16,7 @@ Try natural language. Common intents:
 | "看看这周作业" / "what's due" / "同步课程状态" | → `sub-skills/tasks/sync-status.md` |
 | "帮我完成 DLED3020 paper critique" / "做一下 DSAA2012 lab" | → `sub-skills/tasks/do-homework.md` |
 | "下载 DSAA2043 的 midterm 资料" / "fetch course files" | → use `canvascli download` (see `sub-skills/tools/canvascli-api.md`) |
-| "登录失败了" / "重新登录" | → `sub-skills/tools/canvascli-setup.md` step 3 |
+| "登录失败了" / "重新登录" | → first check `.venv/bin/canvascli whoami`; only run `canvascli-setup.md` step 3 if the saved session is missing/expired |
 | (first time using AutoStudy) | → `sub-skills/tools/canvascli-setup.md` from step 1 |
 
 For anything not listed: read the request, decide if it's a Canvas-related query you can answer with canvascli. If not, say so clearly.
@@ -36,6 +36,14 @@ test -d .venv && .venv/bin/canvascli version > /dev/null 2>&1 \
 - If a canvascli call returns "session expired" / 401 mid-task → only Step 3 of `canvascli-setup.md` is needed. Do not retry the failed call until the user has re-logged in.
 
 The setup involves one user-facing step (`canvascli init` opens a real browser for HKUST(GZ) SSO). Everything else — venv creation, `pip install git+https://github.com/Aurorra1123/canvascli`, Chromium download — the agent runs end-to-end via `Bash`.
+
+Important login model: `canvascli init` is an explicit login/refresh command,
+not a health check. To test whether the current saved session works, run
+`.venv/bin/canvascli whoami` or the real read command (`courses`,
+`assignments`, etc.). A successful `init` writes `state.json` whether or not the
+user selected the SSO "remember login" checkbox; that checkbox only affects how
+smoothly the next SSO refresh goes after the saved session is missing or
+expired.
 
 ## Architecture (so you know what to read)
 
@@ -76,7 +84,7 @@ These apply to every task in this skill:
 1. **Never echo or log canvascli's saved session** (`~/Library/Application Support/canvascli/state.json`). It's a credential.
 2. **Never auto-download or auto-submit anything.** Use `AskUserQuestion` to confirm scope first.
 3. **Never auto-pick "the latest" assignment, file, or course.** The user picks explicitly.
-4. **On session expiration / 401 from any canvascli command**: redirect to `canvascli-setup.md` step 3. Do not retry.
+4. **On session expiration / 401 from any canvascli command**: redirect to `canvascli-setup.md` step 3. Do not retry. Do not run `canvascli init` just to check status; use `whoami` for that.
 5. **Capture canvascli's JSON to disk** (e.g. `canvascli courses > data/courses.json`), then read and summarize. Don't try to summarize from stdout buffers directly.
 6. **`AskUserQuestion` only** for interactive flow. The Claude Code `!` bash channel has no TTY — Python `input()` will EOF immediately. See `docs/PITFALLS.md` if curious why.
 7. **Ground homework deliverables in `problem.md`, not the assignment title.** Canvas's `assignment.description` is HTML and frequently just an attachment link. Before producing any draft / code / slides, `do-homework.md [A3]` must run `tools/problem-extractor.md` to download attached PDFs and extract the real problem text into `problem.md`. **Never produce deliverables containing `[PROBLEM N]` / `[TODO: align with actual project spec]` / `[此处由小组成员填入选题]` placeholders.** The only acceptable inline markers are `[CITATION NEEDED: ...]` and `[CLARIFICATION NEEDED: ...]`, both surfaced for user resolution at the [E] checkpoint.

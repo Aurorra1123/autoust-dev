@@ -2,6 +2,10 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-01 — Clarified Canvas login/session mental model
+
+Validated that `canvascli init` is a login/refresh command, not a session health check: it always opens Chromium and writes a new `state.json` after successful SSO. The correct health check is `.venv/bin/canvascli whoami`, which returned the Canvas user from the current saved session without requiring browser login. Docs now distinguish `state.json` (canvascli's saved Canvas API cookie) from the SSO "remember login" checkbox (controls how smooth the next SSO refresh is), and explicitly tell agents not to run `init` just to test status.
+
 ## 2026-06-01 — Split term-scope fix across canvascli + AutoStudy docs
 
 Reviewed the `eca80a5` AutoStudy hardening commit and moved the root fix back to the data layer: `canvascli` now owns default latest-active-term selection plus explicit `--term` overrides. AutoStudy docs were updated to keep `sync-status` simple (`courses` / `assignments` / `announcements`) and document the CLI contract instead of reimplementing term filtering in skill flow. Verification after refreshing `canvascli init`: default AutoStudy flow returned 7 Spring courses / 57 assignments / 5 announcements; explicit `--term "2025-26 Spring"` returned 7 courses / 57 assignments.

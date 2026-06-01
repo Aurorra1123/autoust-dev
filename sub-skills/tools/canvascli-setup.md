@@ -87,14 +87,23 @@ This installs the full headed Chromium build alongside the headless one.
 
 ## Step 3: One-time SSO login
 
-`canvascli init` launches a real browser, waits for the user to complete HKUST(GZ) SSO, and saves a cookie. **This step needs a real terminal — Claude Code's `!` bash channel has no TTY**, but `init` doesn't use `input()` (it polls), so you can still launch it from the agent. The user just has to be at their keyboard when the browser pops.
+`canvascli init` launches a real browser, waits for the user to complete HKUST(GZ) SSO, and saves a cookie. **This is an explicit login/refresh command, not a health check.** To check whether the current saved session already works, run `canvascli whoami`; do not run `init` just to "try logging in".
+
+This step needs a real terminal — Claude Code's `!` bash channel has no TTY — but `init` doesn't use `input()` (it polls), so you can still launch it from the agent. The user just has to be at their keyboard when the browser pops.
 
 Before launching:
 
 ```
 ✋ The next command opens a Chromium window for HKUST(GZ) SSO.
    Complete the login in that window — it auto-detects success and closes itself.
+   If the SSO page offers "remember login" or "trust this browser", select it.
 ```
+
+The remember-login checkbox is separate from `state.json`: a successful `init`
+creates `state.json` either way, but selecting the checkbox lets the school's
+SSO remember this browser for the next re-login. If the user skips it, today's
+`state.json` can still work, but the next `init` after expiration may require a
+full manual login again.
 
 Then:
 
@@ -117,7 +126,13 @@ The cookie lives outside the repo, in the user's OS-standard config dir (`~/Libr
 .venv/bin/canvascli whoami --pretty
 ```
 
-Should print the user's Canvas profile. If it says "No saved session" or HTTP 401 — Step 3 didn't actually finish. Re-run it.
+Should print the user's Canvas profile. Interpret failures carefully:
+
+- `No saved session` means `state.json` is missing or was never written.
+- HTTP 401 / "session expired" means `state.json` exists but Canvas no longer accepts it.
+- Network or SSL errors are not login failures; retry the command or check proxy/network first.
+
+For the first two cases, re-run Step 3. For network/SSL errors, do not ask the user to re-login unless a retry proves the saved session is actually rejected.
 
 Once `whoami` is happy, return to the calling task.
 
@@ -128,6 +143,7 @@ When `canvascli` returns "Canvas session expired" or HTTP 401:
 1. Tell the user: "Your Canvas session has expired — I'll re-run the login."
 2. Jump straight to **Step 3**.
 3. **Never silently retry** — Canvas cookies expire when the school's SAML assertion does, and only a fresh SSO can re-issue them.
+4. During re-login, remind the user to select "remember login" / "trust this browser" if the SSO page offers it.
 
 ## Files this skill creates
 
@@ -143,5 +159,7 @@ When `canvascli` returns "Canvas session expired" or HTTP 401:
 
 1. **Don't `pip install -e` a clone.** That was the old developer flow. End users install from GitHub directly via `pip install "git+https://github.com/Aurorra1123/canvascli"` — no clone needed, no path assumptions.
 2. **Don't drive `canvascli init` non-interactively.** The user must actually be at their machine to complete SSO; the `init` command can't be automated end-to-end.
-3. **HKUST(GZ) only.** canvascli hardcodes `hkust-gz.instructure.com`. Multi-instance support is explicitly out of scope.
-4. **Treat HTTP 404 from canvascli as "feature disabled"**, not as an error. Some HKUST(GZ) courses turn off Quizzes / Modules / Discussions; canvascli returns empty arrays in that case.
+3. **Don't use `canvascli init` as a status check.** It always opens a browser. Use `canvascli whoami` to verify the existing `state.json`.
+4. **Remember login is not `state.json`.** `state.json` is the Canvas API cookie saved by canvascli; the SSO remember-login checkbox only affects how much manual work the next SSO refresh needs.
+5. **HKUST(GZ) only.** canvascli hardcodes `hkust-gz.instructure.com`. Multi-instance support is explicitly out of scope.
+6. **Treat HTTP 404 from canvascli as "feature disabled"**, not as an error. Some HKUST(GZ) courses turn off Quizzes / Modules / Discussions; canvascli returns empty arrays in that case.

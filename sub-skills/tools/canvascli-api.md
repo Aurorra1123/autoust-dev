@@ -46,13 +46,20 @@ courses = json.loads(out)
 ## Command reference
 
 ### `init`
-One-time SSO login. **Run in user's own terminal**, not from agent.
+Explicit SSO login / refresh. This opens a browser and writes a new
+`state.json`; it is not a status check. **Run in the user's own terminal or only
+when the user is ready for the browser popup.**
 ```bash
 .venv/bin/canvascli init
 ```
 
+If the SSO page offers "remember login" / "trust this browser", ask the user to
+select it. A successful `init` writes `state.json` either way; the checkbox only
+affects whether the next SSO refresh can skip a full manual login.
+
 ### `whoami`
-Verify current session. Returns user object.
+Verify the current saved session. Returns the user object without opening a
+browser.
 ```bash
 .venv/bin/canvascli whoami
 ```
@@ -178,13 +185,15 @@ Submit a file to a Canvas assignment via `online_upload`.
 
 1. **Never echo `state.json`** or any cookie value to the user.
 2. **Treat 401 as session expiration**, not a transient error. Direct user to `canvascli-setup.md` step 3. Do not retry.
-3. **Don't auto-download or auto-submit.** Always confirm scope with `AskUserQuestion`.
-4. **Don't auto-pick "the latest"** assignment / file / folder. The user picks explicitly.
-5. **Pipe JSON, not stdout text.** The text in `--pretty` mode is for humans, not parsing.
+3. **Don't use `init` as a session check.** It always opens a browser. Use `whoami` or the real read command to verify the existing session.
+4. **Don't auto-download or auto-submit.** Always confirm scope with `AskUserQuestion`.
+5. **Don't auto-pick "the latest"** assignment / file / folder. The user picks explicitly.
+6. **Pipe JSON, not stdout text.** The text in `--pretty` mode is for humans, not parsing.
 
 ## Common pitfalls
 
 - **Run via `.venv/bin/canvascli`, not bare `canvascli`** — system PATH might not have the venv binary.
+- **`state.json` and SSO remember-login are separate.** `state.json` is canvascli's saved Canvas API cookie. The SSO checkbox does not decide whether `state.json` is written; it decides whether the next browser login is fast or requires full credentials again.
 - **Term scope belongs in canvascli.** AutoStudy tasks should call `courses`, `assignments`, and `announcements` directly unless the user explicitly asks for a semester, in which case pass `--term`.
 - **HTTP 404 on quizzes/modules/discussions is normal** — that course turned the feature off. canvascli returns `[]` in those cases.
 - **Tuples of `(datetime, dict)`** aren't sortable in Python (dict isn't comparable) — when sorting by `due_at`, always use `key=lambda x: x["due_at"]`.

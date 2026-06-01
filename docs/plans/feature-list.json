@@ -16,7 +16,8 @@
     "evidence": [
       "AutoStudy commit 90072ac",
       "canvascli commit 0385f54",
-      "sub-skills/tools/canvascli-setup.md + canvascli-api.md"
+      "sub-skills/tools/canvascli-setup.md + canvascli-api.md",
+      "2026-06-01 login/session docs clarified: init is refresh, whoami is health check, remember-login is separate from state.json generation"
     ],
     "status": "passing"
   },

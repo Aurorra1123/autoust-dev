@@ -138,6 +138,26 @@ data = resp.json()  # 直接拿 dict
 
 这比 AutoPku 用 `pku3b` CLI + ANSI 色码正则解析的路径干净得多。
 
+### 7b. `canvascli init` 不是登录态检查；`state.json` 和 SSO remember-login 是两层
+
+**现象**：用户怀疑频繁登录是因为 SSO 页面没有勾选 "remember login"。验证时误把 `canvascli init` 当成"测试是否还需要登录"来跑，结果它必然打开浏览器，制造了错误信号。
+
+**正确模型**：
+
+- `canvascli init` 是显式登录 / 刷新命令：打开浏览器，完成 SSO，写入新的 `~/Library/Application Support/canvascli/state.json`。
+- `canvascli whoami` 才是状态检查：它读取现有 `state.json`，成功返回用户对象就说明当前 session 可用。
+- `state.json` 是否生成只取决于本次 `init` 是否成功完成 SSO；和是否勾选 remember-login 没有直接关系。
+- SSO 的 "remember login" / "trust this browser" 影响的是**下一次重新走 SSO 时是否能快速通过**。不勾也会生成可用的 `state.json`，但下次 state 过期或刷新时可能又要完整登录。
+
+**验证记录（2026-06-01）**：
+
+- 当前有效 `state.json` 下，`.venv/bin/canvascli whoami --pretty` 正常返回 Canvas 用户信息，无需浏览器。
+- 移走 `state.json` 后跑 `canvascli init`，不勾 remember-login 仍会生成新的 `state.json`。
+- 再次移走该 `state.json` 后跑 `init`，SSO 需要重新手动登录。
+- 用户之后勾选 remember-login 生成的 state 可被 `whoami` 正常使用；这说明日常命令依赖的是 `state.json`，不是每次重新 SSO。
+
+**规则**：文档和 agent 流程里，永远用 `whoami` / 实际读命令检查登录态；只有 `No saved session`、`session expired`、HTTP 401 时才让用户跑 `init`。运行 `init` 时提醒用户勾选 remember-login / trust-this-browser。
+
 ### 8. 分页用 Link header，不要瞎设 `page` 参数
 
 Canvas 的分页是 HTTP Link header 标准：
