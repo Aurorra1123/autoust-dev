@@ -99,7 +99,7 @@ except RuntimeError as e:
 
 启示：**Files 才是真正的数据底座**，Modules 是辅助索引（老师不一定整理）。
 
-### 6b. `assignment.description` 经常只是一个 PDF 附件链接 — 必须下载附件才能读到真题
+### 6b. `assignment.description` 不是完整 spec — 必须逐源侦查
 
 **现象**：MVP 第一轮跑 4 个旗舰场景，agent 产出的 `solution.md` 里全是 `[PROBLEM N]` 占位符，`report.md` 写着 `[TODO: align with actual project spec]`，`slides.pdf` 是 `[此处由小组成员填入选题]`。pipeline 跑通了，作业没做。
 
@@ -113,9 +113,9 @@ except RuntimeError as e:
       data-api-returntype="File">DSAA2043_Assignment_1.pdf</a></p>
 ```
 
-真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。
+真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。后来又遇到 DSAA2011 Project：assignment description 是空的，真正项目说明在 module item PDF 里；UCUG1505 FINAL project 则是 assignment description 和 Week 4 module item 都指向同一个 Google Doc spec。
 
-**正确做法**：`do-homework.md [A3]` 必须调 `tools/problem-extractor.md`，把 description HTML 里的 `/files/<id>` 全部 grep 出来，用 `canvascli download <fid>` 下回来，pdftotext / pdfminer.six 抽文本，组装成 `problem.md`。下游 `writing-helper` / `code-writer` / `slide-maker` 只能读 `problem.md`，不准读 `assignment.json.description`。
+**正确做法**：`do-homework.md [A3]` 必须调 `tools/problem-extractor.md`，按 Canvas Copilot 的方式逐源查看 assignment、rubric、front page、syllabus、modules、module-items、pages、files、external URLs。产出 `spec.md` 作为完整侦查上下文，同时写 `problem.md` 给现有 `writing-helper` / `code-writer` / `slide-maker` 兼容读取。下游不准直接读 `assignment.description` 当题目。
 
 **规则强化**（写进 `skill.md` Safety #7 + `do-homework.md` Safety #7）：deliverable 文件里**禁止出现** `[PROBLEM N]` / `[TODO: align...]` / `[此处由小组成员填入...]` 这种占位符。只允许 `[CITATION NEEDED: ...]` 和 `[CLARIFICATION NEEDED: ...]` 两种 marker，且都要在 do-homework `[E]` 一次性回流给用户。
 
@@ -124,7 +124,7 @@ except RuntimeError as e:
 - 群组作业 (UCUG) 通常附件是题目说明 + rubric；lab 类作业附件是数据集 + 题目
 - 极少有老师把题目正文直接粘到 Canvas WYSIWYG 里
 
-启示：**没有 problem-extractor 这一步，整个 do-homework 就是个 pipeline demo**，不是真能做作业的工具。
+启示：**没有 Copilot 式 problem-extractor 这一步，整个 do-homework 就是个 pipeline demo**，不是真能做作业的工具。
 
 ### 7. Canvas REST API 直接带 cookie 调，不用 OAuth token
 

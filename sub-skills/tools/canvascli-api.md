@@ -111,10 +111,90 @@ Output shape (per item):
 ```
 
 ### `assignment <id> --course-id <cid>`
-Full detail of one assignment (description HTML, rubric, submission state).
+Full detail of one assignment (description HTML/text, linked file ids, external URLs, submission state).
 ```bash
 .venv/bin/canvascli assignment 12345 --course-id 2151
 ```
+
+Important fields:
+
+```json
+{
+  "id": 12345,
+  "name": "Homework 3",
+  "description": "<p>raw Canvas HTML...</p>",
+  "description_html": "<p>raw Canvas HTML...</p>",
+  "description_text": "plain text version",
+  "description_file_ids": [475078],
+  "external_urls": [{"url": "https://docs.google.com/...", "kind": "third_party", "text": "Spec"}],
+  "rubric_present": false,
+  "submission_types": ["online_upload"],
+  "attachments_count": 0
+}
+```
+
+### Copilot-style assignment context commands
+
+These commands mirror Canvas Copilot's mature data layer. They are **atomic**: each command reads one source and prints JSON. AutoStudy must inspect all likely sources and decide which one is the main spec; do not reintroduce an `assignment-context` aggregate command in the app layer.
+
+```bash
+.venv/bin/canvascli rubric 12345 -c 2151
+.venv/bin/canvascli front-page -c 2151
+.venv/bin/canvascli syllabus -c 2151
+.venv/bin/canvascli modules -c 2151
+.venv/bin/canvascli module-items 67890 -c 2151
+.venv/bin/canvascli page project-guidelines -c 2151
+.venv/bin/canvascli file 475078
+.venv/bin/canvascli assignment-files 12345 -c 2151
+```
+
+Use pattern:
+
+1. Fetch `assignment`, `rubric`, `front-page`, `syllabus`, `modules`, and `assignment-files`.
+2. Fetch `module-items` for every module, not only the first apparent match.
+3. Fetch `page` for every module item whose type is `Page`.
+4. Fetch `file` metadata for every file id discovered in assignment/front-page/syllabus/pages/module items.
+5. Download only files that are plausibly part of the assignment context via `canvascli download`.
+
+Expected output shapes:
+
+```json
+// front-page / syllabus / page
+{
+  "status": "ok",
+  "body_html": "<p>...</p>",
+  "body_text": "...",
+  "body_text_bytes": 1234,
+  "file_ids": [475078],
+  "external_urls": [{"url": "https://...", "kind": "external", "text": "Link"}]
+}
+```
+
+```json
+// modules
+{
+  "status": "ok",
+  "count": 4,
+  "modules": [{"id": 12955, "name": "Project guidelines", "items_count": 4}]
+}
+```
+
+```json
+// module-items
+{
+  "status": "ok",
+  "module": {"id": 12955, "name": "Project guidelines"},
+  "items": [
+    {"type": "File", "title": "project_announce.pdf", "content_id": 625115},
+    {"type": "Page", "title": "Final project specification", "page_url": "final-project"}
+  ]
+}
+```
+
+Real verification anchors:
+
+- DSAA2011 Project: assignment description is empty; module items reveal the project PDF.
+- UCUG1505 FINAL project: assignment description and Week 4 module item both point to the same Google Doc spec; Week 9 slides are nearby context.
 
 ### `announcements`
 List announcements across all courses in the latest active Canvas term.
@@ -202,20 +282,22 @@ Submit a file to a Canvas assignment via `online_upload`.
 
 ## Recipes
 
-### Extract the real problem text from an assignment with PDF attachments
+### Build a homework workbench before generation
 
-Canvas's `description` field on many assignments is just an `<a>...pdf</a>` link wrapping the real problem statement. Reading `description` directly is the most common cause of agents producing template / placeholder content.
+Canvas's `description` field may be an attachment link, a Google Doc link, an empty string, or only a small hint. Reading it directly is the most common cause of agents producing template / placeholder content.
 
-**Don't write your own extractor inline** — use `sub-skills/tools/problem-extractor.md`. It:
+**Don't write your own extractor inline** — use `sub-skills/tools/problem-extractor.md`. It follows Canvas Copilot's source-by-source workflow:
 
-1. Scans `description` HTML for file IDs in two embedding styles (`href="...files/<id>"` and `data-api-endpoint="...files/<id>"`)
-2. Calls `canvascli download <fid> -o <work_dir>/attachments/<filename>` for each
-3. Extracts text (PDF → `pdftotext` or `pdfminer.six`)
-4. Writes `<work_dir>/problem.md` with frontmatter + inline plain-text description + per-attachment `## Attached:` sections + rubric
+1. Calls the atomic context commands above.
+2. Stores raw CLI JSON under `<work_dir>/canvas/`.
+3. Downloads reachable Canvas files into `<work_dir>/references/`.
+4. Writes `<work_dir>/spec.md` as the full source-by-source assignment context.
+5. Writes `<work_dir>/problem.md` as a compatibility view for existing tools.
+6. Writes `<work_dir>/investigation/{rubric.md,unreachable.txt,review_a.json}`.
 
-Downstream tools (`writing-helper`, `code-writer`, `slide-maker`) consume `problem.md`, not `assignment.json.description`. This is the spec's only guarantee against `[PROBLEM N]` template output.
+Downstream tools currently consume `problem.md`, but new orchestration should read `spec.md` first.
 
-### One-liner: list file IDs embedded in a description
+### One-liner: list file IDs embedded in a saved assignment snapshot
 
 If you need a quick lookup without running the full extractor:
 
@@ -226,7 +308,7 @@ d = json.load(open(sys.argv[1]))
 desc = d.get("description") or ""
 ids = set(re.findall(r"/files/(\d+)", desc))
 print(*sorted(ids), sep="\n")
-' data/homework/<COURSE>/<HW>/assignment.json
+' data/homework/<COURSE>/<HW>/canvas/assignment.json
 ```
 
 ### Download a single attachment by ID with the real filename
@@ -235,7 +317,7 @@ print(*sorted(ids), sep="\n")
 
 ```python
 import json, re
-data = json.load(open("assignment.json"))
+data = json.load(open("canvas/assignment.json"))
 desc = data["description"] or ""
 # Title and ID often appear together in a link tag
 for m in re.finditer(r'title="([^"]+)"[^>]*?/files/(\d+)', desc):
@@ -245,5 +327,5 @@ for m in re.finditer(r'title="([^"]+)"[^>]*?/files/(\d+)', desc):
 Then:
 
 ```bash
-.venv/bin/canvascli download 475078 -o attachments/DSAA2043_Assignment_1.pdf
+.venv/bin/canvascli download 475078 -o references/DSAA2043_Assignment_1.pdf
 ```

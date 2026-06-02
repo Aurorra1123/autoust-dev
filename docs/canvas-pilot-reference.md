@@ -38,20 +38,119 @@ Canvas Pilot 有一个叫 **canvas-generic** 的核心编排器。它的设计�
 
 #### 需要做什么
 
-这涉及 **canvascli 的扩展**，因为 AutoStudy 的架构是 canvascli 独立仓库提供数据层，skill 层通过 shell out 调用。要实现深度侦查，需要两步：
+这涉及 **canvascli 的扩展**，因为 AutoStudy 的架构是 canvascli 独立仓库提供数据层，skill 层通过 shell out 调用。要实现深度侦查，需要两步。
 
-**canvascli 侧**（新增命令或参数）：
+**canvascli 侧**（Copilot 式原子命令）：
 
-- `canvascli modules --course-id <ID>` — 获取课程 module 列表和 module item 内容
-- `canvascli front-page --course-id <ID>` — 获取课程首页内容
-- `canvascli syllabus --course-id <ID>` — 获取课程大纲
-- 可能还需要一个 `canvascli full-context --course-id <ID> --assignment-id <ID>` 的聚合命令，一次返回所有相关上下文
+- `canvascli assignment <aid> --course-id <cid>` — 作业页面、description、submission/rubric metadata、HTML 中的文件和外链提示
+- `canvascli rubric <aid> --course-id <cid>` — Canvas rubric / rubric assessment
+- `canvascli front-page --course-id <cid>` — 课程首页
+- `canvascli syllabus --course-id <cid>` — 课程大纲
+- `canvascli modules --course-id <cid>` — module 列表
+- `canvascli module-items <module-id> --course-id <cid>` — 单个 module 的 items
+- `canvascli page <page-url> --course-id <cid>` — Canvas wiki page 正文
+- `canvascli file <file-id>` — 文件元数据
+- `canvascli assignment-files <aid> --course-id <cid>` — assignment 直接附件和 description 直链文件
+
+这里明确不采用 `assignment-context` / `full-context` 聚合命令。Canvas Copilot 的成熟经验是：数据层提供稳定的单源读取能力，上层 agent 必须逐源查看，再判断哪个来源才是真正的 spec。聚合命令看似方便，但容易把"是否相关"这个判断提前固化到数据层，降低灵活性。
 
 **AutoStudy skill 侧**（改造 `problem-extractor` 或 `do-homework` 的 [A3] 步骤）：
 
 - 在现有的"从 description HTML 提取附件"之外，增加"从 modules/front-page/syllabus 补充上下文"的能力
-- 产出可以还是 `problem.md`，但内容更完整——不只包含附件文本，还包含从其他信息源找到的相关内容
+- 产出升级为 `spec.md`：完整记录 assignment、rubric、front page、syllabus、module hits、pages、files、external URLs、unreachable resources
+- 暂时继续写 `problem.md` 作为兼容文件，供现有 writing-helper / code-writer / slide-maker 读取；长期让这些工具逐步迁移到 `spec.md`
 - 这对模块 3（Study Material Generator）也有直接价值——自动收集课程材料需要的就是同样的 Canvas 数据获取能力
+
+#### 真实例子：DSAA2011 和 UCUG1505
+
+这两个真实 case 解释了为什么必须逐源侦查，而不是只读 assignment description。
+
+**DSAA2011 Project**：
+
+- assignment description 为空
+- Canvas rubric 没有
+- front page 404 / 未启用
+- syllabus 有课程级内容但不是项目 spec
+- modules 有 4 个，真正项目说明在 module item 文件里
+- `DSAA2011-26sp-project_announce-L01.pdf` 是主 spec，其他 review / sample PDF 是上下文
+
+如果 AutoStudy 只读 `assignment.description`，这里会得到"空作业"。Copilot 式流程会继续看 modules 和 module items，所以能找到项目说明 PDF。
+
+**UCUG1505 FINAL project**：
+
+- assignment description 里直接有 Google Doc spec 外链
+- Week 4 module item 也有同一个 "Final project specification"
+- Week 9 slides 是邻近上下文
+- rubric / assignment files 都没有
+
+这里的正确判断不是"第一个链接就是全部"，而是看完 assignment + module items 后发现 Google Doc 是主 spec，slides 是补充材料。
+
+---
+
+### 1.1.1 单作业工作台结构
+
+#### Canvas Pilot 的真实 run 结构
+
+2026-06-01 的 DSAA2011 Project run 目录展示了 Canvas Pilot 最值得学习的结构：
+
+```text
+runs/2026-06-01/DSAA2011_L01_-_Machine_Learning__Project/
+├── spec.md
+├── references/
+│   ├── DSAA2011-26sp-project_announce-L01.pdf
+│   ├── DSAA2011-exam_sample.pdf
+│   └── DSAA2011-Final_review.pdf
+├── investigation/
+│   ├── rubric.md
+│   ├── unreachable.txt
+│   └── review_a.json
+├── pipeline_design.md
+├── draft/
+│   ├── project_group01_dropout.ipynb
+│   └── requirements_group01_dropout.txt
+├── verification_checklist.md
+├── verification.log
+└── result.json
+```
+
+这个目录的核心不是"文件名好看"，而是每个文件对应一个阶段和责任：
+
+- `spec.md`：完整作业上下文，不信任单一 Canvas description
+- `references/`：下载到本地的 PDF、starter code、数据、网页文本等可引用材料
+- `investigation/`：rubric、不可达资源、侦查完整性审查
+- `pipeline_design.md`：根据 spec 和 rubric 现场设计的产出方式
+- `draft/`：实际草稿和交付物源文件
+- `verification_checklist.md` / `verification.log`：可机械检查的验收标准与结果
+- `result.json`：这个 assignment 的状态信号，供跨 session 恢复和上层调度读取
+
+#### AutoStudy 应采用的过渡结构
+
+当前 AutoStudy 的 `data/homework/<COURSE>/<HWID>/` 更像一个平铺材料夹。MVP 可用，但 mixed task 会很快变乱。下一步应该向 Canvas Pilot 的单作业工作台靠拢：
+
+```text
+data/homework/<COURSE>/<HWID>/
+├── canvas/
+│   ├── assignment.json
+│   ├── rubric.json
+│   ├── front-page.json
+│   ├── syllabus.json
+│   ├── modules.json
+│   └── module-items-<mid>.json
+├── spec.md
+├── problem.md
+├── references/
+├── investigation/
+│   ├── rubric.md
+│   ├── unreachable.txt
+│   └── review_a.json
+├── pipeline_design.md
+├── draft/
+├── verification_checklist.md
+├── verification.log
+└── result.json
+```
+
+`canvas/` 保存原子 CLI 返回结果，作为取数证据。`spec.md` 成为侦查后的主文件。`problem.md` 暂时保留为兼容层，因为现有 tools 仍读取它。`draft/` 承载多产物，适合 notebook + report + slides + zip 这种混合任务。`result.json` 是后续主动提醒、恢复执行、避免重复处理的基础。
 
 ---
 
@@ -214,9 +313,9 @@ M4 在 ROADMAP 里是"反问式学习助手"，对应 AutoStudy.pdf 的模块 4�
 
 | 事项 | 来源 | 说明 |
 |------|------|------|
-| canvascli 扩展：modules / front-page / syllabus 命令 | 参考 Canvas Pilot 的 spec 侦查 | 这是升级 problem-extractor 和实现模块 1（Course Context Manager）的数据层基础。没有这些数据，模块 3（Study Material Generator）也做不到"从 lecture slides / PDF / reading 自动生成课程笔记"。 |
-| problem-extractor 升级 | 参考 canvas-generic Stage 1-3 | 在现有"从附件提取文本"之外，增加从 modules/front-page/syllabus 补充上下文的能力。产出还是 problem.md，但信息更完整。 |
-| orchestrator 加 fallback 动态组合路径 | 参考 canvas-generic Stage 5-6 | 当启发式匹配不到固定类型时，分析 problem.md 需要哪些 capabilities，按 `_index.md` 的 capability vocabulary 动态组合 tools。不需要一次性替代固定链，先作为 fallback 验证。 |
+| canvascli 原子上下文命令 | 参考 Canvas Pilot 的 spec 侦查 | 补齐 assignment / rubric / front-page / syllabus / modules / module-items / page / file / assignment-files。数据层只读单源并返回 JSON，不做 assignment-context 聚合判断。 |
+| problem-extractor 升级 | 参考 canvas-generic Stage 1-3 | 在现有"从附件提取文本"之外，逐源侦查 assignment、rubric、front page、syllabus、modules、pages、files 和外链。产出 `spec.md` 作为主上下文，并保留 `problem.md` 兼容当前 tools。 |
+| orchestrator 加 fallback 动态组合路径 | 参考 canvas-generic Stage 5-6 | 当启发式匹配不到固定类型时，先分析 `spec.md` / `problem.md` 需要哪些 capabilities，再按 `_index.md` 的 capability vocabulary 动态组合 tools。不需要一次性替代固定链，先作为 fallback 验证。 |
 | 轻量 result.json | 参考 Canvas Pilot 的状态管理 | 每个 do-homework 作业完成后写一个 result.json，记录状态和交付物路径。为 sync-status 的升级和模块 2 的进度追踪打基础。 |
 | 轻量 course-overrides.yaml | 参考 Canvas Pilot 的 overlay 思想 | 不需要 Canvas Pilot 那么复杂的 overlay 机制，但一个简单的 `data/course-overrides.yaml` 可以记录"这门课的作业 spec 通常在哪里"、"这门课偏好的交付格式是什么"、"这门课常用的技能组合是什么"。当前不同课程用完全相同的 heuristics，但实际上教授们的组织习惯差异很大。 |
 

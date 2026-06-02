@@ -54,7 +54,7 @@ sub-skills/
 │   ├── canvascli-setup.md        ← one-time install + login
 │   ├── canvascli-api.md          ← command reference, JSON shapes
 │   ├── _index.md                 ← tool registry (M3 orchestrator reads this)
-│   ├── problem-extractor.md      ← Canvas attachment PDFs → problem.md (data grounding)
+│   ├── problem-extractor.md      ← Canvas multi-source recon → spec.md + problem.md
 │   ├── pdf-renderer.md           ← markdown → PDF (pandoc + tectonic)
 │   ├── writing-helper.md         ← essay / report / reflection drafts
 │   ├── paper-search.md           ← arxiv search → references.bib
@@ -87,7 +87,7 @@ These apply to every task in this skill:
 4. **On session expiration / 401 from any canvascli command**: redirect to `canvascli-setup.md` step 3. Do not retry. Do not run `canvascli init` just to check status; use `whoami` for that.
 5. **Capture canvascli's JSON to disk** (e.g. `canvascli courses > data/courses.json`), then read and summarize. Don't try to summarize from stdout buffers directly.
 6. **`AskUserQuestion` only** for interactive flow. The Claude Code `!` bash channel has no TTY — Python `input()` will EOF immediately. See `docs/PITFALLS.md` if curious why.
-7. **Ground homework deliverables in `problem.md`, not the assignment title.** Canvas's `assignment.description` is HTML and frequently just an attachment link. Before producing any draft / code / slides, `do-homework.md [A3]` must run `tools/problem-extractor.md` to download attached PDFs and extract the real problem text into `problem.md`. **Never produce deliverables containing `[PROBLEM N]` / `[TODO: align with actual project spec]` / `[此处由小组成员填入选题]` placeholders.** The only acceptable inline markers are `[CITATION NEEDED: ...]` and `[CLARIFICATION NEEDED: ...]`, both surfaced for user resolution at the [E] checkpoint.
+7. **Ground homework deliverables in `spec.md` / `problem.md`, not the assignment title.** Canvas's `assignment.description` may be empty, a file link, a Google Doc link, or only one hint among many. Before producing any draft / code / slides, `do-homework.md [A3]` must run `tools/problem-extractor.md` to inspect assignment, rubric, front page, syllabus, modules, pages, files, and external URLs. It writes `spec.md` as the main context and `problem.md` as a compatibility file for current tools. **Never produce deliverables containing `[PROBLEM N]` / `[TODO: align with actual project spec]` / `[此处由小组成员填入选题]` placeholders.** The only acceptable inline markers are `[CITATION NEEDED: ...]` and `[CLARIFICATION NEEDED: ...]`, both surfaced for user resolution at the [E] checkpoint.
 
 ## Telling the user what just happened
 

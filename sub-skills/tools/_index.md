@@ -20,18 +20,18 @@ The data-acquisition layer is a separate concern: `canvascli` is a sister CLI re
 
 | Tool | File | Capabilities | Inputs | Outputs | Stability |
 |---|---|---|---|---|---|
-| **problem-extractor** | [problem-extractor.md](./problem-extractor.md) | `extract_problem` (assignment.json → problem.md by downloading + extracting attachment PDFs) | assignment.json, course_id | `attachments/<file>` + `problem.md` (grounded problem text) | 🟢 stable |
+| **problem-extractor** | [problem-extractor.md](./problem-extractor.md) | `extract_problem` (Copilot-style Canvas reconnaissance → spec.md + compatibility problem.md) | course_id, assignment_id, work_dir | `canvas/*.json` + `spec.md` + `references/` + `investigation/` + `problem.md` | 🟢 stable |
 | **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | `render_pdf` (markdown→PDF), supports Chinese, LaTeX math, callouts | markdown file path, options (font, geometry, callouts) | PDF file path | 🟢 stable |
-| **writing-helper** | [writing-helper.md](./writing-helper.md) | `write_essay` (problem.md + rubric → structured draft.md: essay/report/reflection) | task_profile.yaml, problem.md, references.bib (opt) | draft.md (pandoc-friendly) | 🟡 experimental |
+| **writing-helper** | [writing-helper.md](./writing-helper.md) | `write_essay` (spec.md/problem.md + rubric → structured draft.md: essay/report/reflection) | task_profile.yaml, spec.md, problem.md, references.bib (opt) | draft.md (pandoc-friendly) | 🟡 experimental |
 | **paper-search** | [paper-search.md](./paper-search.md) | `search_papers` (topic keywords → bib + json via arxiv API) | topic keywords, max_results | references.bib, references.json | 🟡 experimental |
 | **figure-maker** | [figure-maker.md](./figure-maker.md) | `make_figure` (line/bar/scatter via matplotlib) | figure_spec dict | fig_N.pdf + fig_N.png in work_dir/figures/ | 🟡 experimental |
-| **code-writer** | [code-writer.md](./code-writer.md) | `write_code` (problem.md → src/*.py + tests + README) | task_profile.yaml, problem.md | work_dir/src/*.py | 🟡 experimental |
+| **code-writer** | [code-writer.md](./code-writer.md) | `write_code` (spec.md/problem.md → src/*.py + tests + README) | task_profile.yaml, spec.md, problem.md | work_dir/src/*.py | 🟡 experimental |
 | **test-runner** | [test-runner.md](./test-runner.md) | `run_tests` (pytest + entry point → markdown report) | work_dir/src/ | test_report.md + test_report.json | 🟡 experimental |
-| **slide-maker** | [slide-maker.md](./slide-maker.md) | `render_slides` — default wraps [guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill) (magazine / Swiss HTML deck + Playwright PDF print); LaTeX-beamer fallback for strict-PDF academic submissions | task_profile.yaml, problem.md, figures/ | `guizang/index.html` + `guizang/slides.pdf` (default) **or** `slides.tex` + `slides.pdf` (beamer fallback) | 🟡 experimental |
+| **slide-maker** | [slide-maker.md](./slide-maker.md) | `render_slides` — default wraps [guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill) (magazine / Swiss HTML deck + Playwright PDF print); LaTeX-beamer fallback for strict-PDF academic submissions | task_profile.yaml, spec.md, problem.md, figures/ | `guizang/index.html` + `guizang/slides.pdf` (default) **or** `slides.tex` + `slides.pdf` (beamer fallback) | 🟡 experimental |
 
 > 🟢 stable · 🟡 experimental · 🔴 work-in-progress
 
-**`problem-extractor` is special**: it's a *pre-orchestrator data grounding* step, invoked by `do-homework.md [A3]` BEFORE the orchestrator runs. It doesn't appear in the scenario chains below because every chain implicitly assumes `problem.md` already exists in the work_dir. If it doesn't, the orchestrator refuses to proceed (see `task-orchestrator.md` Safety rule #2).
+**`problem-extractor` is special**: it's a *pre-orchestrator reconnaissance* step, invoked by `do-homework.md [A]` BEFORE the orchestrator runs. It inspects Canvas sources one by one through `canvascli`, writes `spec.md` as the main source of truth, and keeps `problem.md` as a compatibility file while older tools migrate. It doesn't appear in the scenario chains below because every chain implicitly assumes `spec.md` and `problem.md` already exist in the work_dir. If they don't, the orchestrator refuses to proceed (see `task-orchestrator.md` Safety rule #2).
 
 ## Adding a new tool
 
@@ -59,7 +59,7 @@ To keep the orchestrator's matching simple, use these verbs when describing what
 
 | Verb | Meaning |
 |---|---|
-| `extract_problem` | unwrap Canvas description → real problem text (downloads attached PDFs) |
+| `extract_problem` | inspect Canvas assignment context → `spec.md`, references, investigation notes, compatibility `problem.md` |
 | `parse_pdf` | extract text/structure from PDF |
 | `render_pdf` | produce PDF from markdown/LaTeX |
 | `render_slides` | produce slides (PPTX/HTML/PDF) |
@@ -88,7 +88,7 @@ To avoid scope creep:
 
 `do-homework.md` consults this table to populate `required_capabilities` per task type. Each row is a full pipeline from blank work_dir to deliverable.
 
-**Implicit prefix for every chain:** `extract_problem` (run by `do-homework [A3]` before the orchestrator). The chains below assume `problem.md` already exists.
+**Implicit prefix for every chain:** `extract_problem` (run by `do-homework [A]` before the orchestrator). The chains below assume `spec.md` and `problem.md` already exist.
 
 | Scenario | type | Tool chain (in order) | Final deliverable |
 |---|---|---|---|

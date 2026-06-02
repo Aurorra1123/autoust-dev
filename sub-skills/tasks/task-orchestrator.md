@@ -25,11 +25,13 @@ The calling task hands you a structured description:
 type: paper | slides | math | lab | video | notes | mixed
 work_dir: data/homework/DSAA2043/hw3/
 source:
-  problem_md: data/homework/DSAA2043/hw3/problem.md         # PRIMARY — grounded problem text (from problem-extractor)
-  attachments_dir: data/homework/DSAA2043/hw3/attachments/  # raw + per-file .txt
-  assignment_json: data/homework/DSAA2043/hw3/assignment.json  # metadata only (due_at, rubric, points)
+  spec_md: data/homework/DSAA2043/hw3/spec.md               # PRIMARY — Copilot-style source-by-source context
+  problem_md: data/homework/DSAA2043/hw3/problem.md         # compatibility view for current tools
+  references_dir: data/homework/DSAA2043/hw3/references/    # downloaded files + extracted text
+  investigation_dir: data/homework/DSAA2043/hw3/investigation/
+  assignment_json: data/homework/DSAA2043/hw3/canvas/assignment.json  # metadata only (due_at, rubric, points)
 deliverables:
-  - path: data/homework/DSAA2043/hw3/final.pdf
+  - path: data/homework/DSAA2043/hw3/draft/final.pdf
     format: pdf | pptx | html | mp4 | ipynb | md
 required_capabilities:    # verbs from tools/_index.md
   - search_papers
@@ -51,9 +53,22 @@ user_overrides:          # optional, things the user said specifically
   - "no charts, just text"
 ```
 
-The `work_dir` is the orchestrator's filesystem playground. All intermediates and the final deliverable live there.
+The `work_dir` is the orchestrator's filesystem playground. It follows the Canvas Copilot-inspired workbench shape:
 
-**Important: `source.problem_md` is the ground truth.** Every deliverable tool (`writing-helper`, `code-writer`, `slide-maker`) MUST read `problem_md` for the actual problem content. They MUST NOT read `assignment_json.description` directly — that's HTML, frequently just an attachment link, and is the cause of "template content" failures. `assignment_json` exists only for metadata (due_at, rubric, points, submission_types).
+```text
+work_dir/
+├── canvas/
+├── spec.md
+├── problem.md
+├── references/
+├── investigation/
+├── draft/
+├── verification_checklist.md
+├── verification.log
+└── result.json
+```
+
+**Important: `source.spec_md` is the ground truth.** Current deliverable tools (`writing-helper`, `code-writer`, `slide-maker`) still read `problem_md`, so the extractor writes a compatibility `problem.md`. The orchestrator should read `spec_md` first when inferring type, constraints, and deliverables. Tools MUST NOT read `assignment_json.description` directly — that's HTML, frequently just a file link or empty, and is the cause of "template content" failures. `assignment_json` exists only for metadata (due_at, rubric, points, submission_types).
 
 ## Execution flow
 
@@ -168,9 +183,9 @@ The calling task uses this summary to present the result to the user.
 
 ## Heuristics for type inference
 
-If the calling task is unsure of the task type, use these signals from `problem.md` (NOT from `assignment.json.description` — that's HTML and often just a file link):
+If the calling task is unsure of the task type, use these signals from `spec.md` first, then `problem.md` (NOT from `assignment_json.description` — that's HTML and often just a file link):
 
-| Signals in problem.md / rubric | Inferred type |
+| Signals in spec.md / problem.md / rubric | Inferred type |
 |---|---|
 | "essay", "report", "review", "critique", "paper", "annotated bibliography", "reflection" | `paper` |
 | "presentation", "slides", "PPT", "deck", "pitch", "demo" | `slides` |
@@ -180,19 +195,21 @@ If the calling task is unsure of the task type, use these signals from `problem.
 | "notes", "study guide", "summarize the lecture" | `notes` (→ falls back to `paper` pipeline) |
 | Multiple of the above | `mixed` — pick the highest-weight one or run sub-orchestrations |
 
-Real examples from the 4 MVP validation runs:
+Real examples:
 
 - **DLED3020 Paper Critique** — `problem.md` says "critically evaluate this paper" → `paper` (essay structure, citation_style=APA)
 - **UCUG1077 Group presentation** — submission_types includes "online_upload" + `problem.md` mentions "PPT" → `slides`
 - **DSAA2043 Lab-Assignment 1** — title contains "Lab" + `problem.md` has "prove that... Big-O" → split: `math` for the proof portion, `lab` for the code portion. Default to `math` if mixed and rubric weights theory > implementation.
 - **DSAA2012 Project Report** — `problem.md` says "report" + "implementation" + "experiments" → `lab` (because the code is the core; the report is one section of the deliverable)
+- **DSAA2011 Project** — assignment page is empty, but `spec.md` records module PDF requirements for notebook + report + slides + zip → `mixed`.
+- **UCUG1505 FINAL project** — assignment page and Week 4 module both point to the same Google Doc spec; Week 9 slides are supporting context → likely `slides` / `mixed`, depending on the Google Doc contents.
 
 Confidence < 0.7? Hand back to caller and ask the user explicitly.
 
 ## Safety rules
 
 1. **No tool runs without user approval at the calling-task level.** The orchestrator assumes the calling task has already done [B] confirmation.
-2. **`source.problem_md` must exist and be non-trivial.** Before running any deliverable tool, check that `<work_dir>/problem.md` exists and is > 1 KB. If not, stop and tell the caller — the caller's `[A3]/[A4]` skipped grounding. Do NOT run tools against a missing or empty problem.md (they'll produce template content).
+2. **`source.spec_md` and `source.problem_md` must exist and be non-trivial.** Before running any deliverable tool, check that `<work_dir>/spec.md` exists and is > 1 KB and `<work_dir>/problem.md` exists. If not, stop and tell the caller — the caller's `[A3]/[A4]` skipped reconnaissance. Do NOT run tools against a missing or empty spec/problem file (they'll produce template content).
 3. **Stop on first failure, do not silently fall back.** A missing capability or a tool error must be surfaced, not papered over.
 4. **No tool may write outside `work_dir`** (one exception: `pdf-renderer` writing the final PDF to a path explicitly in `deliverables`).
 5. **Don't cache stale intermediates.** If the calling task re-invokes orchestrator with the same work_dir, regenerate everything unless the caller passes `resume: true`.

@@ -2,6 +2,18 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-02 — Final-review cleanup for M3.5 recon evidence
+
+Cleaned up review risks in the M3.5 workbench docs: canvascli README now shows the required `assignment <aid> -c <cid>` form, the Canvas Pilot reference tail no longer describes the old modules-only/problem.md-only direction, and the tool registry/backlog now use the `spec.md` + atomic-context wording. Rechecked `/tmp/autoust-recon-verify/dsaa2011`: `spec.md` is 45,709 B, `problem.md` is 107,322 B, assignment description is empty, front page is 404/not enabled, modules count is 4, module 12955 contains the project PDF, 3 references downloaded, and file 688370 metadata failed; `review_a.json` lists that file under `blocking_unreachables` while the recon verdict still remained `proceed`.
+
+## 2026-06-01 — Adopt Canvas Copilot workbench direction for deep assignment reconnaissance
+
+Reviewed Canvas Copilot's real DSAA2011 Project run at `/Users/deepwisdom/Desktop/project/canvas_copilot/runs/2026-06-01/DSAA2011_L01_-_Machine_Learning__Project`. The user approved copying its single-assignment workbench shape: `spec.md`, `references/`, `investigation/`, `pipeline_design.md`, `draft/`, `verification_checklist.md`, `verification.log`, and `result.json`. AutoStudy will migrate from the current flat `data/homework/<COURSE>/<HWID>/` layout toward a compatible structure with `canvas/` raw CLI snapshots, `spec.md` as the main reconnaissance artifact, and `problem.md` kept temporarily for existing tools.
+
+The data-layer direction is now explicitly Copilot-style atomic commands, not `assignment-context`: `assignment`, `rubric`, `front-page`, `syllabus`, `modules`, `module-items`, `page`, `file`, and `assignment-files`. DSAA2011 Project and UCUG1505 FINAL project are the two required real verification cases for the upcoming AutoStudy integration. Backlog now has M3.5 items for atomic context, workdir structure, deep recon, and result.json.
+
+Implemented the AutoStudy documentation side of that migration: `canvascli-api.md`, `problem-extractor.md`, `do-homework.md`, `task-orchestrator.md`, `_index.md`, `skill.md`, and `PITFALLS.md` now describe the spec-first workbench. Verification used the script template copied from `problem-extractor.md` into `/tmp/autoust-recon-verify/extract_problem.py` and ran real Canvas cases: DSAA2011 Project produced a 45,709 B `spec.md`, inspected module 12955, and downloaded the project announcement PDF; UCUG1505 FINAL project produced a 19,771 B `spec.md`, found the Google Doc spec in both assignment description and Week 4 module item, and listed Week 9 slides as project context. One design correction from verification: inspect every module item, but only download likely assignment-context files instead of every course file.
+
 ## 2026-06-01 — Clarified Canvas login/session mental model
 
 Validated that `canvascli init` is a login/refresh command, not a session health check: it always opens Chromium and writes a new `state.json` after successful SSO. The correct health check is `.venv/bin/canvascli whoami`, which returned the Canvas user from the current saved session without requiring browser login. Docs now distinguish `state.json` (canvascli's saved Canvas API cookie) from the SSO "remember login" checkbox (controls how smooth the next SSO refresh is), and explicitly tell agents not to run `init` just to test status.
