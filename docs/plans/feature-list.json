@@ -280,7 +280,8 @@
     "evidence": [
       "docs/canvas-pilot-reference.md 记录 Canvas Copilot DSAA2011 run 结构和 AutoStudy 过渡结构设计",
       "sub-skills/tools/problem-extractor.md defines canvas/ + spec.md + references/ + investigation/ + problem.md",
-      "sub-skills/tasks/do-homework.md and task-orchestrator.md updated to use spec.md-first workbench paths"
+      "sub-skills/tasks/do-homework.md and task-orchestrator.md updated to use spec.md-first workbench paths",
+      "2026-06-02 task-orchestrator.md now requires pipeline_design.md, verification_checklist.md, verification.log, and human_review_items in the orchestrator summary"
     ],
     "status": "in-progress",
     "notes": "先设计结构，再改侦查流程；生成和验证阶段可以渐进迁移。"
@@ -325,9 +326,17 @@
       "状态文件不包含 Canvas cookie、token 或敏感原文大段内容",
       "明确 result.json 由 do-homework 写；recon_assignment.py 只写 spec.md/problem.md/review_a.json"
     ],
-    "evidence": [],
-    "status": "pending",
-    "notes": "参考 Canvas Copilot：result.json 是作业流程状态收据，不是侦查细节文件；侦查是否足够由 investigation/review_a.json 表示。"
+    "evidence": [
+      "scripts/write_homework_result.py added as stable writer for per-assignment result.json",
+      "do-homework.md now calls the writer for skipped, draft_ready, submitted, and error paths",
+      "docs/canvas-pilot-reference.md explains result.json vs review_a.json vs future pending_assignments.json/plan.json",
+      "2026-06-02 py_compile passed for scripts/recon_assignment.py and scripts/write_homework_result.py",
+      "2026-06-02 /tmp/autoust-result-verify/dsaa2011 result.json smoke: status draft_ready, deliverable draft/project_group01_dropout.ipynb, verification_log_path set, review_a_verdict proceed",
+      "2026-06-02 /tmp/autoust-result-verify/ucug1505 result.json smoke: status skipped, notes user stopped after reconnaissance, review_a_verdict proceed",
+      "2026-06-02 json.tool passed for docs/plans/feature-list.json and both smoke result.json files; git diff --check passed"
+    ],
+    "status": "passing",
+    "notes": "单作业状态闭环已落到稳定脚本；result.json 仍由 do-homework 写，recon_assignment.py 只写 spec.md/problem.md/review_a.json。scan-plan/batch execute 是后续方向，不在本项实现。"
   },
   {
     "id": "M4-TUTOR",

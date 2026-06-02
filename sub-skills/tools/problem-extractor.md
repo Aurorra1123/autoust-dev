@@ -38,8 +38,6 @@ The tool writes this structure under `<work_dir>`:
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   └── review_a.json
-└── scripts/
-    └── extract_problem.py
 ```
 
 `canvas/` stores raw JSON snapshots from atomic `canvascli` commands. `spec.md` is the main reconnaissance artifact. `problem.md` is a compatibility file for existing tools (`writing-helper`, `code-writer`, `slide-maker`) that still expect that filename. `references/` stores downloaded files and extracted `.txt` text. `investigation/` records rubric findings, unreachable resources, and the Stage-A completeness review.

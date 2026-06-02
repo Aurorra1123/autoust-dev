@@ -59,6 +59,36 @@ Consult Canvas Copilot before inventing new Canvas workflows, especially for:
 
 AutoStudy's distilled notes live in `docs/canvas-pilot-reference.md`.
 
+### Reference, But Do Not Clone
+
+Canvas Copilot is more mature in many Canvas workflow details, so new
+AutoStudy Canvas behavior should start by inspecting how Canvas Copilot handles
+the same problem. That includes running or reading a comparable real workflow
+when possible, not guessing from memory.
+
+But AutoStudy and Canvas Copilot have different product shapes:
+
+- Canvas Copilot is closer to a repeatable automation system: scan Canvas,
+  propose a batch plan, get approval, dispatch items, and keep strict run
+  ledgers.
+- AutoStudy is closer to a study assistant: it should keep the user in the
+  loop, explain what it found, ask for missing context, help the user decide
+  what to do next, and compose task flows around the user's current intent.
+
+Therefore, the rule is **borrow mature mechanisms, redesign the interaction**.
+For example, AutoStudy should borrow Copilot's atomic Canvas data access,
+source-by-source assignment reconnaissance, workbench structure, verification
+logs, and lightweight state files. It should not blindly copy Copilot's batch
+automation defaults when an assistant-style checkpoint, explanation, or user
+supplement step better fits AutoStudy.
+
+When adapting a Copilot pattern, document both sides:
+
+1. What Canvas Copilot does and why it is mature.
+2. Which part AutoStudy adopts directly.
+3. Which part AutoStudy changes because its assistant-oriented user experience
+   is different.
+
 ## Layer Boundary
 
 Describe `canvascli` behavior in AutoStudy as a contract, not as an
@@ -210,4 +240,3 @@ Correct fix:
   algorithm.
 - Verify from AutoStudy using its `.venv/bin/canvascli`.
 - Record verification in progress and feature-list docs.
-

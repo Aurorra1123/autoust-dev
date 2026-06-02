@@ -250,8 +250,11 @@ Canvas Pilot 用几个 JSON 文件来记录运行状态，让 agent 能跨 sessi
   "course": "DSAA2043",
   "assignment_id": "12345",
   "status": "draft_ready",
+  "spec_md": "data/homework/DSAA2043/12345/spec.md",
   "problem_md": "data/homework/DSAA2043/12345/problem.md",
   "deliverables": ["data/homework/DSAA2043/12345/solution.pdf"],
+  "verification_log_path": "data/homework/DSAA2043/12345/verification.log",
+  "human_review_items": [],
   "updated_at": "2026-06-01T14:30:00Z"
 }
 ```
@@ -259,6 +262,54 @@ Canvas Pilot 用几个 JSON 文件来记录运行状态，让 agent 能跨 sessi
 放在 `data/homework/<COURSE>/<HWID>/result.json`，do-homework 写，sync-status 后续可读。这样 sync-status 就能展示"这门课有 3 个作业已完成草稿、2 个未开始"，而不是只展示 DDL。`status: draft_ready` 的含义是草稿/初版交付物已经生成但尚未提交；`status: skipped` 可表示用户在侦查汇报后选择暂不继续。
 
 对于模块 2（Proactive Task Reminder），这个 `result.json` 加上 Canvas 的 submission 状态就是优先级排序的基础。
+
+AutoStudy 采用一个稳定脚本写这个状态文件，避免 agent 每次手写 JSON：
+
+```bash
+.venv/bin/python scripts/write_homework_result.py \
+  --work-dir "data/homework/DSAA2043/hw3" \
+  --status draft_ready \
+  --deliverable "data/homework/DSAA2043/hw3/draft/final.pdf" \
+  --verification-log "data/homework/DSAA2043/hw3/verification.log"
+```
+
+四个状态的含义：
+
+- `skipped`：用户在侦查汇报后选择先不做，或未来 plan 执行时明确 defer。
+- `draft_ready`：草稿/初版交付物已经生成，但未提交 Canvas。
+- `submitted`：用户确认后已经提交 Canvas。
+- `error`：侦查后续、生成、验证或提交流程失败，需要用户或开发者处理。
+
+#### `data/runs/<today>` 和 `data/homework/<COURSE>/<HWID>` 的关系
+
+Canvas Pilot 有 scan/execute 两层：`runs/<today>/plan.json` 是今天这批
+作业的执行计划，`runs/<today>/<assignment>/result.json` 是单个作业的结果。
+
+AutoStudy 后续可以借鉴这层，但命名要更符合助手型产品。建议用：
+
+```text
+data/runs/<today>/
+├── pending_assignments.json
+├── plan.json
+└── REPORT.md
+
+data/homework/<COURSE>/<HWID>/
+├── spec.md
+├── draft/
+└── result.json
+```
+
+两者不冲突：`data/runs/<today>/pending_assignments.json` 记录"今天扫到哪些
+作业、用户想处理哪些"，只保存轻量索引和 `work_dir` 指针；`data/homework`
+保存具体作业的侦查、材料、草稿、验证和结果。也就是说：
+
+```text
+daily plan item -> points to -> assignment workbench
+```
+
+注意这里的 `pending_assignments.json` 不等于
+`data/homework/<COURSE>/<HWID>/canvas/assignment.json`。前者是一批作业的扫描
+列表；后者是某个 Canvas assignment 的原始 API 快照。
 
 ---
 

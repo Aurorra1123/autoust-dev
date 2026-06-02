@@ -2,6 +2,12 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-02 — Result writer + assistant-shaped Copilot adaptation rule
+
+Recorded the collaboration rule that Canvas Copilot is a mature reference but not a blueprint to clone: AutoStudy should borrow mechanisms such as atomic data access, deep reconnaissance, workbenches, verification logs, and state files while redesigning the interaction around an assistant-style user loop. Added `scripts/write_homework_result.py` as the stable writer for single-assignment `result.json`; `do-homework.md` now calls it for `skipped`, `draft_ready`, `submitted`, and `error` paths, while `recon_assignment.py` remains reconnaissance-only.
+
+Verification used existing real recon workbenches copied to `/tmp/autoust-result-verify/`: DSAA2011 Project produced a `draft_ready` result with a fake notebook fixture, `verification_log_path`, two `human_review_items`, and `review_a_verdict: proceed`; UCUG1505 FINAL project produced a `skipped` result with notes and `review_a_verdict: proceed`. Checks passed: `python3 -m py_compile scripts/recon_assignment.py scripts/write_homework_result.py`, `python3 -m json.tool docs/plans/feature-list.json`, `python3 -m json.tool` on both smoke `result.json` files, and `git diff --check`. Next: review these uncommitted changes with the user before committing; after approval, consider assistant-style `pending_assignments.json` / `plan.json` design for `sync-status`.
+
 ## 2026-06-02 — Stable recon runtime + post-recon user supplement gate
 
 Turned the Copilot-style reconnaissance template into a stable runtime script at `scripts/recon_assignment.py`. `problem-extractor.md` now invokes that script instead of asking the agent to copy a markdown template, and `do-homework.md [B]` now explicitly performs a mandatory reconnaissance summary + user supplement checkpoint even when `review_a.json.verdict == "proceed"`; user supplements are written to `investigation/user_notes.md` and carried into `task_profile.yaml.user_overrides`.

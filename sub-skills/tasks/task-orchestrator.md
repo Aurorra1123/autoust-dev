@@ -62,6 +62,7 @@ work_dir/
 ├── problem.md
 ├── references/
 ├── investigation/
+├── pipeline_design.md
 ├── draft/
 ├── verification_checklist.md
 ├── verification.log
@@ -95,6 +96,11 @@ write_essay / solve_proof / write_code  →  (consumes intermediates)
                   ↓
 render_pdf / render_slides / edit_video →  (produces final deliverable)
 ```
+
+Before executing tools, write `work_dir/pipeline_design.md`. This is a short,
+assignment-specific plan, not a reusable global template. It should name the
+inferred output mode, planned stages, expected deliverables, verification focus,
+and any user overrides from `task_profile.yaml`.
 
 Concretely for the four MVP pipelines (see `tools/_index.md` "Scenario → Tool chain"):
 
@@ -156,6 +162,19 @@ Before returning to the calling task:
   - `md`: file is non-empty UTF-8
 - If any check fails, report which step likely caused it (last successful intermediate)
 
+Also write two Copilot-style verification artifacts:
+
+- `work_dir/verification_checklist.md` — the checks this assignment should pass,
+  grounded in `spec.md`, rubric text, and deliverable format.
+- `work_dir/verification.log` — measured results in `PASS | name | measured:
+  ...`, `FAIL | name | measured: ...`, or `SKIP | name | reason: ...` form.
+
+If verification leaves items that need the student's judgment (for example
+"group ID missing", "notebook needs to be executed in the course environment",
+or "Google Doc rubric was unreachable"), include them in the Step 5
+`human_review_items` list. Do not hide them in prose only; `do-homework` writes
+that list into `result.json`.
+
 ### Step 5: Return summary
 
 Hand back to the calling task a structured summary:
@@ -176,6 +195,9 @@ tools_used:
   - writing-helper
   - pdf-renderer
 duration_sec: 87
+verification_log_path: data/homework/DSAA2043/hw3/verification.log
+human_review_items:
+  - "Group ID needs to be filled in before submission"
 failures: []   # or list of {tool, error}
 ```
 

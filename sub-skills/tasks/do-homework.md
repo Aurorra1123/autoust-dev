@@ -50,7 +50,10 @@ data/homework/<COURSE>/<HWID>/
 ├── problem.md
 ├── references/
 ├── investigation/
+├── pipeline_design.md
 ├── draft/
+├── verification_checklist.md
+├── verification.log
 └── result.json
 ```
 
@@ -112,7 +115,20 @@ If user picks "我有补充要求": ask one free-form follow-up, write it to `<w
 
 If user picks "只做某几题": follow up with a single free-form question asking the scope, capture as `partial_scope: "<user text>"` in the task profile.
 
-If user picks "先不做": write `<work_dir>/result.json` with `status: "skipped"` and notes saying the user stopped after reconnaissance, then stop. Don't touch the orchestrator.
+If user picks "先不做": write `<work_dir>/result.json` with
+`status: "skipped"` using `scripts/write_homework_result.py`, then stop. Don't
+touch the orchestrator.
+
+```bash
+.venv/bin/python scripts/write_homework_result.py \
+  --work-dir "data/homework/<COURSE>/<HWID>" \
+  --status skipped \
+  --course "<COURSE>" \
+  --course-id "<course_id>" \
+  --assignment-id "<assignment_id>" \
+  --assignment-name "<assignment_name>" \
+  --note "user stopped after reconnaissance"
+```
 
 If `[A4]` flagged reconnaissance failure, add a 4th option to this AskUserQuestion: "粘贴题目内容或 spec 链接给我" — capture the user's pasted text into `<work_dir>/problem_user.md` and reference it from `task_profile.source.problem_md`.
 
@@ -158,6 +174,21 @@ Invoke `tasks/task-orchestrator.md` with the profile. The orchestrator:
 
 The orchestrator must NOT prompt the user. If a tool genuinely needs disambiguation, it raises back to do-homework, which adds a single inline AskUserQuestion — but this should be rare. Aim for zero extra prompts.
 
+If the orchestrator fails, stop and write `<work_dir>/result.json` with
+`status: "error"` using `scripts/write_homework_result.py` before surfacing the
+failure:
+
+```bash
+.venv/bin/python scripts/write_homework_result.py \
+  --work-dir "data/homework/<COURSE>/<HWID>" \
+  --status error \
+  --course "<COURSE>" \
+  --course-id "<course_id>" \
+  --assignment-id "<assignment_id>" \
+  --assignment-name "<assignment_name>" \
+  --note "<short failure summary>"
+```
+
 ### [E] Draft review + submission confirmation (AskUserQuestion #2)
 
 Once the orchestrator returns, show the user:
@@ -176,7 +207,24 @@ Then `AskUserQuestion`:
 
 If user picks "重做": capture their change request, go back to [C] with adjustments to `task_profile.yaml` (do NOT re-fetch [A]).
 
-If user picks "不": stop. Tell them the file path one more time so they can find it.
+If user picks "不": write `<work_dir>/result.json` with
+`status: "draft_ready"` using `scripts/write_homework_result.py`, then stop.
+Tell them the file path one more time so they can find it.
+
+```bash
+.venv/bin/python scripts/write_homework_result.py \
+  --work-dir "data/homework/<COURSE>/<HWID>" \
+  --status draft_ready \
+  --course "<COURSE>" \
+  --course-id "<course_id>" \
+  --assignment-id "<assignment_id>" \
+  --assignment-name "<assignment_name>" \
+  --draft-path "<primary_deliverable_path>" \
+  --deliverable "<primary_deliverable_path>" \
+  --verification-log "data/homework/<COURSE>/<HWID>/verification.log" \
+  --human-review-item "<anything the user must still check before submitting>" \
+  --note "draft generated; user chose to review manually before submission"
+```
 
 ### [F] Submit (only if user confirmed in [E])
 
@@ -188,7 +236,40 @@ Capture stdout — it returns the submission object with attempt number, submitt
 - ✓ Submitted as attempt #N at <submitted_at>
 - Canvas URL to verify
 
-If submit fails (assignment overdue / locked / etc.), tell the user the Canvas error message verbatim and offer to retry or stop. Do NOT loop automatically.
+If submit succeeds, write `<work_dir>/result.json` with
+`status: "submitted"`:
+
+```bash
+.venv/bin/python scripts/write_homework_result.py \
+  --work-dir "data/homework/<COURSE>/<HWID>" \
+  --status submitted \
+  --course "<COURSE>" \
+  --course-id "<course_id>" \
+  --assignment-id "<assignment_id>" \
+  --assignment-name "<assignment_name>" \
+  --draft-path "<submitted_deliverable_path>" \
+  --deliverable "<submitted_deliverable_path>" \
+  --verification-log "data/homework/<COURSE>/<HWID>/verification.log" \
+  --submitted-at "<submitted_at_from_canvas>" \
+  --submission-attempt "<attempt_number>" \
+  --canvas-url "https://hkust-gz.instructure.com/courses/<course_id>/assignments/<assignment_id>"
+```
+
+If submit fails (assignment overdue / locked / etc.), write
+`<work_dir>/result.json` with `status: "error"` and the Canvas error message in
+`notes`, then tell the user the Canvas error message verbatim and offer to retry
+or stop. Do NOT loop automatically.
+
+```bash
+.venv/bin/python scripts/write_homework_result.py \
+  --work-dir "data/homework/<COURSE>/<HWID>" \
+  --status error \
+  --course "<COURSE>" \
+  --course-id "<course_id>" \
+  --assignment-id "<assignment_id>" \
+  --assignment-name "<assignment_name>" \
+  --note "<Canvas submit error>"
+```
 
 ## Output format (final message to user)
 
