@@ -11,7 +11,7 @@ The flagship M3 task. The user asks something like:
 - "做一下 UCUG1077 的 group presentation slides"
 - "写 DSAA2012 的 project report"
 
-You go from "user names an assignment" to "draft / code / slides exists and (optionally) is submitted to Canvas". **Two and only two AskUserQuestion checkpoints**: at [B] for intent confirmation, at [E] for submission confirmation. Everything else runs without prompting the user.
+You go from "user names an assignment" to "draft / code / slides exists and (optionally) is submitted to Canvas". **Two and only two AskUserQuestion checkpoints**: at [B] for reconnaissance review + intent/user supplements, at [E] for submission confirmation. Everything else runs without prompting the user.
 
 ## Preconditions
 
@@ -68,10 +68,10 @@ Invoke `tools/problem-extractor.md`. It will:
 6. Write `<work_dir>/investigation/rubric.md`, `unreachable.txt`, and `review_a.json`.
 
 ```bash
-mkdir -p "data/homework/<COURSE>/<HWID>/scripts"
-# Write the script per tools/problem-extractor.md template
-.venv/bin/python "data/homework/<COURSE>/<HWID>/scripts/extract_problem.py" \
-    "data/homework/<COURSE>/<HWID>" "<course_id>" "<assignment_id>"
+.venv/bin/python scripts/recon_assignment.py \
+  --course-id "<course_id>" \
+  --assignment-id "<assignment_id>" \
+  --work-dir "data/homework/<COURSE>/<HWID>"
 ```
 
 **Read `spec.md` and `investigation/review_a.json` immediately after they're written.** Then read `problem.md` for compatibility with the existing toolchain. Do NOT skip this read. The whole skill collapses to template-fill nonsense if you treat `assignment.description` as the problem statement.
@@ -87,7 +87,7 @@ If the extractor exited non-zero, OR `review_a.json.verdict` is not `proceed`, O
 
 Do NOT proceed silently to [C] when `spec.md` is thin — the deliverable will be garbage. This is the most important rule in this whole task.
 
-### [B] Summary + intent confirmation (AskUserQuestion #1)
+### [B] Recon summary + user supplements + intent confirmation (AskUserQuestion #1)
 
 Read `spec.md` first, then `problem.md` (NOT `assignment.json.description` directly). Summarize for the user in 4–6 lines:
 - Course + assignment name + due_at (local time) + points_possible — from `spec.md` metadata
@@ -96,18 +96,23 @@ Read `spec.md` first, then `problem.md` (NOT `assignment.json.description` direc
 - Rubric or grading criteria in a compact list if present; say "Canvas rubric not found" if only spec-based criteria exist.
 - Detected scenario: `paper` / `slides` / `math` / `lab` (use the heuristic table in `task-orchestrator.md`)
 
+Even when `review_a.json.verdict == "proceed"`, this checkpoint is still mandatory. `proceed` means "Canvas materials are sufficient to start"; it does **not** mean the user has no extra group information, instructor oral notes, preferred dataset, formatting preference, or scope constraint.
+
 Then `AskUserQuestion`:
 
 ```
-针对这份 <COURSE> <name>，你想我:
-  - 完整完成草稿 (推荐)
-  - 只做某几题 / 某个章节 (你告诉我具体范围)
+针对这份 <COURSE> <name>，我已经完成侦查。你想我:
+  - 继续完整做草稿，暂无额外补充 (推荐)
+  - 我有补充要求 / 组队信息 / 老师口头要求
+  - 只做某几题 / 某个章节
   - 先不做，我自己看一下
 ```
 
+If user picks "我有补充要求": ask one free-form follow-up, write it to `<work_dir>/investigation/user_notes.md`, and carry it into `task_profile.yaml.user_overrides`.
+
 If user picks "只做某几题": follow up with a single free-form question asking the scope, capture as `partial_scope: "<user text>"` in the task profile.
 
-If user picks "先不做": stop here. Don't touch the orchestrator.
+If user picks "先不做": write `<work_dir>/result.json` with `status: "skipped"` and notes saying the user stopped after reconnaissance, then stop. Don't touch the orchestrator.
 
 If `[A4]` flagged reconnaissance failure, add a 4th option to this AskUserQuestion: "粘贴题目内容或 spec 链接给我" — capture the user's pasted text into `<work_dir>/problem_user.md` and reference it from `task_profile.source.problem_md`.
 
@@ -132,6 +137,7 @@ constraints:
   citation_style: APA      # APA / IEEE / none
   language: en             # en / zh
   partial_scope: null      # set if user chose partial in [B]
+user_overrides: []          # set from investigation/user_notes.md if user provided supplements
 required_capabilities:
   # paper: [compose_essay, search_papers, make_figure, render_pdf]
   # slides: [make_slides, render_pdf]

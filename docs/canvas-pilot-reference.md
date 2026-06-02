@@ -121,7 +121,7 @@ runs/2026-06-01/DSAA2011_L01_-_Machine_Learning__Project/
 - `pipeline_design.md`：根据 spec 和 rubric 现场设计的产出方式
 - `draft/`：实际草稿和交付物源文件
 - `verification_checklist.md` / `verification.log`：可机械检查的验收标准与结果
-- `result.json`：这个 assignment 的状态信号，供跨 session 恢复和上层调度读取
+- `result.json`：这个 assignment 的流程状态收据，供跨 session 恢复和上层调度读取；它不替代 `spec.md` / `review_a.json` 的侦查记录
 
 #### AutoStudy 应采用的过渡结构
 
@@ -150,7 +150,7 @@ data/homework/<COURSE>/<HWID>/
 └── result.json
 ```
 
-`canvas/` 保存原子 CLI 返回结果，作为取数证据。`spec.md` 成为侦查后的主文件。`problem.md` 暂时保留为兼容层，因为现有 tools 仍读取它。`draft/` 承载多产物，适合 notebook + report + slides + zip 这种混合任务。`result.json` 是后续主动提醒、恢复执行、避免重复处理的基础。
+`canvas/` 保存原子 CLI 返回结果，作为取数证据。`spec.md` 成为侦查后的主文件。`problem.md` 暂时保留为兼容层，因为现有 tools 仍读取它。`draft/` 承载多产物，适合 notebook + report + slides + zip 这种混合任务。`result.json` 是 do-homework 流程的状态收据：用户跳过、草稿完成、验证失败、提交成功时写；单纯侦查完成只写 `spec.md` 和 `investigation/review_a.json`。
 
 ---
 
@@ -243,7 +243,7 @@ Canvas Pilot 用几个 JSON 文件来记录运行状态，让 agent 能跨 sessi
 
 #### 建议怎么做
 
-不需要像 Canvas Pilot 那么重（它还有 `_processed.json` 跨天 ledger、`plan.json` 审批门控等），但一个轻量的 `result.json` 就能解决大部分问题：
+不需要像 Canvas Pilot 那么重（它还有 `_processed.json` 跨天 ledger、`plan.json` 审批门控等），但一个轻量的 `result.json` 就能解决大部分问题。注意：`result.json` 不在单纯侦查结束时写；侦查阶段的判断放在 `investigation/review_a.json`，而 `result.json` 由 do-homework 在用户确认后续动作或流程结束时写：
 
 ```json
 {
@@ -256,7 +256,7 @@ Canvas Pilot 用几个 JSON 文件来记录运行状态，让 agent 能跨 sessi
 }
 ```
 
-放在 `data/homework/<COURSE>/<HWID>/result.json`，do-homework 完成时写，sync-status 时读。这样 sync-status 就能展示"这门课有 3 个作业已完成草稿、2 个未开始"，而不是只展示 DDL。
+放在 `data/homework/<COURSE>/<HWID>/result.json`，do-homework 写，sync-status 后续可读。这样 sync-status 就能展示"这门课有 3 个作业已完成草稿、2 个未开始"，而不是只展示 DDL。`status: draft_ready` 的含义是草稿/初版交付物已经生成但尚未提交；`status: skipped` 可表示用户在侦查汇报后选择暂不继续。
 
 对于模块 2（Proactive Task Reminder），这个 `result.json` 加上 Canvas 的 submission 状态就是优先级排序的基础。
 

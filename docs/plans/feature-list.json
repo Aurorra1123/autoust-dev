@@ -255,14 +255,15 @@
       "在 DSAA2011 Project 和 UCUG1505 FINAL project 上对照 Canvas Copilot 侦查结果验证"
     ],
     "evidence": [
-      "canvascli 工作区未提交改动：README.md、canvascli/__main__.py、canvascli/client.py、canvascli/resources/context.py",
       "2026-06-01 本地检查：canvascli --help 无 assignment-context；python -m compileall canvascli；git diff --check",
       "DSAA2011 Project: assignment 空、rubric 无、front page 404、modules 4 个，module-items 12955 找到 project PDF",
       "UCUG1505 FINAL project: assignment description 和 Week 4 module item 指向同一个 Google Doc spec；Week 9 slides 是邻近上下文",
-      "2026-06-01 AutoStudy .venv/bin/canvascli --help confirmed all atomic context commands are visible"
+      "2026-06-01 AutoStudy .venv/bin/canvascli --help confirmed all atomic context commands are visible",
+      "canvascli commit 57b02d5 adds atomic context commands and removes assignment-context",
+      "2026-06-02 canvascli client retry exception bug fixed after real whoami SSL EOF regression check"
     ],
-    "status": "in-progress",
-    "notes": "数据层方向已确认：完全参考 Canvas Copilot 的原子读取方式。下一步需要先收口并提交 canvascli，再更新 AutoStudy 任务文档。"
+    "status": "passing",
+    "notes": "数据层已收口为 Canvas Copilot 式原子命令；assignment-context 不再使用。2026-06-02 补修 SSL 重试异常类型后 whoami 通过。"
   },
   {
     "id": "M3.5-WORKDIR-STRUCTURE",
@@ -295,16 +296,22 @@
       "下载或记录 assignment/module/page 中发现的文件和外链到 references/ 或 investigation/unreachable.txt",
       "生成 spec.md，包含来源分区、主 spec 判断、rubric 摘要、缺失/不可达材料",
       "继续生成 problem.md 兼容现有 writing-helper / code-writer / slide-maker",
-      "在 DSAA2011 Project 上能找到 module item PDF 主 spec，在 UCUG1505 FINAL project 上能识别 Google Doc spec 和邻近 slides 上下文"
+      "在 DSAA2011 Project 上能找到 module item PDF 主 spec，在 UCUG1505 FINAL project 上能识别 Google Doc spec 和邻近 slides 上下文",
+      "仓库提供稳定 scripts/recon_assignment.py，do-homework 不再从 markdown 临时抄脚本",
+      "侦查后 [B] 必须向用户汇报来源判断并询问补充信息，即使 review_a verdict 为 proceed"
     ],
     "evidence": [
       "2026-06-01 /tmp/autoust-recon-verify/dsaa2011: spec.md 45,709 B; references include DSAA2011-26sp-project_announce-L01.pdf; module-items-12955 inspected",
       "2026-06-02 final-review recheck: DSAA2011 assignment description 0 B, front page 404/not enabled, modules 4, module 12955 project PDF found, 3 references downloaded, file 688370 metadata failed non-blocking, review_a verdict proceed",
       "2026-06-01 /tmp/autoust-recon-verify/ucug1505: spec.md 19,771 B; assignment page and Week 4 module item both show Final project specification Google Doc; Week 9 slides listed as project context",
-      "Template extracted from problem-extractor.md and py_compile passed before real verification"
+      "Template extracted from problem-extractor.md and py_compile passed before real verification",
+      "scripts/recon_assignment.py added as stable runtime for Copilot-style reconnaissance",
+      "do-homework.md [B] updated to include mandatory user supplement checkpoint after recon",
+      "2026-06-02 /tmp/autoust-recon-script-verify/dsaa2011: scripts/recon_assignment.py produced spec.md 66,322 B, problem.md 155,415 B, 4 modules / 69 module items, assignment description 0 B, project PDF file 625115 downloaded, review_a verdict proceed",
+      "2026-06-02 /tmp/autoust-recon-script-verify/ucug1505: scripts/recon_assignment.py produced spec.md 22,527 B, problem.md 14,274 B, 14 modules / 64 module items, Final project Google Doc and Week 9 slides recorded, media GIFs inspected-not-downloaded, review_a verdict proceed"
     ],
-    "status": "in-progress",
-    "notes": "文档级流程和脚本模板已实现并在 /tmp/autoust-recon-verify 跑过真实 DSAA2011 / UCUG1505 验证。正式翻 passing 前需要收口 canvascli 提交，并决定是否把验证脚本模板抽成可复用 repo script。"
+    "status": "passing",
+    "notes": "正式 scripts/recon_assignment.py 已加入并用 DSAA2011 / UCUG1505 两个真实 case 回归通过；侦查只写 spec.md/problem.md/review_a.json，result.json 归 do-homework 流程状态。"
   },
   {
     "id": "M3.5-RESULT-JSON",
@@ -315,11 +322,12 @@
       "定义 result.json schema：status、course、assignment_id、spec_md、draft_path/deliverables、verification_log_path、human_review_items、updated_at",
       "侦查失败、草稿完成、不提交、提交成功/失败都有明确状态",
       "do-homework 结束时写 result.json，sync-status 后续可读取",
-      "状态文件不包含 Canvas cookie、token 或敏感原文大段内容"
+      "状态文件不包含 Canvas cookie、token 或敏感原文大段内容",
+      "明确 result.json 由 do-homework 写；recon_assignment.py 只写 spec.md/problem.md/review_a.json"
     ],
     "evidence": [],
     "status": "pending",
-    "notes": "参考 Canvas Pilot，但先做轻量版本；plan.json 和 _processed.json 留到主动提醒阶段。"
+    "notes": "参考 Canvas Copilot：result.json 是作业流程状态收据，不是侦查细节文件；侦查是否足够由 investigation/review_a.json 表示。"
   },
   {
     "id": "M4-TUTOR",

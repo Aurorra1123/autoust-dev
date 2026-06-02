@@ -2,6 +2,12 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-02 — Stable recon runtime + post-recon user supplement gate
+
+Turned the Copilot-style reconnaissance template into a stable runtime script at `scripts/recon_assignment.py`. `problem-extractor.md` now invokes that script instead of asking the agent to copy a markdown template, and `do-homework.md [B]` now explicitly performs a mandatory reconnaissance summary + user supplement checkpoint even when `review_a.json.verdict == "proceed"`; user supplements are written to `investigation/user_notes.md` and carried into `task_profile.yaml.user_overrides`.
+
+Real Canvas verification used `/tmp/autoust-recon-script-verify/`: DSAA2011 Project produced `spec.md` 66,322 B / `problem.md` 155,415 B, inspected 4 modules and 69 module items, confirmed assignment description 0 B, downloaded `DSAA2011-26sp-project_announce-L01.pdf` plus nearby module PDFs, and `review_a` returned `proceed`. UCUG1505 FINAL project produced `spec.md` 22,527 B / `problem.md` 14,274 B, inspected 14 modules and 64 module items, recorded the Final project Google Doc plus Week 9 slides, skipped front-page GIF media as inspected-not-downloaded, and `review_a` returned `proceed`. A canvascli retry bug surfaced during `whoami` (`requests.SSLError` should be `requests.exceptions.SSLError`) and was fixed in the canvascli repo.
+
 ## 2026-06-02 — Final-review cleanup for M3.5 recon evidence
 
 Cleaned up review risks in the M3.5 workbench docs: canvascli README now shows the required `assignment <aid> -c <cid>` form, the Canvas Pilot reference tail no longer describes the old modules-only/problem.md-only direction, and the tool registry/backlog now use the `spec.md` + atomic-context wording. Rechecked `/tmp/autoust-recon-verify/dsaa2011`: `spec.md` is 45,709 B, `problem.md` is 107,322 B, assignment description is empty, front page is 404/not enabled, modules count is 4, module 12955 contains the project PDF, 3 references downloaded, and file 688370 metadata failed; `review_a.json` lists that file under `blocking_unreachables` while the recon verdict still remained `proceed`.
