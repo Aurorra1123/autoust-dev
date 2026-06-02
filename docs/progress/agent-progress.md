@@ -2,6 +2,12 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-02 — Stable plan-item handoff for do-homework
+
+Added `scripts/select_plan_item.py` so a user choice like "do plan item 1" is resolved from `data/runs/<today>/plan.json` plus `pending_assignments.json` into a stable handoff object for `do-homework`: `course_id`, `assignment_id`, `assignment_name`, `recommended_action`, `existing_result_path`, and `suggested_work_dir`. Updated `sync-status.md`, `do-homework.md`, and `docs/canvas-pilot-reference.md` to use this selector instead of asking the agent to re-match assignment titles after the user has picked a numbered item.
+
+Verification used `/tmp/autoust-select-plan-fixture-2` to cover `recon`, `review_or_submit`, `manual_review`, `continue/error`, and invalid-index behavior; `py_compile` passed for the selector and the existing M3.5 scripts. The selector also ran against cached real live-scan plans under `/tmp/autoust-flow-real/runs` and `/tmp/autoust-flow-real/runs-after-skip`, resolving UCUG1600 plan items before and after a skipped-result filtered the first assignment out. A full DSAA2011 Machine Learning Project simulation under `/tmp/autoust-ml-flow` built a one-item plan, selected `2973:21641`, ran real reconnaissance to `review_a.verdict=proceed`, wrote `status=skipped`, and confirmed the rerun plan filtered the item as `result_skipped`.
+
 ## 2026-06-02 — Assistant-style scan-plan implementation started
 
 Started M3.5-SCAN-PLAN after reviewing Canvas Copilot's `canvas-scan` and run-state schema again: AutoStudy borrows the scan/execute boundary but keeps `sync-status` as a recommendation step, not a batch executor. Added `scripts/write_scan_plan.py` to combine local canvascli snapshots with `data/homework/**/result.json` and write `data/runs/<today>/pending_assignments.json`, `plan.json`, and `REPORT.md`; `sync-status.md` now points to this writer and explicitly stops before do-homework unless the user chooses one item.

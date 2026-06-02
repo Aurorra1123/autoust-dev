@@ -359,6 +359,17 @@ This gives AutoStudy the useful part of Canvas Pilot's state discipline without
 turning `sync-status` into a batch executor. The user still chooses what happens
 next.
 
+The stable handoff from a numbered plan item to a single-assignment workflow is:
+
+```bash
+.venv/bin/python scripts/select_plan_item.py --index <N>
+```
+
+It reads today's `plan.json` plus `pending_assignments.json` and returns the
+selected `course_id`, `assignment_id`, `assignment_name`, `recommended_action`,
+and `suggested_work_dir`. This keeps the assistant from re-matching assignment
+titles after the user has already chosen an item from the plan.
+
 ---
 
 ### 1.4 关键路径的轻量 Hook

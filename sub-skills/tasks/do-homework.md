@@ -31,7 +31,41 @@ This step follows Canvas Copilot's "inspect all sources first" habit. It prevent
 
 #### [A1] Resolve identifiers
 
-Resolve the user's natural-language request to a `(course_id, assignment_id)` pair. The user usually says "DLED3020 Paper Critique" — match against `data/assignments.json` by case-insensitive substring of `name` AND course code in `context_name`. If ambiguous (multiple matches), surface the candidates via AskUserQuestion at [B] — see below.
+Resolve the request to a `(course_id, assignment_id)` pair.
+
+Preferred path after `sync-status`: if the user chose "plan item N", first run
+the selector:
+
+```bash
+.venv/bin/python scripts/select_plan_item.py --index <N> --pretty
+```
+
+Use the selector JSON directly:
+
+```text
+course_id
+assignment_id
+assignment_name
+suggested_work_dir
+recommended_action
+existing_result_path
+```
+
+Do not re-match by title when this object exists. It is the stable handoff from
+`sync-status` to `do-homework`.
+
+If `recommended_action == "review_or_submit"`, this is not a new
+reconnaissance task by default. Read `existing_result_path` and the workbench
+under `suggested_work_dir`, then help the user review, revise, or submit the
+existing draft.
+
+If `recommended_action == "manual_review"`, stop before `[A3]` and tell the
+user this plan item likely needs manual Canvas interaction.
+
+Direct natural-language path: if the user says "DLED3020 Paper Critique"
+without coming from a plan item, match against `data/assignments.json` by
+case-insensitive substring of `name` AND course code in `context_name`. If
+ambiguous, surface the candidates via AskUserQuestion at [B] — see below.
 
 #### [A2] Create the workbench directory
 
@@ -39,7 +73,10 @@ Resolve the user's natural-language request to a `(course_id, assignment_id)` pa
 mkdir -p "data/homework/<COURSE>/<HWID>"
 ```
 
-Where `<HWID>` is a short slug derived from the assignment name (e.g. `paper-critique`).
+Where `<HWID>` is a short slug derived from the assignment name (e.g.
+`paper-critique`). If the request came from `scripts/select_plan_item.py`, use
+its `suggested_work_dir` exactly so local result tracking and future scans point
+to the same workbench.
 
 Target structure:
 

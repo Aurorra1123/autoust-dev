@@ -133,6 +133,26 @@ What would you like to do next?
   - Nothing, just wanted the overview
 ```
 
+If the user chooses a numbered plan item, resolve it through the stable selector
+before starting any homework workflow:
+
+```bash
+.venv/bin/python scripts/select_plan_item.py --index <N> --pretty
+```
+
+Use the selector output as the handoff object for `do-homework.md`. Do not
+re-match the assignment by title when the selector has returned `course_id`,
+`assignment_id`, and `suggested_work_dir`.
+
+Selector actions:
+
+| `recommended_action` | Behavior |
+|---|---|
+| `recon` | Start `do-homework.md` with the selected identifiers. |
+| `review_or_submit` | Read `existing_result_path` / `suggested_work_dir` and help the user review or submit the existing draft instead of re-running reconnaissance by default. |
+| `continue` | Inspect the previous `result.json` error and ask the user whether to retry. |
+| `manual_review` | Tell the user the item likely needs manual Canvas interaction; do not treat it like a normal draftable homework item. |
+
 **Do NOT auto-download anything.** Files are only fetched when the user explicitly asks.
 **Do NOT auto-execute plan items.** `sync-status` proposes; `do-homework` acts
 only after the user picks one item.
@@ -173,6 +193,7 @@ Keep tone informative but not noisy. The user wants to scan in 5 seconds.
 |---|---|
 | `data/*.json` doesn't exist after fetch | Fetch must have failed silently — show the user the fetch command stderr |
 | `data/runs/<today>/plan.json` missing | Re-run `scripts/write_scan_plan.py`; if it fails, show the short stderr and fall back to classic summary |
+| User selects an invalid plan index | Run `scripts/select_plan_item.py --index <N>`; show its short stderr and ask for a valid item number |
 | All sections empty | Still respond with a "you're caught up ✓" message + courses overview |
 | `due_at` is `null` | Skip from time-based sections, but count in courses overview |
 | Announcement `message` is HTML | Don't render HTML; just show title + posted date |
@@ -188,3 +209,5 @@ Keep tone informative but not noisy. The user wants to scan in 5 seconds.
 - **Don't reimplement term filtering here**: canvascli owns latest-active-term detection and explicit `--term` selection.
 - **Use `.venv/bin/canvascli`** explicitly — system PATH might not have it.
 - **Canvas terminal state wins**: if Canvas says submitted/graded, `write_scan_plan.py` filters it out even if an old local `result.json` says `draft_ready`.
+- **Use `scripts/select_plan_item.py` for numbered choices**: don't manually
+  reconstruct `course_id` / `assignment_id` from the rendered markdown table.
