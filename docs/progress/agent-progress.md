@@ -2,11 +2,17 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-02 — Assistant-style scan-plan implementation started
+
+Started M3.5-SCAN-PLAN after reviewing Canvas Copilot's `canvas-scan` and run-state schema again: AutoStudy borrows the scan/execute boundary but keeps `sync-status` as a recommendation step, not a batch executor. Added `scripts/write_scan_plan.py` to combine local canvascli snapshots with `data/homework/**/result.json` and write `data/runs/<today>/pending_assignments.json`, `plan.json`, and `REPORT.md`; `sync-status.md` now points to this writer and explicitly stops before do-homework unless the user chooses one item.
+
+Verification wrote plans under `/tmp/autoust-scan-plan-current3`, `/tmp/autoust-scan-plan-with-results3`, and `/tmp/autoust-scan-plan-default-terminal3`. Current real Canvas snapshot produced raw snapshot copies plus 3 actionable items after filtering 44 graded, 6 submitted, and 4 ancient-overdue assignments; DSAA2011/UCUG1505 fixture checks confirmed `draft_ready -> review_or_submit`, `skipped -> filtered`, and Canvas `graded` wins over stale local draft state in default mode. Checks passed: `py_compile` for all scripts, `json.tool` for feature-list and generated plan files, and the DSAA/UCUG fixture assertions. Next: final review with the user before committing.
+
 ## 2026-06-02 — Result writer + assistant-shaped Copilot adaptation rule
 
 Recorded the collaboration rule that Canvas Copilot is a mature reference but not a blueprint to clone: AutoStudy should borrow mechanisms such as atomic data access, deep reconnaissance, workbenches, verification logs, and state files while redesigning the interaction around an assistant-style user loop. Added `scripts/write_homework_result.py` as the stable writer for single-assignment `result.json`; `do-homework.md` now calls it for `skipped`, `draft_ready`, `submitted`, and `error` paths, while `recon_assignment.py` remains reconnaissance-only.
 
-Verification used existing real recon workbenches copied to `/tmp/autoust-result-verify/`: DSAA2011 Project produced a `draft_ready` result with a fake notebook fixture, `verification_log_path`, two `human_review_items`, and `review_a_verdict: proceed`; UCUG1505 FINAL project produced a `skipped` result with notes and `review_a_verdict: proceed`. Checks passed: `python3 -m py_compile scripts/recon_assignment.py scripts/write_homework_result.py`, `python3 -m json.tool docs/plans/feature-list.json`, `python3 -m json.tool` on both smoke `result.json` files, and `git diff --check`. Next: review these uncommitted changes with the user before committing; after approval, consider assistant-style `pending_assignments.json` / `plan.json` design for `sync-status`.
+Verification used existing real recon workbenches copied to `/tmp/autoust-result-verify/`: DSAA2011 Project produced a `draft_ready` result with a fake notebook fixture, `verification_log_path`, two `human_review_items`, and `review_a_verdict: proceed`; UCUG1505 FINAL project produced a `skipped` result with notes and `review_a_verdict: proceed`. Checks passed: `python3 -m py_compile scripts/recon_assignment.py scripts/write_homework_result.py`, `python3 -m json.tool docs/plans/feature-list.json`, `python3 -m json.tool` on both smoke `result.json` files, and `git diff --check`. Committed as `c4ae2a4 feat: add homework result state writer`. Next: build assistant-style `pending_assignments.json` / `plan.json` support for `sync-status`.
 
 ## 2026-06-02 — Stable recon runtime + post-recon user supplement gate
 

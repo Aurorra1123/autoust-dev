@@ -289,6 +289,10 @@ AutoStudy 后续可以借鉴这层，但命名要更符合助手型产品。建�
 
 ```text
 data/runs/<today>/
+├── raw/
+│   ├── courses.json
+│   ├── assignments.json
+│   └── announcements.json
 ├── pending_assignments.json
 ├── plan.json
 └── REPORT.md
@@ -310,6 +314,50 @@ daily plan item -> points to -> assignment workbench
 注意这里的 `pending_assignments.json` 不等于
 `data/homework/<COURSE>/<HWID>/canvas/assignment.json`。前者是一批作业的扫描
 列表；后者是某个 Canvas assignment 的原始 API 快照。
+
+#### AutoStudy 的 scan-plan 适配
+
+Canvas Pilot 的成熟边界是：`canvas-scan` 只扫描、分桶、写 `plan.json`，
+然后停止；`canvas-execute` 读用户批准后的计划再执行。这个边界值得直接
+学习，因为它把"提出建议"和"采取行动"分开，防止 agent 在用户还没批准时
+启动一串作业流程。
+
+AutoStudy 采用同一个边界，但换成交互更轻的助手形态：
+
+```text
+sync-status
+  -> canvascli courses / assignments / announcements
+  -> scripts/write_scan_plan.py
+  -> data/runs/<today>/pending_assignments.json
+  -> data/runs/<today>/plan.json
+  -> data/runs/<today>/REPORT.md
+  -> AskUserQuestion: choose one item, review a draft, or stop
+
+do-homework
+  -> only starts after the user chooses one item
+  -> single-assignment workbench under data/homework/<COURSE>/<HWID>/
+```
+
+The stable writer is:
+
+```bash
+.venv/bin/python scripts/write_scan_plan.py
+```
+
+It reads `data/assignments.json`, `data/courses.json`, and
+`data/homework/**/result.json`. It does not call Canvas and does not execute
+homework. Its job is to combine current Canvas facts with local workflow state:
+
+- Canvas `submitted` / `graded` items are filtered out by default.
+- local `result.json.status == draft_ready` changes the suggested action to
+  `review_or_submit`.
+- local `result.json.status == skipped` or `submitted` keeps the item out of the
+  plan unless explicitly deferred.
+- unsubmitted project/report/lab/homework-like items are suggested as `recon`.
+
+This gives AutoStudy the useful part of Canvas Pilot's state discipline without
+turning `sync-status` into a batch executor. The user still chooses what happens
+next.
 
 ---
 
@@ -374,7 +422,8 @@ M4 在 ROADMAP 里是"反问式学习助手"，对应 AutoStudy.pdf 的模块 4�
 
 | 事项 | 来源 | 说明 |
 |------|------|------|
-| plan.json + _processed.json | 参考 Canvas Pilot 的跨 session 状态 | 让 sync-status 从"每次全量同步"变成"只看新增/变更的作业"。`_processed.json` 记录已处理过的作业，`plan.json` 记录当前轮次的计划。这是模块 2（Proactive Task Reminder）的基础。 |
+| plan.json + pending_assignments.json | 参考 Canvas Pilot 的 scan/plan 状态 | 让 sync-status 从"每次只列 Canvas 数据"变成"给出助手式建议计划"。`pending_assignments.json` 记录当前可行动作业，`plan.json` 记录建议下一步，`result.json` 反哺本地进度。 |
+| _processed.json | 参考 Canvas Pilot 的跨天 ledger | 先不急着实现；等 scan-plan 和 do-homework 的 result.json 跑稳后，再决定是否需要跨天账本。 |
 | 轻量 cron 自动化 | 参考 Canvas Pilot 的 cron 框架 | Canvas Pilot 有 669 行的 cron 框架，我们不需要那么重。但一个简单的定时检查（"有没有新作业发布了"、"有没有快到期的作业还没开始"）是模块 2 的核心。可以用 Claude Code 的 `/loop` 或系统 cron 触发 sync-status。 |
 
 ---
@@ -392,7 +441,7 @@ M4 在 ROADMAP 里是"反问式学习助手"，对应 AutoStudy.pdf 的模块 4�
 | **Codex sidecar 双驱动** | 增加一倍维护成本，AutoStudy 的 markdown skill 模式已经够用 |
 | **完整的 10 个 hooks 体系** | 过度工程，2-3 个关键 hook 即可 |
 | **_private / public 双仓库隔离** | AutoStudy 定位单校个人用，不需要产品级的公私隔离 |
-| **scan/execute 架构分离** | AutoStudy 当前是单次任务模式，不需要 Canvas Pilot 那种批处理级分离 |
+| **批量自动 execute 默认行为** | AutoStudy 借鉴 scan/execute 的边界，但不照搬批处理执行体验。sync-status 只建议，do-homework 只在用户选择单项后执行。 |
 
 ---
 

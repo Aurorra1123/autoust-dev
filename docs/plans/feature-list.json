@@ -339,6 +339,33 @@
     "notes": "单作业状态闭环已落到稳定脚本；result.json 仍由 do-homework 写，recon_assignment.py 只写 spec.md/problem.md/review_a.json。scan-plan/batch execute 是后续方向，不在本项实现。"
   },
   {
+    "id": "M3.5-SCAN-PLAN",
+    "category": "state",
+    "priority": "P0",
+    "description": "将 sync-status 升级为助手式 scan-plan：同步 Canvas 后生成 pending_assignments.json、plan.json 和 REPORT.md，但不自动执行作业",
+    "acceptance": [
+      "sync-status 调用 canvascli courses / assignments / announcements 后保存 raw snapshot",
+      "scripts/write_scan_plan.py 读取 data/assignments.json、data/courses.json 和 data/homework/**/result.json",
+      "生成 data/runs/<today>/pending_assignments.json，记录当前可行动作业、Canvas 状态、本地 result 状态和建议 work_dir",
+      "生成 data/runs/<today>/plan.json，记录助手建议下一步和 user_decision:null",
+      "生成 data/runs/<today>/REPORT.md，作为用户可读计划摘要",
+      "sync-status 只提出计划并询问用户下一步，不自动下载、不自动侦查、不自动执行 do-homework",
+      "Canvas submitted/graded 状态默认优先于本地旧 result，避免 stale draft 把已完成作业拉回计划",
+      "用 DSAA2011 Project 和 UCUG1505 FINAL project 风格 fixture 验证 result.json 对计划的影响"
+    ],
+    "evidence": [
+      "scripts/write_scan_plan.py added as stable scan-plan writer; it also copies raw canvascli snapshots into data/runs/<today>/raw/",
+      "sub-skills/tasks/sync-status.md now describes raw snapshots plus pending_assignments.json / plan.json / REPORT.md",
+      "docs/canvas-pilot-reference.md records the Canvas Copilot scan/execute boundary and AutoStudy assistant-style adaptation",
+      "2026-06-02 py_compile passed for scripts/recon_assignment.py, scripts/write_homework_result.py, and scripts/write_scan_plan.py",
+      "2026-06-02 current Canvas snapshot smoke: /tmp/autoust-scan-plan-current3 produced raw snapshots, pending_assignments.json, and plan.json; json.tool passed; 3 actionable items after filtering 44 graded, 6 submitted, and 4 ancient-overdue assignments",
+      "2026-06-02 DSAA2011/UCUG1505 fixture: /tmp/autoust-scan-plan-with-results3 local DSAA2011 Project draft_ready result becomes review_or_submit; local UCUG1505 FINAL project skipped result is filtered; /tmp/autoust-scan-plan-default-terminal3 keeps Canvas graded terminal items out of the plan",
+      "2026-06-02 docs/plans/feature-list.json json.tool passed"
+    ],
+    "status": "passing",
+    "notes": "sync-status now has a stable assistant-style planning layer. It proposes next actions but still requires the user to choose a single item before do-homework runs."
+  },
+  {
     "id": "M4-TUTOR",
     "category": "skill-task",
     "priority": "P1",
