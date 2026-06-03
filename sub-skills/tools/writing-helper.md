@@ -104,6 +104,9 @@ Quality bar:
 - Hand off to `pdf-renderer.md` with `draft.md` → `final.pdf`
 - If `pipeline_design.md` declares `post-process: humanize`, or user requested
   at [B], load `humanizer.md` and apply to draft before rendering
+- **Suggestion for pipeline design**: for academic reports and essays submitted
+  to institutions with AI-detection tools, consider adding `post-process: humanize`
+  to the pipeline_design stage. This is optional and should be the agent's judgment call.
 
 ## Self-check
 

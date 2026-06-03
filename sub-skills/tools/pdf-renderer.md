@@ -222,19 +222,40 @@ render_pdf("draft.md", "data/homework/DSAA2043/hw3/final.pdf")
 
 ## Post-processing (fallback chain)
 
-If the primary rendering path fails, try in order:
+Before rendering, **check each engine in order** — do NOT skip to fpdf2
+without first attempting the higher-quality paths:
+
+```bash
+# Step 1: Check tectonic
+tectonic --version 2>/dev/null && echo "TECTONIC_OK" || echo "TECTONIC_MISSING"
+# Step 2: Check xelatex
+xelatex --version 2>/dev/null | head -1 && echo "XELATEX_OK" || echo "XELATEX_MISSING"
+```
+
+Then try rendering paths **in this order, stopping at first success**:
 
 1. **Tectonic two-step** (preferred) — `pandoc → tex → tectonic → PDF`
+   - Only attempt if `tectonic --version` succeeds
+   - Do NOT `brew install tectonic` in background and skip ahead — wait for install
+     or skip this path entirely
+
 2. **Pandoc + xelatex** — `pandoc --pdf-engine=xelatex → PDF`
-3. **fpdf2 pure Python** — if neither LaTeX engine is available:
+   - Only attempt if `xelatex --version` succeeds
+
+3. **fpdf2 pure Python** (last resort) — only if both LaTeX engines are unavailable:
    ```bash
    pip install fpdf2
    ```
-   Render a simplified text-only PDF. Record in `human_review_items`:
-   "PDF rendered via fpdf2 fallback — formatting quality may be degraded."
+   Render a simplified text-only PDF. **fpdf2 cannot embed images or complex
+   formatting** — expect degraded output. Record in `human_review_items`:
+   "PDF rendered via fpdf2 fallback — formatting quality may be degraded.
+   Consider installing tectonic for better output."
 
 If the final PDF is suspiciously small (<10KB for a multi-page report),
 it likely failed silently. Re-run with a different path.
+
+If fpdf2 output doesn't meet `min_quality` (e.g., < 5 pages when required),
+record this as a FAIL in verification.log and add to `human_review_items`.
 
 ## Self-check
 
