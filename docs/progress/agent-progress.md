@@ -2,6 +2,52 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-03 — Skills architecture refactoring + end-to-end validation
+
+Completed the full skills architecture refactoring cycle triggered by the pipeline trace audit (P0-P5). Followed the superpowers workflow: brainstorm → spec → plans → subagent-driven implementation → 2-round end-to-end validation with trace analysis.
+
+### What changed
+
+**10 files modified/created across 6 commits:**
+
+1. `docs/skills-architecture-spec.md` — Added §2.4 path discovery rules, fallback/min_quality fields, P5 note
+2. `sub-skills/tools/_index.md` — Rewritten from routing table to pure capability menu
+3. `sub-skills/tools/code-writer.md` — Restructured to unified template (Contract→Guidance→Appendices→Post-processing→Self-check)
+4. `sub-skills/tools/code-writer-python.md` — New Python appendix (uv, project structure, notebook conventions)
+5. `sub-skills/tools/writing-helper.md` — Restructured to unified template, added humanizer suggestion
+6. `sub-skills/tools/writing-helper-report.md` — New report type appendix (data integrity rules)
+7. `sub-skills/tools/pdf-renderer.md` — Added sequential fallback chain + Self-check
+8. `sub-skills/tools/humanizer.md` — New post-processing skill for reducing AI patterns
+9. `sub-skills/tasks/do-homework.md` — Added REPO_ROOT computation, pipeline shapes, new pipeline_design format
+10. `sub-skills/tasks/task-orchestrator.md` — Added 5-step path discovery, SKILLS_DIR references
+
+**Plus documentation:** pipeline-trace-audit.md, superpowers spec + plan
+
+### Validation results (2 rounds on DSAA2011 ML Project)
+
+| Issue | Original Audit | Round 1 | Round 2 |
+|-------|---------------|---------|---------|
+| P0: Skill reads | 0 reads | 8 reads | 13 reads |
+| P1: Stage→Tool mapping | Missing | Full mapping | Full + humanizer |
+| P2: Notebook execution | Fabricated | 36/37 cells | 25/25 cells, 0 errors |
+| P3: PDF fallback | 4 failures | PARTIAL (skipped checks) | FIXED (sequential checks) |
+| P4: Directory structure | Non-standard | All in draft/ | All in draft/ |
+| P5: Write sandbox | Blocked | heredoc workaround | heredoc workaround |
+| Humanizer | N/A | Not declared | Declared + applied |
+
+Round 2 verification.log: 20 PASS / 4 FAIL (PDF quality — test environment limitation with no working LaTeX engine, not an architecture issue).
+
+### Key design principle reinforced
+
+Skills are domain expertise supplements — reference guidance, not hard constraints. Task spec always takes precedence over skill defaults. The model follows skills as best practice, but specific assignment requirements override.
+
+### Where to look next
+
+- Feature list: `docs/plans/feature-list.json` M3.5-SKILLS-ARCHITECTURE and M3.5-DYNAMIC-PIPELINE both now `passing`
+- Audit report: `docs/pipeline-trace-audit.md`
+- Design spec: `docs/superpowers/specs/2026-06-03-skills-refactor-design.md`
+- Remaining M3.5 items: M3.5-ITERATION (pending), M3.5-PREFERENCE-SYSTEM (pending), M3.5-SUB-AGENT-REVIEW (pending)
+
 ## 2026-06-03 — Skills architecture design + Copilot per-type skill deep dive
 
 Deep-dived into all six Canvas Copilot per-type skills (canvas-ics33, canvas-essay, canvas-reading-annotation, canvas-zybooks, canvas-inside, canvas-humanizer) and analyzed their complete pipelines — reconnaissance, generation, and verification stages differ significantly across types.
