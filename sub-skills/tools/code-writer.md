@@ -1,132 +1,108 @@
 ---
 name: code-writer
-description: Write Python (or other language) source files from a lab assignment spec. The agent authors the code in-context and saves it to work_dir/src/. test-runner.md handles execution.
+description: Write source code from assignment spec. Provides domain guidance for code quality — language-specific conventions are in appendix files loaded on demand.
 ---
 
 # code-writer
 
-Lab / programming assignment workhorse. Reads `spec.md`,
-`pipeline_design.md`, references, and rubric, then writes source files into
-`<work_dir>/src/`. **The agent writes the code directly** — same philosophy as
-`writing-helper`. This file is the spec + style guide.
+Code generation workhorse. Reads the assignment workbench and writes source
+files into `<work_dir>/src/`. This file provides cross-language guidance;
+language-specific conventions (project structure, testing, toolchain) are
+in appendix files loaded based on `pipeline_design.md` stage declarations.
 
-## Capabilities
+**Skills provide reference guidance, not hard constraints.** If the task spec
+explicitly requires a different approach, follow the spec.
 
-- `write_code` — assignment spec → src/*.py with module structure and a runnable entry point
+## Contract
 
-## Inputs / Outputs
+- **reads:**
+  - `spec.md` (PRIMARY — standardized reconnaissance report)
+  - `pipeline_design.md` (code stage, deliverables, constraints)
+  - `investigation/rubric.md`
+  - `references/` (starter code, data, spec PDFs/text)
+  - `problem.md` (compatibility; read after spec.md)
+  - `investigation/user_notes.md` (optional)
+  - `investigation/user_scope.md` (optional)
+- **writes:**
+  - `src/<module>.py` (or .cpp/.java per lang)
+  - `src/test_<module>.py` (pytest-style or equivalent)
+  - `src/README.md`
+- **preconditions:**
+  - `spec.md` and `pipeline_design.md` must exist and contain actual content
+  - Language must be determined (default: Python)
 
-```
-Input:  <work_dir>/spec.md                 (PRIMARY: standardized reconnaissance report)
-        <work_dir>/pipeline_design.md      (code stage, deliverables, constraints, verification plan)
-        <work_dir>/investigation/rubric.md
-        <work_dir>/references/             (starter code, data, spec PDFs/text)
-        <work_dir>/problem.md              (compatibility summary; read after spec.md)
-        <work_dir>/canvas/assignment.json  (metadata only: due_at, rubric, points)
-        <work_dir>/investigation/user_notes.md  (optional)
-        <work_dir>/investigation/user_scope.md  (optional)
-Output: <work_dir>/src/<module>.py         (one file per module, runnable)
-        <work_dir>/src/test_<module>.py    (one test file per module, pytest-style)
-        <work_dir>/src/README.md           (how to run, expected output)
-```
+## Guidance
 
-**Read `spec.md` first, then `pipeline_design.md`, references, rubric, user
-supplements, and finally `problem.md`, completely.** The workbench files contain
-the actual lab spec — function signatures to implement, datasets to process,
-algorithms to write. The assignment title alone (e.g. "Project Report") tells
-you nothing about what to implement. If `spec.md` or `pipeline_design.md` is
-missing or thin, refuse to proceed.
+### Parse the spec from the workbench
 
-## Setup
+Read `spec.md`, `pipeline_design.md`, rubric, and references end-to-end.
+Identify:
 
-No mandatory install (Python ships with the .venv). If the lab needs `numpy` / `torch` / etc., they should already be in `.venv` (matplotlib + numpy installed at MVP setup; user adds others as needed).
+- **Language**: Python is default. Record in pipeline_design.md if not already there.
+- **Required functions / classes / entry points**: look for "implement", "complete",
+  function signatures. Use those exact names — auto-graders match by name.
+- **I/O contract**: input format, expected output, datasets.
+- **Algorithm constraints**: complexity bounds, allowed libraries, "implement from scratch".
+- **Test cases**: translate spec-provided input/output pairs into tests.
 
-## Invocation (decision flow)
+If spec names a specific dataset, paper, function, or algorithm — implement that,
+not a generic equivalent. If ambiguous on a specific point, write
+`[CLARIFICATION NEEDED: <question>]` as a comment and continue with a defensible default.
 
-### Step 1 — Parse the spec from the workbench
+### Write the code
 
-Read `spec.md`, `pipeline_design.md`, `investigation/rubric.md`, and relevant
-files under `references/` end-to-end. Identify:
+Style rules (defaults — spec overrides if it says otherwise):
 
-- **Language**: Python is default for HKUST(GZ) labs; some courses use C++ / Java. Record the chosen language in `pipeline_design.md` if it is not already there.
-- **Required functions / classes / entry points**: look for "implement", "complete", "you should write", function signatures spelled out. The spec usually names them explicitly (e.g. "implement `fit(X, y)` and `predict(X)`"); use those exact names.
-- **I/O contract**: input format, expected output format, datasets (often included in the attachment or referenced by name).
-- **Test cases**: if the spec provides input/output pairs, translate them into pytest in Step 3.
-- **Algorithm constraints**: complexity bounds, allowed libraries, "don't use sklearn", "implement from scratch", etc.
-
-If `spec.md` or a fetched reference names a specific dataset, paper, function,
-or algorithm, implement that — not a generic equivalent. If the spec says
-"implement k-means with k-means++ initialization", you write k-means++; you do
-not write a generic clustering library.
-
-If the spec is ambiguous on a specific point, write `[CLARIFICATION NEEDED: <question>]` as a comment in the relevant file and continue with a defensible default. Surfaced at do-homework [E].
-
-### Step 2 — Write the code
-
-Style rules (MVP):
-- **Implement what `spec.md` and `pipeline_design.md` actually ask.** Not a generic representative project. If the spec is about linear regression, write linear regression; do not write "regression + clustering + classification" as a representative sampling.
+- Implement what spec actually asks. Not a generic representative project.
 - One responsibility per file. Don't dump everything into `solution.py`.
-- Top of every file: a 1-line docstring stating what it does. No multi-paragraph docstrings.
-- No comments unless the WHY is non-obvious (see CLAUDE.md style rules).
+- Top of every file: 1-line docstring. No multi-paragraph docstrings.
+- No comments unless the WHY is non-obvious.
 - Type hints on public functions.
-- Use stdlib where possible. Only reach for `numpy` / external deps if the spec implies them.
-- **No `[TODO: align with actual project spec]` or equivalent placeholders.** The whole point of grounding via the workbench is to know what to implement. If you're unsure on a specific point, use `[CLARIFICATION NEEDED: <question>]` instead.
+- Use stdlib where possible.
+- **No `[TODO: align with actual project spec]` or equivalent placeholders.**
+  Use `[CLARIFICATION NEEDED: <question>]` instead.
+- `if __name__ == "__main__":` is mandatory for runnable entry points.
+- Don't shadow stdlib names (no `os.py`, `json.py`, etc.).
+- Use `pathlib.Path(__file__).parent` for relative paths, never hard-code absolute paths.
+- No `print()` debug statements in submitted code. Wrap in `if __debug__:` or remove.
+- Seed `random`/`numpy.random` with `seed=42` if spec requires reproducibility.
 
-### Step 3 — Write the tests
+### Write the tests
 
-For every public function, write at least one pytest test. Tests live in `<work_dir>/src/test_<module>.py`. Keep them focused — one assertion per test where possible.
+For every public function, at least one pytest test. Tests in `src/test_<module>.py`.
+One assertion per test where possible. Use `@pytest.mark.parametrize` for spec-provided
+input/output pairs.
 
-If the assignment provides test cases (e.g. expected input/output pairs), translate them into pytest parametrize:
+### Write the README
 
-```python
-import pytest
-from solution import solve
+`src/README.md` — 5-10 lines: how to run, expected output, assumptions made.
 
-@pytest.mark.parametrize("inputs,expected", [
-    ([1, 2, 3], 6),
-    ([], 0),
-    ([-1, 1], 0),
-])
-def test_solve(inputs, expected):
-    assert solve(inputs) == expected
-```
+## Appendices (loaded on demand)
 
-### Step 4 — Write the README
+| Appendix | When to load |
+|---|---|
+| [code-writer-python.md](./code-writer-python.md) | When `lang: python` or default (always for HKUST(GZ) labs) |
+| `code-writer-cpp.md` (future) | When `lang: cpp` |
 
-`<work_dir>/src/README.md` — 5-10 lines:
+Read this parent file first, then load the matching language appendix for
+toolchain-specific conventions (project structure, dependency management, testing).
 
-```markdown
-# <Assignment name>
+## Post-processing
 
-Run:
-    python solution.py < input.txt
-    pytest test_solution.py
+- Hand off to `test-runner.md` to verify code passes its own tests
+- If the assignment also asks for a report, `writing-helper.md` drafts prose next
+- If `pipeline_design.md` declares `post-process: humanize` for code comments,
+  load `humanizer.md`
 
-Expected output: <one line>
+## Self-check
 
-Notes:
-- <any assumption the agent made>
-```
-
-### Step 5 — Hand off
-
-The orchestrator then calls `test-runner.md` to verify the code passes its own tests. After test-runner confirms, `writing-helper` (if the assignment also asks for a report) drafts the prose; pdf-renderer combines.
-
-## What this tool is NOT for
-
-- ❌ Running the code — that's `test-runner.md`
-- ❌ Writing the lab report prose — that's `writing-helper.md`
-- ❌ Setting up project infrastructure (CMake, setup.py, etc.) — MVP assumes single-file or flat-module Python labs
-- ❌ Debugging student-provided broken code — only write fresh code from a fresh spec
-
-## Pitfalls
-
-1. **`spec.md` and `pipeline_design.md` are the spec, NOT `assignment.description`.** The description is HTML and often just a file link or empty. Reading it directly produces "implement a representative project" template code. Always read the workbench files generated by `problem-extractor`.
-2. **Don't include the assignment description as a docstring at top of the file.** Some labs auto-grade and the docstring tripping a keyword can cause false flags.
-3. **`if __name__ == "__main__":` is mandatory** for any file that has a runnable entry — pytest imports the file, and module-level code at import time will break tests.
-4. **Don't shadow stdlib names.** `solution.py` is fine; `os.py` / `sys.py` / `json.py` would break imports anywhere downstream.
-5. **Path handling**: use `pathlib.Path(__file__).parent` to find files relative to the source — never hard-code `/Users/...` or `data/...`. The lab may be auto-graded in a different directory.
-6. **Don't add `print()` debug statements in submitted code.** Auto-graders often parse stdout. Wrap diagnostics in `if __debug__:` or remove before submission.
-7. **`random` and `numpy.random` need seeding** if the assignment requires reproducibility. Default to `seed=42` if the spec doesn't say.
-8. **Be honest about gaps.** If the spec mentions something you couldn't implement, write `[CLARIFICATION NEEDED: <question>]` as a comment + a `pytest.skip` for that test — don't silently leave broken code that "looks" complete, and don't fall back to `[TODO: align with actual project spec]`-style template placeholders.
-9. **Function/class names follow the main spec verbatim.** If the spec says `fit_ols(X, y)`, do not write `train_ordinary_least_squares(X, y)` — auto-graders match by name.
+- [ ] `spec.md` and `pipeline_design.md` were read completely (not just title)
+- [ ] Code implements what the spec asks, not a generic equivalent
+- [ ] All required functions/classes from spec are implemented with exact names
+- [ ] Code can run in a clean environment without errors
+- [ ] Notebooks were actually executed — output cells are not fabricated estimates
+- [ ] Report data metrics come from actual execution results
+- [ ] No `[TODO]` / `[PROBLEM N]` / `[此处填入...]` placeholders
+- [ ] Only `[CITATION NEEDED]` and `[CLARIFICATION NEEDED]` markers used
+- [ ] Tests exist for every public function
+- [ ] README explains how to run and expected output
