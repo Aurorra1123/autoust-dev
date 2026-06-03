@@ -322,6 +322,7 @@ Stage 5 classify-output
 - 把 do-homework `[B]` 的侦查汇报和用户补充问题做得更顺：直接把 DSAA/UCUG 这种 blockers 转成用户可理解的问题。
 - 让 task-orchestrator 对 `pipeline_design.md` 的执行结果有更稳定的 structured summary，区分 `success` / `partial` / `failed_due_to_human_blocker`。
 - 在用户补齐 DSAA group/dataset/style-file 或 UCUG partner/concept/video/code 信息后，跑一次真正 draft generation，而不是只做 dry-run。
+- **Skills 架构落地**（详见 `docs/skills-architecture-spec.md`）：重构 code-writer / writing-helper 为渐进式加载模式，新建语言附录和 humanizer skill，在真实 mixed 任务上验证新架构。
 
 ### 设计理念（M3.5+ 长期方向）
 

@@ -96,6 +96,38 @@ Current approved homework direction:
   `pipeline_design.md`; `task-orchestrator` executes that plan instead of
   reading `task_profile.yaml`.
 
+### Skills Architecture
+
+AutoStudy's skills are **domain expertise supplements**, not fixed pipeline
+scripts. The model already knows how to write code / write essays / render PDFs.
+Skills tell it "how we do it right here" — project conventions, quality bars,
+self-check lists, and composition patterns.
+
+The complete architecture spec lives in **`docs/skills-architecture-spec.md`**.
+Key design decisions:
+
+1. **Progressive loading**: `_index.md` only shows top-level skills (code-writer,
+   writing-helper, etc.). Sub-skills and language/type appendices are discovered
+   by reading the parent skill file. Never flatten sub-skills into `_index.md`.
+
+2. **Core + appendix pattern**: Each skill has a main file with shared guidance,
+   plus optional appendix files for language-specific or type-specific rules
+   (e.g., `code-writer-python.md`, `writing-helper-report.md`).
+
+3. **Skills can nest skills**: writing-helper may invoke humanizer in
+   post-processing; code-writer delegates to test-runner for verification.
+   Nesting is conditional — the skill checks context before loading sub-skills.
+
+4. **Preference integration**: Defaults in skill files → overridden by
+   `pipeline_design.md` stage declarations (task-level) → overridden by
+   `data/course-overrides/` (course-level, not yet implemented) → overridden by
+   Claude Code memory (user-level, not yet implemented).
+
+5. **Unified review framework**: Instead of per-type verification rules, all
+   types share a common spec-vs-deliverable semantic diff pattern. Each skill
+   provides its own Self-check list; the orchestrator or sub-agent audit reads
+   spec + constraints + deliverable and returns a JSON gap array.
+
 ### Design Principles (M3.5+)
 
 Five principles govern all post-M3.5 development. They originate from deep

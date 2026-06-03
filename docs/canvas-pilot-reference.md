@@ -550,5 +550,46 @@ Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3
 
 - **固定 pipeline 模板**：Copilot 为每种输出模式定义了固定阶段序列。AutoStudy 选择更灵活的动态组合，因为 Claude Code 的 agent 能力足够强，不需要预先枚举所有可能。
 - **单次 batch execute**：Copilot 的 `canvas-execute` 一次性分发所有审批项。AutoStudy 的 `do-homework` 只处理用户选择的单项，保留助手式的节奏控制。
-- **Humanizer**：Copilot 在 doc_prose 模式中集成了 AI 内容人性化。AutoStudy 不做这个——"agent 负责脏活，用户负责审核"的定位与 humanizer 矛盾。
+- **Humanizer（硬编码强制）**：Copilot 在 essay/doc_prose 模式中硬编码调用 humanizer。AutoStudy 保留 humanizer 作为可选后处理 skill（用户在 [B] 要求或 pipeline_design.md 声明时才调用），不作为默认行为。
 - **Stop hook 强锁**：Copilot 用 Stop hook 阻止 session 在未完成所有作业时结束。AutoStudy 是助手，不应该阻止用户随时离开。
+- **重 overlay 体系**：Copilot 每种 skill 配套 100-300 行 overlay。AutoStudy 用三层偏好体系替代（渐进实现），不需要用户手动编写 overlay。
+
+---
+
+## 7. Copilot per-type Skill 深度管线分析
+
+对 Copilot 六个具体 skill 的完整管线做了深度阅读。每个 skill 有独立的
+侦查、生成、验证流程，差异很大。AutoStudy 的 skills 架构设计
+（见 `docs/skills-architecture-spec.md`）从中提取了可借鉴的模式，
+同时避免了固定 per-type pipeline 的僵化。
+
+| Skill | 管线阶段数 | 侦查方式 | 生成核心 | 验证机制 | 独特设计 |
+|---|---|---|---|---|---|
+| canvas-generic | 11 (Stage 0-11) | 全量 Stage 1-5 | 通用管线 (Stage 6-7) | Sub-agent B (验证清单) + C (覆盖度) | 三层子代理审查，验证重试循环 |
+| canvas-ics33 (代码) | 9 (Stage 1-9) | 定向 (overlay 的 `spec_source`) | test-first implement (逐 feature) | identifier grounding + numeric constraints + re-clone verify | process_humanize 重写 git 历史，constraints.md 提取 |
+| canvas-essay (长文) | 8 (Step 1-8) | 定向 (walk PDFs/modules) | outline → body → revise | 字数 + 引用数 + plagiarism risk + voice register | persona profile (MBTI → derived_vector)，humanizer 后处理 |
+| canvas-reading-annotation (标注) | 6+ (Stage 1-6.5) | 定向 (overlay 的 homework_module_id) | PDF 物理操作 (PyMuPDF) | 6-check gate (line fill, color family, page count) | color rubric + voice register (B1-B2) |
+| canvas-zybooks (数学) | 7 (Step 1-7) | 解析 Canvas description HTML table | API 调题 → LLM 解题 → LaTeX 渲染 | 子题数 + 无占位符泄漏 | zyBook API + JWT，不提交到 Canvas |
+| canvas-inside (quiz) | ~7 | — | 4-agent arbitration per question | 3 层强制执行机制 | paced submission (人类节奏模拟)，strategic miss |
+
+### 跨 Skill 共有模式（AutoStudy 已借鉴）
+
+1. **Research before improvise**：当 spec 不符合已知模板时，spawn 2-3 个
+   parallel agents 做深度调查。AutoStudy 的实现：skill Guidance 中的
+   "不确定时先调查"原则。
+
+2. **Post-delivery self-audit**：结构验证通过后，强制 spawn 1 个 audit
+   agent 做 spec-vs-deliverable 语义 diff。AutoStudy 的实现：统一的
+   sub-agent 审查框架，在 `pipeline_design.md` 的 stage 中按需声明
+   `review: true`。
+
+3. **约束提取 + 可量化验证**：生成前从 spec 提取 testable constraints，
+   生成后用机械检查验证。AutoStudy 的实现：`pipeline_design.md` 的
+   `## Constraints` + 每个 skill 的 Self-check。
+
+4. **Overlay 加载**：每个 skill 第一步读 overlay 获取课程级知识。
+   AutoStudy 的实现：三层偏好系统（当前只实现了任务级，通过
+   `pipeline_design.md` stage 声明传递）。
+
+5. **Stage-by-stage 校准**：首次运行逐阶段审查。AutoStudy 的实现：
+   do-homework [B] 的用户补充 + pipeline_design.md 的 review 声明。

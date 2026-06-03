@@ -2,6 +2,24 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-03 — Skills architecture design + Copilot per-type skill deep dive
+
+Deep-dived into all six Canvas Copilot per-type skills (canvas-ics33, canvas-essay, canvas-reading-annotation, canvas-zybooks, canvas-inside, canvas-humanizer) and analyzed their complete pipelines — reconnaissance, generation, and verification stages differ significantly across types.
+
+Key design decisions established through brainstorming with user:
+
+1. **Skills are domain expertise supplements**, not fixed pipeline scripts. The model already knows how to write code/essays; skills provide project conventions, quality bars, and composition patterns.
+
+2. **Progressive loading**: `_index.md` only shows top-level skills. Sub-skills and appendices (code-writer-python.md, writing-helper-essay.md, humanizer.md) are discovered by reading the parent skill file. Never flatten sub-skills into `_index.md`.
+
+3. **Core + appendix pattern**: Main skill file has shared guidance; language-specific (code-writer-python.md) or type-specific (writing-helper-report.md) details go in separate files loaded on demand.
+
+4. **Skills can nest skills**: writing-helper may invoke humanizer in post-processing; code-writer delegates to test-runner. Nesting is conditional — checked against `pipeline_design.md` declarations and user preferences.
+
+5. **Preference integration via pipeline_design.md**: Language, type, constraints, review flags are declared per-stage in `pipeline_design.md`. This is the task-level preference mechanism (course-level and user-level preferences are future work).
+
+Created `docs/skills-architecture-spec.md` — the authoritative design document for all skill file structure, loading mechanism, composition patterns, pipeline_design format, and preference system integration. Updated COLLABORATION.md (Skills Architecture section), AGENTS.md (skills architecture rules), ROADMAP.md (development priorities), and canvas-pilot-reference.md (Section 7: per-type skill deep pipeline analysis with cross-skill common patterns).
+
 ## 2026-06-03 — Establish M3.5+ design principles and Copilot 11-stage gap analysis
 
 Deep-dived into the Canvas Copilot reference project at `/Users/deepwisdom/Desktop/project/canvas_copilot/`. Previous sessions only read the distilled notes in `docs/canvas-pilot-reference.md`; this session read the actual Copilot codebase including `canvas-generic` SKILL.md (11 stages, 3 sub-agents, verification retry loop), framework skills (scan/execute/skip/bootstrap/setup), per-course generic skills, hooks system, and 2026-06-01 real run records.

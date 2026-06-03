@@ -428,6 +428,28 @@
     "notes": "Design principles established after user clarified AutoStudy's assistant-oriented identity and long-term direction. These principles guide all subsequent development."
   },
   {
+    "id": "M3.5-SKILLS-ARCHITECTURE",
+    "category": "architecture",
+    "priority": "P0",
+    "description": "Skills 架构设计：渐进式加载、Core+Appendix 模式、Skill 嵌套组合、统一审查框架、偏好系统集成",
+    "acceptance": [
+      "docs/skills-architecture-spec.md 完整描述所有设计决策",
+      "_index.md 只列顶层 skill，子技能通过父级 skill 渐进发现",
+      "code-writer.md 按新模板重构，新建 code-writer-python.md",
+      "writing-helper.md 按新模板重构，新建 writing-helper-report.md",
+      "pipeline_design.md 支持 lang/type/constraints/review/post-process 声明",
+      "在真实 mixed 作业上验证新 skill 架构的端到端流程"
+    ],
+    "evidence": [
+      "2026-06-03 docs/skills-architecture-spec.md created",
+      "2026-06-03 COLLABORATION.md updated with Skills Architecture section",
+      "2026-06-03 AGENTS.md updated with skills architecture rules",
+      "2026-06-03 canvas-pilot-reference.md Section 7: per-type skill deep pipeline analysis"
+    ],
+    "status": "passing",
+    "notes": "Design spec established. Implementation (skill file rewrites + new appendices) is tracked under M3.5-DYNAMIC-PIPELINE."
+  },
+  {
     "id": "M3.5-ITERATION",
     "category": "architecture",
     "priority": "P1",

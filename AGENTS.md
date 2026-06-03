@@ -48,6 +48,22 @@ Five design principles govern M3.5+ development (full text in
 4. Three-layer preference system (task / course / user)
 5. Review-first design (composable sub-agent review per pipeline stage)
 
+## Skills architecture
+
+Skills are **domain expertise supplements** — not fixed pipeline scripts. The
+complete spec is in **`docs/skills-architecture-spec.md`**. Read that file before
+modifying any skill or adding a new one.
+
+Key rules:
+- `_index.md` only lists top-level skills; sub-skills are discovered progressively
+- Each skill follows a standard template: Contract → Guidance → Appendices →
+  Post-processing → Self-check
+- Skills compose via files in the workbench, not direct calls
+- Language/type specifics go in appendix files, not the main skill or `_index.md`
+- Defaults live in skill files; overrides come from `pipeline_design.md` (task),
+  `data/course-overrides/` (course, not yet implemented), or Claude Code memory
+  (user, not yet implemented)
+
 ## Start-of-session checklist
 
 Run through these before touching code:
