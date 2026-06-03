@@ -5,7 +5,10 @@ description: Write Python (or other language) source files from a lab assignment
 
 # code-writer
 
-Lab / programming assignment workhorse. Reads `spec.md` / `problem.md` + rubric, writes source files into `<work_dir>/src/`. **The agent writes the code directly** — same philosophy as `writing-helper`. This file is the spec + style guide.
+Lab / programming assignment workhorse. Reads `spec.md`,
+`pipeline_design.md`, references, and rubric, then writes source files into
+`<work_dir>/src/`. **The agent writes the code directly** — same philosophy as
+`writing-helper`. This file is the spec + style guide.
 
 ## Capabilities
 
@@ -14,17 +17,25 @@ Lab / programming assignment workhorse. Reads `spec.md` / `problem.md` + rubric,
 ## Inputs / Outputs
 
 ```
-Input:  <work_dir>/task_profile.yaml       (language, constraints)
-        <work_dir>/spec.md                 (PRIMARY: source-by-source assignment context)
-        <work_dir>/problem.md              (compatibility grounded problem spec)
+Input:  <work_dir>/spec.md                 (PRIMARY: standardized reconnaissance report)
+        <work_dir>/pipeline_design.md      (code stage, deliverables, constraints, verification plan)
+        <work_dir>/investigation/rubric.md
+        <work_dir>/references/             (starter code, data, spec PDFs/text)
+        <work_dir>/problem.md              (compatibility summary; read after spec.md)
         <work_dir>/canvas/assignment.json  (metadata only: due_at, rubric, points)
-        <work_dir>/spec_extras/*           (optional: starter code, data files, test cases the user provides)
+        <work_dir>/investigation/user_notes.md  (optional)
+        <work_dir>/investigation/user_scope.md  (optional)
 Output: <work_dir>/src/<module>.py         (one file per module, runnable)
         <work_dir>/src/test_<module>.py    (one test file per module, pytest-style)
         <work_dir>/src/README.md           (how to run, expected output)
 ```
 
-**Read `spec.md` first, then `problem.md`, completely.** The workbench files contain the actual lab spec — function signatures to implement, datasets to process, algorithms to write. The assignment title alone (e.g. "Project Report") tells you nothing about what to implement. If both files are missing or thin, refuse to proceed.
+**Read `spec.md` first, then `pipeline_design.md`, references, rubric, user
+supplements, and finally `problem.md`, completely.** The workbench files contain
+the actual lab spec — function signatures to implement, datasets to process,
+algorithms to write. The assignment title alone (e.g. "Project Report") tells
+you nothing about what to implement. If `spec.md` or `pipeline_design.md` is
+missing or thin, refuse to proceed.
 
 ## Setup
 
@@ -32,30 +43,34 @@ No mandatory install (Python ships with the .venv). If the lab needs `numpy` / `
 
 ## Invocation (decision flow)
 
-### Step 1 — Parse the spec from `spec.md` / `problem.md`
+### Step 1 — Parse the spec from the workbench
 
-Read `spec.md` and `problem.md` end-to-end. From downloaded reference sections and source candidates, identify:
+Read `spec.md`, `pipeline_design.md`, `investigation/rubric.md`, and relevant
+files under `references/` end-to-end. Identify:
 
-- **Language**: Python is default for HKUST(GZ) labs; some courses use C++ / Java. Language goes in `task_profile.yaml`.
+- **Language**: Python is default for HKUST(GZ) labs; some courses use C++ / Java. Record the chosen language in `pipeline_design.md` if it is not already there.
 - **Required functions / classes / entry points**: look for "implement", "complete", "you should write", function signatures spelled out. The spec usually names them explicitly (e.g. "implement `fit(X, y)` and `predict(X)`"); use those exact names.
 - **I/O contract**: input format, expected output format, datasets (often included in the attachment or referenced by name).
 - **Test cases**: if the spec provides input/output pairs, translate them into pytest in Step 3.
 - **Algorithm constraints**: complexity bounds, allowed libraries, "don't use sklearn", "implement from scratch", etc.
 
-If `problem.md` references a specific dataset, paper, or algorithm by name, implement THAT — not a generic equivalent. If the spec says "implement k-means with k-means++ initialization", you write k-means++; you do not write a generic clustering library.
+If `spec.md` or a fetched reference names a specific dataset, paper, function,
+or algorithm, implement that — not a generic equivalent. If the spec says
+"implement k-means with k-means++ initialization", you write k-means++; you do
+not write a generic clustering library.
 
 If the spec is ambiguous on a specific point, write `[CLARIFICATION NEEDED: <question>]` as a comment in the relevant file and continue with a defensible default. Surfaced at do-homework [E].
 
 ### Step 2 — Write the code
 
 Style rules (MVP):
-- **Implement what `problem.md` actually asks.** Not a generic representative project. If the spec is about linear regression, write linear regression; do not write "regression + clustering + classification" as a representative sampling.
+- **Implement what `spec.md` and `pipeline_design.md` actually ask.** Not a generic representative project. If the spec is about linear regression, write linear regression; do not write "regression + clustering + classification" as a representative sampling.
 - One responsibility per file. Don't dump everything into `solution.py`.
 - Top of every file: a 1-line docstring stating what it does. No multi-paragraph docstrings.
 - No comments unless the WHY is non-obvious (see CLAUDE.md style rules).
 - Type hints on public functions.
 - Use stdlib where possible. Only reach for `numpy` / external deps if the spec implies them.
-- **No `[TODO: align with actual project spec]` or equivalent placeholders.** The whole point of grounding via `problem.md` is to know what to implement. If you're unsure on a specific point, use `[CLARIFICATION NEEDED: <question>]` instead.
+- **No `[TODO: align with actual project spec]` or equivalent placeholders.** The whole point of grounding via the workbench is to know what to implement. If you're unsure on a specific point, use `[CLARIFICATION NEEDED: <question>]` instead.
 
 ### Step 3 — Write the tests
 
@@ -106,7 +121,7 @@ The orchestrator then calls `test-runner.md` to verify the code passes its own t
 
 ## Pitfalls
 
-1. **`spec.md` / `problem.md` are the spec, NOT `assignment.description`.** The description is HTML and often just a file link or empty. Reading it directly produces "implement a representative project" template code. Always read the workbench files generated by `problem-extractor`.
+1. **`spec.md` and `pipeline_design.md` are the spec, NOT `assignment.description`.** The description is HTML and often just a file link or empty. Reading it directly produces "implement a representative project" template code. Always read the workbench files generated by `problem-extractor`.
 2. **Don't include the assignment description as a docstring at top of the file.** Some labs auto-grade and the docstring tripping a keyword can cause false flags.
 3. **`if __name__ == "__main__":` is mandatory** for any file that has a runnable entry — pytest imports the file, and module-level code at import time will break tests.
 4. **Don't shadow stdlib names.** `solution.py` is fine; `os.py` / `sys.py` / `json.py` would break imports anywhere downstream.
@@ -114,4 +129,4 @@ The orchestrator then calls `test-runner.md` to verify the code passes its own t
 6. **Don't add `print()` debug statements in submitted code.** Auto-graders often parse stdout. Wrap diagnostics in `if __debug__:` or remove before submission.
 7. **`random` and `numpy.random` need seeding** if the assignment requires reproducibility. Default to `seed=42` if the spec doesn't say.
 8. **Be honest about gaps.** If the spec mentions something you couldn't implement, write `[CLARIFICATION NEEDED: <question>]` as a comment + a `pytest.skip` for that test — don't silently leave broken code that "looks" complete, and don't fall back to `[TODO: align with actual project spec]`-style template placeholders.
-9. **Function/class names follow `problem.md` verbatim.** If the spec says `fit_ols(X, y)`, do not write `train_ordinary_least_squares(X, y)` — auto-graders match by name.
+9. **Function/class names follow the main spec verbatim.** If the spec says `fit_ols(X, y)`, do not write `train_ordinary_least_squares(X, y)` — auto-graders match by name.

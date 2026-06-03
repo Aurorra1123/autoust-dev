@@ -82,6 +82,55 @@ logs, and lightweight state files. It should not blindly copy Copilot's batch
 automation defaults when an assistant-style checkpoint, explanation, or user
 supplement step better fits AutoStudy.
 
+Current approved homework direction:
+
+- Reconnaissance follows Canvas Copilot `canvas-generic` Stage 1-5: fetch
+  context, find rubric, locate inputs, review investigation, and classify output
+  mode.
+- This reconnaissance is agent-led. `scripts/recon_assignment.py` is historical
+  transition evidence, not the production `do-homework` path.
+- `spec.md` is a standardized report written after reading all sources; full
+  source text belongs in `references/`, not in a raw context dump.
+- `problem.md` is temporary compatibility for older tools.
+- After the user supplement checkpoint, `do-homework` writes
+  `pipeline_design.md`; `task-orchestrator` executes that plan instead of
+  reading `task_profile.yaml`.
+
+### Design Principles (M3.5+)
+
+Five principles govern all post-M3.5 development. They originate from deep
+reference to Canvas Copilot but serve AutoStudy's assistant-oriented identity:
+
+1. **Assistant, not automation.** Borrow Copilot's mature mechanisms (atomic
+   data access, source-by-source reconnaissance, structured state), but keep
+   the user in the loop at every meaningful decision point. No batch execution,
+   no unsupervised submission, no hidden automation.
+
+2. **Dynamic skills composition, no fixed pipelines.** `pipeline_design.md` is
+   designed on-the-fly by the agent after reconnaissance. `_index.md` is a
+   skills registry loaded on demand, not a fixed routing table. Output modes
+   (doc_prose / pdf_typed / code / slides / mixed) should eventually become
+   loadable skills themselves, not preset pipelines.
+
+3. **Multi-turn iteration.** Complex tasks rarely succeed in one session.
+   Design for: (a) in-session interrupt/resume via `result.json` + workbench
+   files, and (b) cross-session iterative refinement where the user can
+   continue from an existing draft rather than starting over. `result.json`
+   should support `revision_needed` status.
+
+4. **Three-layer preference system.** Task-level preferences collected at
+   `[B]` → stored in `investigation/user_notes.md`. Course-level preferences
+   accumulated across assignments → stored in `data/course-overrides/<COURSE>.md`.
+   User-level preferences → stored in Claude Code project memory
+   (`~/.claude/projects/.../memory/`). Each layer has a different lifecycle
+   and serves a different purpose.
+
+5. **Review-first design.** Insert sub-agent review points wherever valuable.
+   Not limited to Copilot's three fixed sub-agents (A/B/C). Each pipeline
+   stage in `pipeline_design.md` can optionally declare "review after this
+   stage" with specific review criteria and an acceptance checklist. This
+   makes the review infrastructure composable rather than rigid.
+
 When adapting a Copilot pattern, document both sides:
 
 1. What Canvas Copilot does and why it is mature.

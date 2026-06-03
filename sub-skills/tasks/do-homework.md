@@ -1,40 +1,67 @@
 ---
 name: do-homework
-description: End-to-end homework completion. Use when the user asks "complete X assignment", "do my paper for DLED3020", "帮我做 lab 5". Runs Copilot-style Canvas reconnaissance, produces a draft via task-orchestrator, asks confirmation, optionally submits via canvascli.
+description: End-to-end homework completion. Use when the user asks "complete X assignment", "do my paper for DLED3020", "帮我做 lab 5". Runs Canvas Generic-style reconnaissance, designs a per-assignment pipeline, produces a draft, asks confirmation, and optionally submits via canvascli.
 ---
 
 # Do Homework
 
 The flagship M3 task. The user asks something like:
+
 - "帮我做 DLED3020 的 Paper Critique"
 - "complete DSAA2043 Lab Assignment 1"
 - "做一下 UCUG1077 的 group presentation slides"
 - "写 DSAA2012 的 project report"
 
-You go from "user names an assignment" to "draft / code / slides exists and (optionally) is submitted to Canvas". **Two and only two AskUserQuestion checkpoints**: at [B] for reconnaissance review + intent/user supplements, at [E] for submission confirmation. Everything else runs without prompting the user.
+You go from "user names an assignment" to "draft / code / slides exists and
+(optionally) is submitted to Canvas".
+
+AutoStudy follows Canvas Copilot's `canvas-generic` sequence, adapted to an
+assistant-style user loop:
+
+```text
+spec.md
+-> investigation/rubric.md
+-> references/
+-> investigation/review_a.json
+-> pipeline_design.md
+-> draft/
+-> verification_checklist.md
+-> verification.log
+-> result.json
+```
+
+The two user checkpoints are:
+
+1. `[B]` after reconnaissance, where the user can add group info, oral
+   instructions, dataset choice, scope, or stop.
+2. `[E]` after draft generation, where the user reviews and chooses whether to
+   submit.
 
 ## Preconditions
 
 Before running, check the same set as `sync-status.md`:
-1. `.venv/bin/canvascli version` returns 0
-2. `.venv/bin/canvascli whoami` returns 0 (session valid)
+
+1. `.venv/bin/canvascli version` returns 0.
+2. `.venv/bin/canvascli whoami` returns 0.
 
 If either fails, redirect to `tools/canvascli-setup.md` step 3 and stop.
 
-Also: if the user hasn't named a specific assignment, run `sync-status.md` first to surface options, then come back here.
+If the user has not named a specific assignment, run `sync-status.md` first to
+surface options, then come back here.
 
-## Execution flow
+## Execution Flow
 
-### [A] Build the assignment workbench (no user interaction)
+### [A] Build The Assignment Workbench
 
-This step follows Canvas Copilot's "inspect all sources first" habit. It prevents the most common failure mode: treating an empty assignment description or a single attachment link as the whole prompt.
+No user interaction. This step follows Canvas Copilot's "inspect all sources
+first" habit. Do not treat a Canvas assignment description, title, or single
+link as the whole prompt.
 
-#### [A1] Resolve identifiers
+#### [A1] Resolve Identifiers
 
 Resolve the request to a `(course_id, assignment_id)` pair.
 
-Preferred path after `sync-status`: if the user chose "plan item N", first run
-the selector:
+Preferred path after `sync-status`: if the user chose "plan item N", run:
 
 ```bash
 .venv/bin/python scripts/select_plan_item.py --index <N> --pretty
@@ -51,32 +78,31 @@ recommended_action
 existing_result_path
 ```
 
-Do not re-match by title when this object exists. It is the stable handoff from
-`sync-status` to `do-homework`.
+Do not re-match by title when this object exists.
 
-If `recommended_action == "review_or_submit"`, this is not a new
-reconnaissance task by default. Read `existing_result_path` and the workbench
-under `suggested_work_dir`, then help the user review, revise, or submit the
-existing draft.
+Action handling:
 
-If `recommended_action == "manual_review"`, stop before `[A3]` and tell the
-user this plan item likely needs manual Canvas interaction.
+| `recommended_action` | Behavior |
+|---|---|
+| `recon` | Continue to `[A2]`. |
+| `review_or_submit` | Read `existing_result_path` and `suggested_work_dir`; help the user review, revise, or submit the existing draft instead of re-running reconnaissance by default. |
+| `continue` | Inspect the previous error `result.json`; ask whether to retry before doing new work. |
+| `manual_review` | Stop before `[A3]`; tell the user this item likely needs manual Canvas interaction. |
 
 Direct natural-language path: if the user says "DLED3020 Paper Critique"
 without coming from a plan item, match against `data/assignments.json` by
-case-insensitive substring of `name` AND course code in `context_name`. If
-ambiguous, surface the candidates via AskUserQuestion at [B] — see below.
+case-insensitive substring of `name` and course code in `context_name`. If
+ambiguous, surface the candidates at `[B]`.
 
-#### [A2] Create the workbench directory
+#### [A2] Create The Workbench
 
 ```bash
 mkdir -p "data/homework/<COURSE>/<HWID>"
 ```
 
-Where `<HWID>` is a short slug derived from the assignment name (e.g.
-`paper-critique`). If the request came from `scripts/select_plan_item.py`, use
-its `suggested_work_dir` exactly so local result tracking and future scans point
-to the same workbench.
+If the request came from `scripts/select_plan_item.py`, use
+`suggested_work_dir` exactly so local result tracking and future scans point to
+the same workbench.
 
 Target structure:
 
@@ -87,6 +113,9 @@ data/homework/<COURSE>/<HWID>/
 ├── problem.md
 ├── references/
 ├── investigation/
+│   ├── rubric.md
+│   ├── unreachable.txt
+│   └── review_a.json
 ├── pipeline_design.md
 ├── draft/
 ├── verification_checklist.md
@@ -94,53 +123,94 @@ data/homework/<COURSE>/<HWID>/
 └── result.json
 ```
 
-The `canvas/` directory stores raw `canvascli` JSON snapshots. `spec.md` is the main reconnaissance artifact. `problem.md` is kept as a compatibility file for current tools.
+#### [A3] Canvas Generic Reconnaissance - Mandatory
 
-#### [A3] Run Copilot-style reconnaissance — MANDATORY
+Invoke `tools/problem-extractor.md` as an agent-led workflow. Do **not** run
+`scripts/recon_assignment.py` as the normal path. That script is historical
+transition evidence, not the production reconnaissance contract.
 
-Invoke `tools/problem-extractor.md`. It will:
+Follow the Canvas Generic stages:
 
-1. Fetch assignment, rubric, front page, syllabus, modules, every module's items, relevant pages, file metadata, and direct assignment files through atomic `canvascli` commands.
-2. Store raw JSON under `<work_dir>/canvas/`.
-3. Download reachable Canvas files into `<work_dir>/references/`.
-4. Write `<work_dir>/spec.md` with source-by-source context and source candidates.
-5. Write `<work_dir>/problem.md` as a compatibility view for downstream tools.
-6. Write `<work_dir>/investigation/rubric.md`, `unreachable.txt`, and `review_a.json`.
+1. **Stage 1 fetch-context**
+   Read assignment, rubric, front page, syllabus, modules, every module's items,
+   relevant pages, attached files, and external URLs through atomic
+   `canvascli` commands. Save raw JSON under `canvas/`. Then write a
+   standardized `spec.md` report with metadata, source trail, main spec
+   judgment, deliverables, requirements, rubric placeholder, inputs, gaps, and
+   evidence pointers.
 
-```bash
-.venv/bin/python scripts/recon_assignment.py \
-  --course-id "<course_id>" \
-  --assignment-id "<assignment_id>" \
-  --work-dir "data/homework/<COURSE>/<HWID>"
+2. **Stage 2 find-rubric**
+   Search Canvas rubric, `spec.md`, downloaded/fetched references, modules,
+   syllabus, and external spec text. Write `investigation/rubric.md`.
+
+3. **Stage 3 locate-inputs**
+   Download or fetch necessary PDFs, Google Doc text, starter code, datasets, or
+   external spec pages into `references/`. Record blocked resources in
+   `investigation/unreachable.txt`. Revise `spec.md` if fetched inputs change
+   the main spec judgment.
+
+4. **Stage 4 review investigation**
+   Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`, and
+   `investigation/unreachable.txt`. Prefer a separate reviewer/sub-agent when
+   available. Write strict JSON to `investigation/review_a.json`.
+
+5. **Stage 5 classify-output**
+   Classify the output mode (`doc_prose`, `pdf_annotated`, `pdf_typed`, `code`,
+   `form_answers`, `slides`, or `mixed`) and write the preliminary first line of
+   `pipeline_design.md`.
+
+After `[A3]`, immediately read:
+
+```text
+spec.md
+investigation/rubric.md
+investigation/unreachable.txt
+investigation/review_a.json
+pipeline_design.md
+problem.md
 ```
 
-**Read `spec.md` and `investigation/review_a.json` immediately after they're written.** Then read `problem.md` for compatibility with the existing toolchain. Do NOT skip this read. The whole skill collapses to template-fill nonsense if you treat `assignment.description` as the problem statement.
+Do not skip this read. The whole skill collapses into template content if you
+generate from the assignment title or Canvas description.
 
-#### [A4] Gate on reconnaissance quality
+#### [A4] Gate On Reconnaissance Quality
 
-If the extractor exited non-zero, OR `review_a.json.verdict` is not `proceed`, OR both `spec.md` and `problem.md` are thin, the problem text is missing or incomplete. Surface this at [B] as a third option:
+If `review_a.json.verdict` is not `proceed`, or `spec.md` does not clearly
+state deliverables and main source judgment, surface this at `[B]` as a recovery
+option:
 
-> "I checked the assignment page, rubric, course front page, syllabus, modules, pages, and linked files, but I still couldn't identify a complete spec. Options:
->   • Paste the spec text or URL yourself
->   • Point me to the correct module/page/file
->   • Stop for now"
+> "I checked the assignment page, rubric, course front page, syllabus, modules,
+> pages, linked files, and external URLs, but I still could not identify a
+> complete spec. Options: paste the spec text or URL, point me to the correct
+> module/page/file, or stop for now."
 
-Do NOT proceed silently to [C] when `spec.md` is thin — the deliverable will be garbage. This is the most important rule in this whole task.
+Do not proceed silently to `[C]` when `spec.md` is thin.
 
-### [B] Recon summary + user supplements + intent confirmation (AskUserQuestion #1)
+### [B] Recon Summary + User Supplements
 
-Read `spec.md` first, then `problem.md` (NOT `assignment.json.description` directly). Summarize for the user in 4–6 lines:
-- Course + assignment name + due_at (local time) + points_possible — from `spec.md` metadata
-- **Source trail**: name the sources inspected and which one appears to be the main spec. Real examples: "assignment page was empty; module Project guidelines contained `DSAA2011-26sp-project_announce-L01.pdf`" or "assignment page and Week 4 module both point to the same Google Doc spec; Week 9 slides look like supporting context."
-- **Concrete problem summary**: the actual questions/problems/deliverables being asked, drawn from `spec.md` / downloaded references. NOT a paraphrase of the assignment title.
-- Rubric or grading criteria in a compact list if present; say "Canvas rubric not found" if only spec-based criteria exist.
-- Detected scenario: `paper` / `slides` / `math` / `lab` (use the heuristic table in `task-orchestrator.md`)
+AskUserQuestion checkpoint #1.
 
-Even when `review_a.json.verdict == "proceed"`, this checkpoint is still mandatory. `proceed` means "Canvas materials are sufficient to start"; it does **not** mean the user has no extra group information, instructor oral notes, preferred dataset, formatting preference, or scope constraint.
+Read `spec.md` first, then `investigation/review_a.json`,
+`investigation/rubric.md`, and `problem.md`. Summarize in 4-6 lines:
 
-Then `AskUserQuestion`:
+- Course + assignment name + due date + points.
+- Source trail and main spec judgment. Example: "assignment page was empty;
+  module Project guidelines contained `DSAA2011-26sp-project_announce-L01.pdf`."
+- Concrete deliverables and tasks.
+- Rubric or grading criteria if found; say "Canvas rubric not found" if only
+  spec-based criteria exist.
+- Output mode from `pipeline_design.md`.
+- Gaps or human decisions, such as group ID, partner names, dataset choice,
+  video recording, oral instructor notes, or blocked external resources.
 
-```
+Even when `review_a.json.verdict == "proceed"`, this checkpoint is mandatory.
+`proceed` means the Canvas materials are sufficient to start; it does not mean
+the user has no extra group information, instructor oral notes, preferred
+dataset, formatting preference, or scope constraint.
+
+Ask:
+
+```text
 针对这份 <COURSE> <name>，我已经完成侦查。你想我:
   - 继续完整做草稿，暂无额外补充 (推荐)
   - 我有补充要求 / 组队信息 / 老师口头要求
@@ -148,13 +218,19 @@ Then `AskUserQuestion`:
   - 先不做，我自己看一下
 ```
 
-If user picks "我有补充要求": ask one free-form follow-up, write it to `<work_dir>/investigation/user_notes.md`, and carry it into `task_profile.yaml.user_overrides`.
+If the user provides supplements, write them to:
 
-If user picks "只做某几题": follow up with a single free-form question asking the scope, capture as `partial_scope: "<user text>"` in the task profile.
+```text
+<work_dir>/investigation/user_notes.md
+```
 
-If user picks "先不做": write `<work_dir>/result.json` with
-`status: "skipped"` using `scripts/write_homework_result.py`, then stop. Don't
-touch the orchestrator.
+If the user chooses partial scope, write:
+
+```text
+<work_dir>/investigation/user_scope.md
+```
+
+If the user stops, write `result.json` with `status: "skipped"`:
 
 ```bash
 .venv/bin/python scripts/write_homework_result.py \
@@ -167,53 +243,79 @@ touch the orchestrator.
   --note "user stopped after reconnaissance"
 ```
 
-If `[A4]` flagged reconnaissance failure, add a 4th option to this AskUserQuestion: "粘贴题目内容或 spec 链接给我" — capture the user's pasted text into `<work_dir>/problem_user.md` and reference it from `task_profile.source.problem_md`.
+If `[A4]` flagged reconnaissance failure and the user supplies pasted material,
+save it to:
 
-### [C] Construct task profile (no user interaction)
-
-Build a YAML file at `data/homework/<COURSE>/<HWID>/task_profile.yaml`. Schema follows `task-orchestrator.md`'s "Task profile schema" section:
-
-```yaml
-type: paper | slides | math | lab        # from [B] heuristic
-work_dir: data/homework/<COURSE>/<HWID>/
-source:
-  spec_md: data/homework/<COURSE>/<HWID>/spec.md                 # PRIMARY — source-by-source context
-  problem_md: data/homework/<COURSE>/<HWID>/problem.md           # compatibility view for current tools
-  references_dir: data/homework/<COURSE>/<HWID>/references/      # raw + extracted reference files
-  investigation_dir: data/homework/<COURSE>/<HWID>/investigation/
-  assignment_json: data/homework/<COURSE>/<HWID>/canvas/assignment.json # metadata only (due_at, rubric, points)
-deliverables:
-  - path: data/homework/<COURSE>/<HWID>/draft/final.pdf  # adjust per scenario
-    format: pdf
-constraints:
-  length: ~1500 words      # or whatever rubric implies
-  citation_style: APA      # APA / IEEE / none
-  language: en             # en / zh
-  partial_scope: null      # set if user chose partial in [B]
-user_overrides: []          # set from investigation/user_notes.md if user provided supplements
-required_capabilities:
-  # paper: [compose_essay, search_papers, make_figure, render_pdf]
-  # slides: [make_slides, render_pdf]
-  # math: [compose_essay, render_pdf]
-  # lab: [write_code, run_tests, compose_essay, render_pdf]
+```text
+<work_dir>/problem_user.md
 ```
 
-**Note on `source.spec_md` and `source.problem_md`**: new orchestration should read `spec.md` first. Current deliverable tools still treat `problem.md` as the source of truth, so `problem-extractor` writes both. `assignment_json` exists only for metadata (due_at, rubric, points) — tools that read `description` directly are buggy.
+Then update `spec.md`, `problem.md`, and `pipeline_design.md` so downstream
+tools read the supplemented context from files, not chat memory.
 
-See `tools/_index.md` "Scenario → Tool chain" table for the exact `required_capabilities` per scenario.
+### [C] Design Pipeline
 
-### [D] Orchestrator runs (no user interaction unless ambiguous)
+No user interaction.
 
-Invoke `tasks/task-orchestrator.md` with the profile. The orchestrator:
-1. Matches `required_capabilities` to tools in `tools/_index.md`
-2. Runs them sequentially, each writing to `work_dir`
-3. Final tool (usually `pdf-renderer`) produces the deliverable
+Read:
 
-The orchestrator must NOT prompt the user. If a tool genuinely needs disambiguation, it raises back to do-homework, which adds a single inline AskUserQuestion — but this should be rare. Aim for zero extra prompts.
+```text
+spec.md
+investigation/rubric.md
+investigation/review_a.json
+investigation/user_notes.md       # if present
+investigation/user_scope.md       # if present
+problem_user.md                   # if present
+pipeline_design.md
+sub-skills/tools/_index.md
+```
 
-If the orchestrator fails, stop and write `<work_dir>/result.json` with
-`status: "error"` using `scripts/write_homework_result.py` before surfacing the
-failure:
+Complete `pipeline_design.md`. It is the single-assignment execution plan,
+modeled after Canvas Copilot:
+
+```text
+Output mode: mixed (code + doc_prose + slides)
+
+## Deliverables
+- draft/<expected file>
+
+## Pipeline Stages
+### Sub-pipeline A: code
+...
+
+### Sub-pipeline B: doc_prose
+...
+
+## Tool Mapping
+- code-writer
+- test-runner
+- writing-helper
+- slide-maker
+- pdf-renderer
+
+## Verification Plan
+- ...
+
+## Human Review Items
+- ...
+```
+
+Do not write or require `task_profile.yaml`. The orchestrator reads
+`spec.md + pipeline_design.md` directly.
+
+### [D] Orchestrator Runs
+
+Invoke `tasks/task-orchestrator.md` with the workbench path. The orchestrator:
+
+1. Reads `spec.md`, `pipeline_design.md`, `investigation/rubric.md`, and
+   `problem.md`.
+2. Maps stages to tools in `tools/_index.md`.
+3. Runs the tools, each writing inside `work_dir`.
+4. Writes `verification_checklist.md` and `verification.log`.
+5. Returns a structured summary with deliverables and `human_review_items`.
+
+The orchestrator must not prompt the user. If it cannot execute the planned
+pipeline, stop and write `result.json` with `status: "error"`:
 
 ```bash
 .venv/bin/python scripts/write_homework_result.py \
@@ -226,27 +328,33 @@ failure:
   --note "<short failure summary>"
 ```
 
-### [E] Draft review + submission confirmation (AskUserQuestion #2)
+### [E] Draft Review + Submission Confirmation
+
+AskUserQuestion checkpoint #2.
 
 Once the orchestrator returns, show the user:
-- The deliverable path(s)
-- A one-line preview: for PDFs, file size + page count via `pdfinfo` if available; for code, file count + test pass rate
-- The Canvas submission UI URL: `https://hkust-gz.instructure.com/courses/<course_id>/assignments/<assignment_id>`
 
-Then `AskUserQuestion`:
+- Deliverable path(s).
+- A one-line preview: for PDFs, file size + page count via `pdfinfo` if
+  available; for code, file count + test pass rate.
+- Human review items from the orchestrator.
+- Canvas submission URL:
+  `https://hkust-gz.instructure.com/courses/<course_id>/assignments/<assignment_id>`
 
-```
+Ask:
+
+```text
 草稿已经在 <path>。要现在用 canvascli 提交到 Canvas 吗?
   - 是，提交
   - 不，我自己看完再说 (推荐)
   - 重做 / 改某部分 (告诉我具体改什么)
 ```
 
-If user picks "重做": capture their change request, go back to [C] with adjustments to `task_profile.yaml` (do NOT re-fetch [A]).
+If user picks "重做", capture the change request, update
+`investigation/user_notes.md` or `pipeline_design.md`, and rerun from `[C]`.
+Do not re-fetch `[A]` unless the user says Canvas changed.
 
-If user picks "不": write `<work_dir>/result.json` with
-`status: "draft_ready"` using `scripts/write_homework_result.py`, then stop.
-Tell them the file path one more time so they can find it.
+If user picks "不", write `result.json` with `status: "draft_ready"`:
 
 ```bash
 .venv/bin/python scripts/write_homework_result.py \
@@ -263,18 +371,21 @@ Tell them the file path one more time so they can find it.
   --note "draft generated; user chose to review manually before submission"
 ```
 
-### [F] Submit (only if user confirmed in [E])
+### [F] Submit
+
+Only if the user confirmed at `[E]`.
 
 ```bash
 .venv/bin/canvascli submit <assignment_id> "<deliverable_path>" -c <course_id> --pretty
 ```
 
-Capture stdout — it returns the submission object with attempt number, submitted_at, etc. Show the user:
-- ✓ Submitted as attempt #N at <submitted_at>
-- Canvas URL to verify
+Capture stdout. Show the user:
 
-If submit succeeds, write `<work_dir>/result.json` with
-`status: "submitted"`:
+- Submitted attempt number.
+- `submitted_at`.
+- Canvas URL to verify.
+
+If submit succeeds, write `result.json` with `status: "submitted"`:
 
 ```bash
 .venv/bin/python scripts/write_homework_result.py \
@@ -292,77 +403,64 @@ If submit succeeds, write `<work_dir>/result.json` with
   --canvas-url "https://hkust-gz.instructure.com/courses/<course_id>/assignments/<assignment_id>"
 ```
 
-If submit fails (assignment overdue / locked / etc.), write
-`<work_dir>/result.json` with `status: "error"` and the Canvas error message in
-`notes`, then tell the user the Canvas error message verbatim and offer to retry
-or stop. Do NOT loop automatically.
+If submit fails, write `result.json` with `status: "error"` and the Canvas
+error message in `notes`. Do not loop automatically.
 
-```bash
-.venv/bin/python scripts/write_homework_result.py \
-  --work-dir "data/homework/<COURSE>/<HWID>" \
-  --status error \
-  --course "<COURSE>" \
-  --course-id "<course_id>" \
-  --assignment-id "<assignment_id>" \
-  --assignment-name "<assignment_name>" \
-  --note "<Canvas submit error>"
-```
+## Output Format
 
-## Output format (final message to user)
-
-After [F] (or [E] if not submitting):
+After `[F]`, or `[E]` if not submitting:
 
 ```markdown
-## ✓ <COURSE> <assignment name>
+## <COURSE> <assignment name>
 
-**Deliverable:** `data/homework/<COURSE>/<HWID>/final.pdf` (N pages, ~Mkb)
-**Submission:** attempt #N, submitted_at 2026-05-23T14:32:00Z
+**Deliverable:** `data/homework/<COURSE>/<HWID>/draft/...`
+**Status:** draft_ready / submitted / skipped / error
 **Canvas URL:** https://hkust-gz.instructure.com/courses/.../assignments/...
 
-Files produced:
-- final.pdf — the submitted deliverable
-- draft.md — markdown source (for re-render)
-- references.bib — citations used (if paper)
-- figures/ — any generated figures
-```
-
-If not submitted:
-```markdown
-## Draft ready — <COURSE> <assignment name>
-
-**File:** `data/homework/<COURSE>/<HWID>/final.pdf`
-
-Not submitted. You can review and submit later via Canvas, or come back to me and say "submit it".
+Human review items:
+- ...
 ```
 
 ## Safety
 
-1. **Two AskUserQuestion checkpoints only**: [B] and [E]. Don't sneak more prompts in. If you need disambiguation, batch it into [B].
-2. **Never auto-submit.** Even if the user said "complete and submit" upfront, still confirm at [E].
-3. **Never modify the raw Canvas JSON** under `data/homework/.../canvas/*.json`. These are snapshots of Canvas state.
-4. **Stop on first orchestrator failure.** Don't silently retry. Surface the error and ask the user how to proceed.
-5. **Submit failures are not retries.** A 422 or 403 from Canvas means something the user should see — don't loop.
-6. **`partial_scope` is honored.** If the user said "only do problem 2", the writing-helper / code-writer must only produce that part. Don't over-deliver.
-7. **Ground every deliverable in `spec.md` / `problem.md`. NEVER produce placeholder content.** This is the most important rule:
-   - No `[PROBLEM N]` / `[TODO: align with actual project spec]` / `[此处由小组成员填入选题]` in any output file.
-   - The two acceptable inline markers are: `[CITATION NEEDED: <topic>]` (writing-helper, when `references.bib` lacks an entry) and `[CLARIFICATION NEEDED: <specific question>]` (any tool, when `problem.md` is genuinely ambiguous on a specific point).
-   - `[CLARIFICATION NEEDED]` markers are surfaced collectively at [E] — the user can answer them before submission.
-   - If `spec.md` / `problem.md` is too thin to produce real content at all, you must NOT have reached [C]. See [A4].
+1. **Two AskUserQuestion checkpoints only**: `[B]` and `[E]`.
+2. **Never auto-submit.** Even if the user said "complete and submit" upfront,
+   confirm at `[E]`.
+3. **Never modify raw Canvas JSON** under `canvas/*.json`.
+4. **Do not run script-led reconnaissance** as the normal path.
+5. **Stop on first orchestrator failure.**
+6. **Submit failures are not retries.**
+7. **Honor partial scope.**
+8. **Ground every deliverable in `spec.md`, `references/`, and
+   `pipeline_design.md`.** Do not produce `[PROBLEM N]`, `[TODO: align with
+   actual project spec]`, or `[此处由小组成员填入选题]` placeholders. The only
+   acceptable markers are `[CITATION NEEDED: ...]` and
+   `[CLARIFICATION NEEDED: ...]`, both surfaced at `[E]`.
 
 ## Pitfalls
 
-- **Course code in `data/assignments.json` is in `context_name`, not a separate field.** Pattern: `"DLED 3020 - English Communication I (L1)"`. Strip section + dashes when matching.
-- **Don't read `assignment.description` as the problem statement.** It may be empty, a file link, or one of several sources. Always go through `[A3]` to materialize `spec.md` and `problem.md`. This is the single most common cause of "the agent produced mechanical template content".
-- **Don't stop at the first match.** Canvas Copilot's mature workflow checks assignment page, rubric, front page, syllabus, modules, pages, files, and external URLs before deciding which source is the spec.
-- **The work_dir path can contain spaces and Chinese** (course names like "数据结构与算法"). Always double-quote shell arguments. See `docs/PITFALLS.md` #10.
-- **Don't re-fetch [A] on "重做"**. The Canvas description and attachments haven't changed. Just rebuild [C] with new constraints. (If the user says "the problem changed on Canvas", do re-fetch — but ask first.)
-- **`rubric` field can be `null`** even for assignments that have a rubric in the Canvas UI (rubric is associated via a separate API). If null, fall back to using the description's "Grading" section if present.
-- **`submission_types` matters for [F]**. `online_upload` is what canvascli submit handles. If the assignment is `online_text_entry` or `discussion_topic`, canvascli submit will fail — say so at [E] and offer manual fallback.
-- **`[CLARIFICATION NEEDED: ...]` markers** are tools' way of asking the user about a specific ambiguity in `problem.md`. Collect them all and present at [E] before submission — don't burn an AskUserQuestion checkpoint per marker.
+- **Don't read `assignment.description` as the problem statement.** It may be
+  empty, a file link, a Google Doc link, or one hint among many.
+- **Don't stop at the first match.** Canvas Copilot checks assignment page,
+  rubric, front page, syllabus, modules, pages, files, and external URLs before
+  deciding which source is the spec.
+- **Don't turn `spec.md` into a raw dump.** Full PDF or Google Doc text belongs
+  in `references/`; `spec.md` is the standardized report.
+- **Google Docs can be the main spec.** Try to fetch text. If blocked, record it
+  in `unreachable.txt` and let `review_a.json` decide whether it blocks work.
+- **Course code in `data/assignments.json` is in `context_name`, not a separate
+  field.**
+- **The work_dir path can contain spaces and Chinese.** Always quote shell
+  arguments.
+- **`submission_types` matters for `[F]`.** `online_upload` is what
+  `canvascli submit` handles.
+- **`[CLARIFICATION NEEDED: ...]` markers** are batched at `[E]`, not asked one
+  by one.
 
 ## Cross-references
 
-- Scenario detection heuristics: `tasks/task-orchestrator.md` "Heuristics for type inference"
-- Tool capability matrix: `tools/_index.md` "Scenario → Tool chain"
-- Canvas commands used: `tools/canvascli-api.md` (atomic context commands, submit)
-- Submission protocol details: `tools/canvascli-api.md` submit section
+- Reconnaissance: `tools/problem-extractor.md`
+- Pipeline execution: `tasks/task-orchestrator.md`
+- Tool capability matrix: `tools/_index.md`
+- Canvas commands: `tools/canvascli-api.md`
+- Submission protocol: `tools/canvascli-api.md`

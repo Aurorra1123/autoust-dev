@@ -66,10 +66,10 @@
     "id": "M3-DO-HOMEWORK",
     "category": "skill-task",
     "priority": "P0",
-    "description": "do-homework.md：第一个真实端到端作业 task",
+    "description": "do-homework.md：第一个真实端到端作业 task（MVP 历史 flow）",
     "acceptance": [
       "sub-skills/tasks/do-homework.md 完整流程",
-      "[A] problem-extractor 通过 canvascli 原子上下文命令生成 spec.md + problem.md",
+      "[A] problem-extractor 生成可用作业上下文",
       "[B] AskUserQuestion 询问意图（是 / 只做某几题 / 不用）",
       "[C] 调 task-orchestrator 执行",
       "[E] AskUserQuestion 询问是否提交",
@@ -80,7 +80,8 @@
       "sub-skills/tasks/do-homework.md [A]→[F] 流程已写",
       "data/homework/DLED3020/paper-critique/{assignment.json, draft.md, references.bib, final.pdf} — final.pdf 45,684 B / 3 pp / PDF v1.5"
     ],
-    "status": "passing"
+    "status": "passing",
+    "notes": "这是 MVP 历史验收项，证明 do-homework 能产出真实作业草稿。当前正式架构已迁移到 M3.5 的 Canvas Generic reconnaissance + pipeline_design.md flow，单独跟踪，不用本项冒充新 flow 已 passing。"
   },
   {
     "id": "M3-WRITING-HELPER",
@@ -272,7 +273,7 @@
     "description": "把 AutoStudy 单作业目录升级为 Canvas Pilot 式工作台结构",
     "acceptance": [
       "定义 data/homework/<COURSE>/<HWID>/canvas/ 保存原子 CLI JSON 快照",
-      "定义 spec.md 作为完整侦查上下文，problem.md 作为旧工具兼容层",
+      "定义 spec.md 作为标准化侦查报告，problem.md 作为旧工具兼容层",
       "定义 references/、investigation/、draft/、pipeline_design.md、verification_checklist.md、verification.log、result.json 的职责",
       "更新 do-homework / problem-extractor / task-orchestrator 文档中的 work_dir 约定",
       "不破坏已验证的 paper / slides / math / lab MVP 路径"
@@ -281,24 +282,29 @@
       "docs/canvas-pilot-reference.md 记录 Canvas Copilot DSAA2011 run 结构和 AutoStudy 过渡结构设计",
       "sub-skills/tools/problem-extractor.md defines canvas/ + spec.md + references/ + investigation/ + problem.md",
       "sub-skills/tasks/do-homework.md and task-orchestrator.md updated to use spec.md-first workbench paths",
-      "2026-06-02 task-orchestrator.md now requires pipeline_design.md, verification_checklist.md, verification.log, and human_review_items in the orchestrator summary"
+      "2026-06-02 task-orchestrator.md now requires pipeline_design.md, verification_checklist.md, verification.log, and human_review_items in the orchestrator summary",
+      "2026-06-02 docs updated so task-orchestrator reads spec.md + pipeline_design.md instead of task_profile.yaml",
+      "2026-06-02 live agent-led workbenches created under data/homework/DSAA2011/project and data/homework/UCUG1505/final-project with canvas/, spec.md, references/, investigation/, pipeline_design.md, draft/, verification_checklist.md, and verification.log",
+      "2026-06-02 DSAA/UCUG workbench verification logs recorded orchestrator dry-run PASS/SKIP outcomes; data/ remains gitignored local evidence"
     ],
-    "status": "in-progress",
-    "notes": "先设计结构，再改侦查流程；生成和验证阶段可以渐进迁移。"
+    "status": "passing",
+    "notes": "Workbench structure is now validated on two real Canvas cases. Generated data/homework artifacts remain local/gitignored; durable evidence is recorded in progress and feature-list docs."
   },
   {
     "id": "M3.5-DEEP-RECON",
     "category": "skill-tool",
     "priority": "P0",
-    "description": "将 problem-extractor 升级为 Copilot 式深度侦查流程，逐源读取 Canvas 上下文并生成 spec.md",
+    "description": "将 problem-extractor 升级为 agent-led Canvas Generic Stage 1-5 深度侦查流程",
     "acceptance": [
       "侦查阶段调用 canvascli assignment、rubric、front-page、syllabus、modules、module-items、page、file、assignment-files",
       "完整查看所有 likely sources 后再判断主 spec，不做直接精准匹配后提前停止",
       "下载或记录 assignment/module/page 中发现的文件和外链到 references/ 或 investigation/unreachable.txt",
-      "生成 spec.md，包含来源分区、主 spec 判断、rubric 摘要、缺失/不可达材料",
+      "生成标准化 spec.md，包含来源分区、主 spec 判断、交付物、rubric 摘要、缺失/不可达材料",
+      "写 investigation/rubric.md、investigation/unreachable.txt、investigation/review_a.json",
+      "Stage 5 根据 spec/rubric/references 分类 output mode，并启动 pipeline_design.md",
       "继续生成 problem.md 兼容现有 writing-helper / code-writer / slide-maker",
       "在 DSAA2011 Project 上能找到 module item PDF 主 spec，在 UCUG1505 FINAL project 上能识别 Google Doc spec 和邻近 slides 上下文",
-      "仓库提供稳定 scripts/recon_assignment.py，do-homework 不再从 markdown 临时抄脚本",
+      "正式 do-homework 路径不运行 scripts/recon_assignment.py；该脚本只保留为历史过渡验证",
       "侦查后 [B] 必须向用户汇报来源判断并询问补充信息，即使 review_a verdict 为 proceed"
     ],
     "evidence": [
@@ -306,13 +312,42 @@
       "2026-06-02 final-review recheck: DSAA2011 assignment description 0 B, front page 404/not enabled, modules 4, module 12955 project PDF found, 3 references downloaded, file 688370 metadata failed non-blocking, review_a verdict proceed",
       "2026-06-01 /tmp/autoust-recon-verify/ucug1505: spec.md 19,771 B; assignment page and Week 4 module item both show Final project specification Google Doc; Week 9 slides listed as project context",
       "Template extracted from problem-extractor.md and py_compile passed before real verification",
-      "scripts/recon_assignment.py added as stable runtime for Copilot-style reconnaissance",
+      "Historical transition: scripts/recon_assignment.py added and proved atomic canvascli sources can reach DSAA2011/UCUG1505 context",
       "do-homework.md [B] updated to include mandatory user supplement checkpoint after recon",
       "2026-06-02 /tmp/autoust-recon-script-verify/dsaa2011: scripts/recon_assignment.py produced spec.md 66,322 B, problem.md 155,415 B, 4 modules / 69 module items, assignment description 0 B, project PDF file 625115 downloaded, review_a verdict proceed",
-      "2026-06-02 /tmp/autoust-recon-script-verify/ucug1505: scripts/recon_assignment.py produced spec.md 22,527 B, problem.md 14,274 B, 14 modules / 64 module items, Final project Google Doc and Week 9 slides recorded, media GIFs inspected-not-downloaded, review_a verdict proceed"
+      "2026-06-02 /tmp/autoust-recon-script-verify/ucug1505: scripts/recon_assignment.py produced spec.md 22,527 B, problem.md 14,274 B, 14 modules / 64 module items, Final project Google Doc and Week 9 slides recorded, media GIFs inspected-not-downloaded, review_a verdict proceed",
+      "2026-06-02 docs pivot: problem-extractor.md, do-homework.md, task-orchestrator.md, tools, PITFALLS, ROADMAP, and canvas-pilot-reference now define agent-led Canvas Generic Stage 1-5 as the official path",
+      "2026-06-02 agent-led DSAA2011 Project recon: assignment description 0 B, Canvas rubric absent, front page not enabled, syllabus checked, all 4 modules / 69 module items inspected, module 12955 file 625115 identified as main spec, 4 project-module PDFs downloaded, review_a verdict proceed",
+      "2026-06-02 agent-led UCUG1505 FINAL project recon: assignment description linked Google Doc, Canvas rubric absent, front page checked, syllabus empty, all 14 modules / 64 module items inspected, Week 4 corroborated same Google Doc, Week 9 slides marked supporting context, Google Doc spec and documentation template fetched, review_a verdict proceed",
+      "2026-06-02 Stage 4 used cold self-review because no sub-agent reviewer tool is available; review_a.json records review_method cold_read_self_review_no_sub_agent_available"
     ],
     "status": "passing",
-    "notes": "正式 scripts/recon_assignment.py 已加入并用 DSAA2011 / UCUG1505 两个真实 case 回归通过；侦查只写 spec.md/problem.md/review_a.json，result.json 归 do-homework 流程状态。"
+    "notes": "Official path is now validated as agent-led Canvas Generic Stage 1-5 on DSAA2011 Project and UCUG1505 FINAL project. scripts/recon_assignment.py remains historical transition evidence only."
+  },
+  {
+    "id": "M3.5-PIPELINE-DESIGN",
+    "category": "architecture",
+    "priority": "P0",
+    "description": "将 do-homework / task-orchestrator 迁移到 spec.md -> pipeline_design.md -> draft/ 的单作业执行契约",
+    "acceptance": [
+      "do-homework [C] 在用户补充后完成 pipeline_design.md，而不是写 task_profile.yaml",
+      "pipeline_design.md 明确 output mode、deliverables、sub-pipelines、tool mapping、verification plan、human review items",
+      "task-orchestrator 只从 workbench 读取 spec.md、pipeline_design.md、investigation/rubric.md、references/ 和 problem.md 兼容摘要",
+      "writing-helper / code-writer / slide-maker / paper-search 从 spec.md + pipeline_design.md 获取任务约束，不再要求 task_profile.yaml",
+      "DSAA2011 Project 能生成 mixed pipeline：code/notebook、report、presentation、requirements、package",
+      "UCUG1505 FINAL project 能生成 mixed pipeline：code/source zip、documentation、video demo human review item",
+      "至少完成一次真实 flow 连通测试，证明 task-orchestrator 可以按 pipeline_design.md 执行或清晰返回 human review blockers"
+    ],
+    "evidence": [
+      "2026-06-02 docs pivot: do-homework.md [C] now writes pipeline_design.md and explicitly says not to write task_profile.yaml",
+      "2026-06-02 task-orchestrator.md now consumes spec.md + pipeline_design.md and warns not to resurrect task_profile.yaml",
+      "2026-06-02 tools/_index.md, writing-helper.md, code-writer.md, slide-maker.md, and paper-search.md updated to read the workbench and pipeline_design.md",
+      "2026-06-02 DSAA2011 pipeline_design.md validated: Output mode mixed (code + doc_prose + slides + package), deliverables notebook/report PDF/presentation PDF/requirements/zip, registered tools mapped, orchestrator dry-run stopped on human blockers for group/dataset/style files instead of fabricating outputs",
+      "2026-06-02 UCUG1505 pipeline_design.md validated: Output mode mixed (code + doc_prose + video_manual + package), deliverables documentation/code zip/video URL, registered tools mapped for automatable parts, orchestrator dry-run stopped on human blockers for partner/concept/code/video details",
+      "2026-06-02 verification_checklist.md and verification.log written for both local workbenches; result.json intentionally not written because no user-approved draft/submission terminal state occurred"
+    ],
+    "status": "passing",
+    "notes": "spec.md -> pipeline_design.md -> task-orchestrator dry-run is validated on the two required real cases. Next work should turn the dry-run blocker handling into a smoother do-homework user supplement and execution experience."
   },
   {
     "id": "M3.5-RESULT-JSON",
@@ -324,7 +359,7 @@
       "侦查失败、草稿完成、不提交、提交成功/失败都有明确状态",
       "do-homework 结束时写 result.json，sync-status 后续可读取",
       "状态文件不包含 Canvas cookie、token 或敏感原文大段内容",
-      "明确 result.json 由 do-homework 写；recon_assignment.py 只写 spec.md/problem.md/review_a.json"
+      "明确 result.json 由 do-homework 写；侦查阶段只写 spec.md、problem.md、investigation/* 和 pipeline_design.md 初版"
     ],
     "evidence": [
       "scripts/write_homework_result.py added as stable writer for per-assignment result.json",
@@ -336,7 +371,7 @@
       "2026-06-02 json.tool passed for docs/plans/feature-list.json and both smoke result.json files; git diff --check passed"
     ],
     "status": "passing",
-    "notes": "单作业状态闭环已落到稳定脚本；result.json 仍由 do-homework 写，recon_assignment.py 只写 spec.md/problem.md/review_a.json。scan-plan/batch execute 是后续方向，不在本项实现。"
+    "notes": "单作业状态闭环已落到稳定脚本；result.json 仍由 do-homework 写。正式侦查路径已从脚本版改为 agent-led Canvas Generic，scan-plan/batch execute 不在本项实现。"
   },
   {
     "id": "M3.5-SCAN-PLAN",
@@ -370,6 +405,88 @@
     ],
     "status": "passing",
     "notes": "sync-status now has a stable assistant-style planning layer. It proposes next actions but still requires the user to choose a single item before do-homework runs."
+  },
+  {
+    "id": "M3.5-DESIGN-PRINCIPLES",
+    "category": "architecture",
+    "priority": "P0",
+    "description": "确立 M3.5+ 五条设计理念：助手式定位、动态 skills 组合、多轮迭代、三层偏好、审查前置",
+    "acceptance": [
+      "五条设计理念写入 COLLABORATION.md Design Principles 小节",
+      "ROADMAP.md M3.5 设计理念小节覆盖五条原则",
+      "AGENTS.md 引用设计理念摘要",
+      "canvas-pilot-reference.md 包含 Copilot 完整 11 阶段对比表和架构差异表"
+    ],
+    "evidence": [
+      "2026-06-03 COLLABORATION.md: added Design Principles (M3.5+) section with 5 principles",
+      "2026-06-03 ROADMAP.md: added 设计理念 section under M3.5 covering all 5 principles",
+      "2026-06-03 AGENTS.md: added principle summary reference",
+      "2026-06-03 canvas-pilot-reference.md: added Section 6 with 11-stage comparison table and architecture diff table",
+      "2026-06-03 deep-dived into /Users/deepwisdom/Desktop/project/canvas_copilot/ actual codebase: canvas-generic SKILL.md, framework skills, per-course skills, hooks, runs, courses.yaml"
+    ],
+    "status": "passing",
+    "notes": "Design principles established after user clarified AutoStudy's assistant-oriented identity and long-term direction. These principles guide all subsequent development."
+  },
+  {
+    "id": "M3.5-ITERATION",
+    "category": "architecture",
+    "priority": "P1",
+    "description": "多轮迭代能力：单轮中断恢复 + 跨轮次持续优化，result.json 支持 revision_needed",
+    "acceptance": [
+      "result.json schema 增加 revision_needed 状态",
+      "do-homework 支持从已有 workbench 继续迭代（非从零开始）",
+      "pipeline 中每个阶段的产物可追溯和可重做",
+      "在真实作业上验证中断恢复和跨轮迭代"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "notes": "Design principle 3 (multi-turn iteration). Critical for complex tasks that won't be done well in one session."
+  },
+  {
+    "id": "M3.5-PREFERENCE-SYSTEM",
+    "category": "architecture",
+    "priority": "P2",
+    "description": "三层偏好体系：任务级 ([B] 采集) → 课程级 (overlay 沉淀) → 用户级 (Claude Code memory)",
+    "acceptance": [
+      "任务级：do-homework [B] 采集用户补充，存 investigation/user_notes.md",
+      "课程级：首次作业侦查后积累课程偏好，存 data/course-overrides/<COURSE>.md",
+      "用户级：利用 Claude Code 项目 memory 存储跨学期个人偏好",
+      "在真实课程上验证偏好积累和自动读取"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "notes": "Design principle 4 (three-layer preference). Task-level is basic infrastructure; course-level and user-level are progressive enhancements."
+  },
+  {
+    "id": "M3.5-SUB-AGENT-REVIEW",
+    "category": "architecture",
+    "priority": "P1",
+    "description": "审查前置：pipeline 中每个阶段可按需声明子代理审查 + 验收清单",
+    "acceptance": [
+      "pipeline_design.md 支持在每个 stage 后声明 review 点",
+      "Sub-agent A (侦查完整性) 从 cold self-review 升级为独立 sub-agent",
+      "Sub-agent B (验证清单设计) 从 rubric 提取可量化检查项",
+      "Sub-agent C (验证覆盖度审查) 防止 false-pass",
+      "在真实作业上验证审查机制的完备性"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "notes": "Design principle 5 (review-first). Not limited to Copilot's fixed 3 sub-agents; each pipeline stage can optionally declare review points."
+  },
+  {
+    "id": "M3.5-DYNAMIC-PIPELINE",
+    "category": "architecture",
+    "priority": "P1",
+    "description": "动态 skills 组合：pipeline_design.md 由 agent 现场设计，输出模式 skills 化",
+    "acceptance": [
+      "pipeline_design.md 不从固定模板选择，而是根据侦查结果现场组合 skills",
+      "输出模式 (doc_prose/pdf_typed/code/slides/mixed) 不绑定固定 pipeline",
+      "在真实 mixed 作业上验证动态组合效果优于固定 pipeline",
+      "_index.md 的 Scenario 表从固定路由改为参考指导"
+    ],
+    "evidence": [],
+    "status": "pending",
+    "notes": "Design principle 2 (dynamic skills composition). The key differentiator from Copilot's fixed pipeline templates."
   },
   {
     "id": "M4-TUTOR",

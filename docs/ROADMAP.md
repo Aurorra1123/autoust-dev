@@ -40,6 +40,7 @@ clone AutoStudy 仓库 → 执行 skill.md
 M1  Canvas 抓取器 + 抽离成 canvascli   ✅ 已完成
 M2  最小可 load skill                  ✅ 已完成
 M3  作业辅助 + 启发式调度               ✅ MVP（4 场景已端到端跑通）
+M3.5 Canvas Generic 式作业侦查 + 单作业计划  🚧 当前重点
 M4  反问式学习助手
 M5  多平台 + 主动提醒
 ```
@@ -156,25 +157,27 @@ AutoStudy/
 
 **端到端通路已验证**（commit `37b7daf`）：任务画像 → orchestrator 读 `_index.md` → 匹配 `render_pdf` → pdf-renderer 两步法 → 真 PDF 落盘 + magic bytes 校验。
 
-### `do-homework.md` 软交互流程（设计已定）
+### `do-homework.md` 软交互流程（M3.5 正在升级）
 
 不是每步都卡用户，**只两个询问点**：
 
 ```
 用户："帮我完成 DSAA2043 hw3"
   ↓
-[A] Agent 用 canvascli 找题 → 拉作业 description → 识别类型
+[A] 解析用户选择或 plan item → 建单作业 workbench
+    → Canvas Generic Stage 1-5 侦查
+    → 写 spec.md / rubric.md / references/ / review_a.json / pipeline_design.md 第一行
   ↓
 [B] ★ 询问点 1：摘要 + 询问意图
-       "DSAA2043 hw3：5 道动态规划证明题 + 2 道 OJ 编程题，ddl 12-13 15:59。
-        要我直接做吗？"
-       AskUserQuestion: [是 / 只做某几题 / 不用]
+       汇报：主 spec 来源、交付物、rubric、不可达资源、output mode
+       AskUserQuestion: [继续完整做 / 我有补充 / 只做某范围 / 先不做]
   ↓
-[C] 用户同意 → 调 task-orchestrator
-       orchestrator 内部完成 tool 调度 + 连贯执行
-       中间只在遇到必须问的歧义时才中断
+[C] 用户同意 → do-homework 完成 pipeline_design.md
+       不写 task_profile.yaml
   ↓
-[D] 完成后：草稿展示
+[D] task-orchestrator 执行 pipeline_design.md
+       tools 读 spec.md + references/ + rubric + 用户补充
+       写 draft/、verification_checklist.md、verification.log
   ↓
 [E] ★ 询问点 2：提交确认
        AskUserQuestion: [canvascli submit Canvas / 我先看草稿 / 取消]
@@ -260,6 +263,111 @@ M3 不可能一口气把所有产出能力做完。首发选 **Report** 类作�
 9. ✅ `tools/slide-maker.md`（guizang 默认 + beamer fallback）
 10. ✅ Report / slides / math / lab 4 个场景在真实作业上跑通
 11. ⏸ M3-SUBMIT：`canvascli submit` 在真实未过期作业上端到端验证（当前代码层已验，需 sandbox 作业补一次真实回归）
+
+---
+
+## M3.5. Canvas Generic 式作业侦查 + 单作业计划（✅ 基础验证通过）
+
+**目标**：把 M3 的"能产出"升级为"先稳定理解作业，再按真实 spec 现场设计执行计划"。这一阶段大量参考 Canvas Copilot，但保留 AutoStudy 的助手式用户循环。
+
+### 已完成 / 已对齐
+
+- `canvascli` 数据层已经补齐 Copilot 式原子命令：`assignment`、`rubric`、`front-page`、`syllabus`、`modules`、`module-items`、`page`、`file`、`assignment-files`；不使用 `assignment-context` 聚合命令。
+- `sync-status` 已升级为 scan-plan：写 `data/runs/<today>/pending_assignments.json`、`plan.json`、`REPORT.md`，只建议下一步，不自动执行作业。
+- `scripts/select_plan_item.py` 已作为 numbered plan item 到单作业 workbench 的稳定 handoff。
+- 单作业 workbench 结构已确定：`canvas/`、`spec.md`、`references/`、`investigation/`、`pipeline_design.md`、`draft/`、`verification_checklist.md`、`verification.log`、`result.json`。
+- `result.json` 已作为 do-homework 的状态收据；`review_a.json` 只表示侦查是否足够。
+- DSAA2011 Project 与 UCUG1505 FINAL project 已按 agent-led Canvas Generic Stage 1-5 跑通到 `pipeline_design.md` 和 task-orchestrator dry-run。
+
+### 当前批准方向
+
+正式侦查流程完全参考 Canvas Copilot `canvas-generic` Stage 1-5，但通过 `canvascli` 原子命令实现：
+
+```text
+Stage 1 fetch-context
+  read assignment / front page / modules / syllabus / attached files / external URLs
+  write standardized spec.md
+
+Stage 2 find-rubric
+  search Canvas rubric, spec, PDFs, modules, syllabus, external URLs
+  write investigation/rubric.md
+
+Stage 3 locate-inputs
+  fetch PDFs, Google Docs, starter code, datasets, external text
+  write references/ and investigation/unreachable.txt
+
+Stage 4 review investigation
+  reviewer/sub-agent if available; otherwise cold self-review
+  read spec.md + rubric.md + references/ + unreachable.txt
+  write investigation/review_a.json
+
+Stage 5 classify-output
+  choose doc_prose / pdf_annotated / pdf_typed / code / form_answers / slides / mixed
+  start pipeline_design.md
+```
+
+`scripts/recon_assignment.py` 是历史过渡验证，不是正式 do-homework 路径。正式路径由 agent 逐源阅读并写 `spec.md`；机械脚本最多只能辅助保存 JSON 或下载单个文件，不能替 agent 判断主 spec、写最终 spec、写 review_a 或分类 output mode。
+
+### 已完成验收
+
+已用两个真实 case 验证新 flow，不只是文档演练：
+
+- **DSAA2011 Project**：assignment 页面为空，真正 spec 在 module PDF；`pipeline_design.md` 识别 `mixed`，包含 notebook/code、report PDF、presentation PDF、requirements、可选 data/package；dry-run 正确停在 group/dataset/style-file blockers。
+- **UCUG1505 FINAL project**：assignment page 与 Week 4 module 指向同一个 Google Doc spec，Week 9 slides 是支持上下文；`pipeline_design.md` 识别 `mixed`，包含 code/source zip、documentation、video demo 相关 human review item；dry-run 正确停在 partner/concept/code/video blockers。
+
+通过标准已满足：`spec.md` 能清楚说明主 spec 和交付物，`review_a.json.verdict == "proceed"`，`pipeline_design.md` 可被 task-orchestrator dry-run 读取并返回 human blockers，且工具不再需要 `task_profile.yaml`。
+
+### 后续开发重点
+
+- 把 do-homework `[B]` 的侦查汇报和用户补充问题做得更顺：直接把 DSAA/UCUG 这种 blockers 转成用户可理解的问题。
+- 让 task-orchestrator 对 `pipeline_design.md` 的执行结果有更稳定的 structured summary，区分 `success` / `partial` / `failed_due_to_human_blocker`。
+- 在用户补齐 DSAA group/dataset/style-file 或 UCUG partner/concept/video/code 信息后，跑一次真正 draft generation，而不是只做 dry-run。
+
+### 设计理念（M3.5+ 长期方向）
+
+以下五条设计理念指导 M3.5 及后续所有开发。这些原则来自对 Canvas Copilot 的深度参考，但服务于 AutoStudy 的助手式定位：
+
+#### 1. 助手式，不是自动化
+
+Canvas Copilot 是"scan → batch plan → approval → batch execute → report"的自动化系统。AutoStudy 是"用户说一句话，agent 在环理解、侦查、汇报、确认、执行、审查"的助手。借鉴 Copilot 的成熟机制（原子数据访问、逐源侦查、结构化状态），但每次交互都保留用户的选择权和知情权。
+
+#### 2. 动态 skills 组合，不绑固定 pipeline
+
+MVP 阶段的固定流水线（paper → search + write + render）验证了单个 tool 的可靠性，但复杂/混合任务（如"论文搜索 + 代码分析 + report 撰写 + PPT 构造"）无法靠固定链完成好。AutoStudy 的方向是：充分发挥 Claude Code 的 agent 能力，`pipeline_design.md` 由 agent 根据侦查结果现场设计，`_index.md` 是按需加载的 skills 注册表而非固定路由表。输出模式（doc_prose / pdf_typed / code / slides / mixed）也不应是预设 pipeline，而是 skills 的按需组合——后续可以考虑将输出模式本身也设计为可加载的 skill。
+
+#### 3. 多轮迭代：单轮中断恢复 + 跨轮次持续优化
+
+复杂任务在一个会话中大概率做不好。AutoStudy 的设计必须同时考虑：
+
+- **单轮内的中断恢复**：如果会话中途 context 溢出或 agent 中断，`result.json` + workbench 文件结构允许下一个 session 从断点继续。
+- **跨轮次的迭代优化**：一轮做完后用户不满意（草稿质量不够、某个部分需要重做、新信息需要补充），应该能从已有 workbench 继续迭代，而不是从零开始。`result.json` 的状态不只是 `draft_ready` / `submitted`，还要支持 `revision_needed`，pipeline 中每个阶段的产物都应可追溯和可重做。
+
+这是 AutoStudy 与 Canvas Copilot 的关键差异：Copilot 的目标是"一次性走完 pipeline"，AutoStudy 的目标是"长期陪伴用户打磨交付物"。
+
+#### 4. 三层偏好体系
+
+用户偏好不应该每次都从零采集。AutoStudy 设计三层偏好沉淀：
+
+| 层级 | 采集时机 | 存储位置 | 生命周期 |
+|---|---|---|---|
+| **任务级** | do-homework `[B]` 用户补充环节 | `investigation/user_notes.md` / `investigation/user_scope.md` | 单次作业 |
+| **课程级** | 首次作业侦查后积累，后续作业自动读取 | `data/course-overrides/<COURSE>.md` 或 workbench overlay | 学期内持续 |
+| **用户级** | 用户主动声明或 agent 从交互中推断 | Claude Code 项目级 memory（`~/.claude/projects/.../memory/`） | 跨学期持久 |
+
+任务级偏好是最基础的——用户在 `[B]` 补充的组队信息、口头要求、选题方向等。课程级偏好是进阶——如果某门课教授"始终要求 2000 字"、"偏好 PDF 格式"、"作业 spec 总是在 module 里"，这些不需要每次强调。用户级偏好最持久——借助 Claude Code 的 memory 能力，可以存储"我喜欢中文输出"、"我的代码风格偏好"等跨课程的个人偏好。
+
+Canvas Copilot 用 per-cluster learnings overlay 文件实现类似功能，但它的 overlay 是纯机器累积的。AutoStudy 的三层设计更灵活，因为中间层可以借助 agent 的理解力做"课程习惯推断"，而不只是机械记录。
+
+#### 5. 审查前置：尽可能多的子代理审查点
+
+参考 Canvas Copilot 的 3 个 sub-agent 审查机制（A: 调查完整性 / B: 验证清单设计 / C: 验证覆盖度），AutoStudy 的设计理念是：
+
+- **侦查阶段**：Sub-agent A 审查 `spec.md` + `rubric.md` + `references/` 的完整性（已实现为 cold self-review，后续升级为独立 sub-agent）。
+- **管线设计阶段**：审查 `pipeline_design.md` 的合理性——交付物是否覆盖 spec 要求、skills 选择是否充分、遗漏了什么。
+- **生成阶段**：每个 pipeline stage 完成后，可以插入子代理审查 + 验收清单。例如 code-writer 完成后审查代码质量，writing-helper 完成后审查论述结构。这不是固定审查，而是 `pipeline_design.md` 中每个阶段都可以声明"此阶段完成后需要审查"和对应的审查要点。
+- **验证阶段**：Sub-agent B 从 rubric 设计可量化的验证清单，Sub-agent C 审查验证覆盖度（防止 false-pass）。
+
+核心原则：pipeline 中每完成一个原子阶段，都可以选择加一个子代理审查。审查点不是固定的，而是在 `pipeline_design.md` 中按需声明。这样既保证了审查的完备性，又不强制每个阶段都审查（有些阶段足够简单，审查成本大于收益）。
 
 ---
 
@@ -398,3 +506,9 @@ canvascli 仓库            AutoStudy 仓库
 
 **M3 收尾**（小，可同 M4 一起做）：
 1. 用户提供未过期 / sandbox 作业 → 跑一次真实 `canvascli submit` → 翻 M3-SUBMIT 到 passing
+
+**M3.5+ 长期方向**：
+1. 把生成和验证闭环做鲁棒（动态 skills 组合、多轮迭代、阶段级审查）
+2. 建立三层偏好体系（任务级 / 课程级 / 用户级）
+3. 在真实作业上跑通完整 do-homework flow（侦查 → 用户补充 → 动态管线设计 → 生成 → 审查 → 迭代）
+4. 输出模式按需 skills 化（doc_prose / pdf_typed / code / slides 等不再是预设 pipeline，而是可加载的 skill 组合）

@@ -33,6 +33,21 @@ Canvas Copilot is the design reference for this project. Prefer the local clone 
 
 AutoStudy's distilled notes live in `docs/canvas-pilot-reference.md`. Treat that file as the first stop for "what should we borrow from Canvas Copilot?" and go to the source repo when implementation details matter.
 
+Current M3.5 homework direction is recorded in `docs/COLLABORATION.md` and
+`docs/canvas-pilot-reference.md`: use agent-led Canvas Generic Stage 1-5
+reconnaissance, write a standardized `spec.md`, keep `problem.md` only as
+compatibility, and execute through `pipeline_design.md` instead of
+`task_profile.yaml`.
+
+Five design principles govern M3.5+ development (full text in
+`docs/COLLABORATION.md` → Design Principles):
+
+1. Assistant, not automation
+2. Dynamic skills composition, no fixed pipelines
+3. Multi-turn iteration (in-session resume + cross-session refinement)
+4. Three-layer preference system (task / course / user)
+5. Review-first design (composable sub-agent review per pipeline stage)
+
 ## Start-of-session checklist
 
 Run through these before touching code:

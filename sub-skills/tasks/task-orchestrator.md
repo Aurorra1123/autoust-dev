@@ -1,59 +1,48 @@
 ---
 name: task-orchestrator
-description: Heuristically compose a pipeline of tools to complete a heterogeneous task (report / slides / video / code / proof). Called by do-homework / write-notes / weekly-plan. Do not invoke directly from user input — the calling task must first produce a task profile.
+description: Execute a per-assignment pipeline from a workbench containing spec.md and pipeline_design.md. Called by do-homework after reconnaissance and user supplement checkpoint. Do not invoke directly from user input.
 ---
 
 # task-orchestrator
 
-The core M3 mechanism. Given a **task profile** and the **tools index**, decide which tools to run, in what order, and execute the pipeline. Reusable across do-homework, write-notes, and future tasks.
+The core M3 execution mechanism. Given a single-assignment workbench and the
+tools index, execute the pipeline that `do-homework [C]` designed.
 
-## When to invoke
+This task does **not** infer the assignment from raw Canvas fields and does
+**not** consume `task_profile.yaml`. The source of truth is:
 
-- A calling task (e.g. `do-homework`) has already:
-  1. Identified the user's intent
-  2. Read the assignment description / lecture slides / etc.
-  3. Got user approval to proceed
-- That task constructs a **task profile** (see schema below) and hands it to this orchestrator
-
-This task is **not user-facing**. End-users say "帮我完成 hw3", which routes to `do-homework`, which calls into here. Don't try to expose this directly.
-
-## Task profile schema
-
-The calling task hands you a structured description:
-
-```yaml
-type: paper | slides | math | lab | video | notes | mixed
-work_dir: data/homework/DSAA2043/hw3/
-source:
-  spec_md: data/homework/DSAA2043/hw3/spec.md               # PRIMARY — Copilot-style source-by-source context
-  problem_md: data/homework/DSAA2043/hw3/problem.md         # compatibility view for current tools
-  references_dir: data/homework/DSAA2043/hw3/references/    # downloaded files + extracted text
-  investigation_dir: data/homework/DSAA2043/hw3/investigation/
-  assignment_json: data/homework/DSAA2043/hw3/canvas/assignment.json  # metadata only (due_at, rubric, points)
-deliverables:
-  - path: data/homework/DSAA2043/hw3/draft/final.pdf
-    format: pdf | pptx | html | mp4 | ipynb | md
-required_capabilities:    # verbs from tools/_index.md
-  - search_papers
-  - write_essay
-  - make_figure
-  - render_pdf
-deadline: 2025-12-13T15:59:00Z   # ISO 8601, may be null
-scope:
-  course: DSAA2043
-  course_id: 2151
-  assignment: Homework 3
-  assignment_id: 12345
-constraints:
-  word_count: 1500       # optional, type-specific
-  citation_style: APA    # optional, type-specific
-  language: en | zh | mixed
-user_overrides:          # optional, things the user said specifically
-  - "skip question 4, I'll do it myself"
-  - "no charts, just text"
+```text
+work_dir/
+├── spec.md
+├── problem.md
+├── references/
+├── investigation/
+│   ├── rubric.md
+│   ├── review_a.json
+│   ├── user_notes.md      # optional
+│   └── user_scope.md      # optional
+└── pipeline_design.md
 ```
 
-The `work_dir` is the orchestrator's filesystem playground. It follows the Canvas Copilot-inspired workbench shape:
+`spec.md` is the standardized Canvas Generic reconnaissance report.
+`pipeline_design.md` is the assignment-specific execution plan. Older tools may
+still read `problem.md`, but the orchestrator should always read `spec.md` and
+`pipeline_design.md` first.
+
+## When To Invoke
+
+Only after `do-homework` has:
+
+1. Resolved `course_id` and `assignment_id`.
+2. Built the workbench.
+3. Completed Canvas Generic Stage 1-5 reconnaissance.
+4. Asked the user for supplements at `[B]`.
+5. Written or updated `pipeline_design.md` at `[C]`.
+
+End users never call this directly. They say "帮我完成 hw3", which routes to
+`do-homework`.
+
+## Required Workbench
 
 ```text
 work_dir/
@@ -62,6 +51,9 @@ work_dir/
 ├── problem.md
 ├── references/
 ├── investigation/
+│   ├── rubric.md
+│   ├── unreachable.txt
+│   └── review_a.json
 ├── pipeline_design.md
 ├── draft/
 ├── verification_checklist.md
@@ -69,194 +61,240 @@ work_dir/
 └── result.json
 ```
 
-**Important: `source.spec_md` is the ground truth.** Current deliverable tools (`writing-helper`, `code-writer`, `slide-maker`) still read `problem_md`, so the extractor writes a compatibility `problem.md`. The orchestrator should read `spec_md` first when inferring type, constraints, and deliverables. Tools MUST NOT read `assignment_json.description` directly — that's HTML, frequently just a file link or empty, and is the cause of "template content" failures. `assignment_json` exists only for metadata (due_at, rubric, points, submission_types).
+Before executing, check:
 
-## Execution flow
+- `spec.md` exists and clearly states deliverables.
+- `pipeline_design.md` exists and starts with `Output mode: ...`.
+- `investigation/review_a.json` exists and has `verdict: "proceed"`, unless
+  `do-homework` explicitly recorded user-supplied recovery material.
+- `references/` contains required reachable materials, or
+  `investigation/unreachable.txt` explains missing resources.
 
-### Step 1: Capability matching
+If these checks fail, return to `do-homework` with `status: failed`. Do not run
+tools against an ungrounded assignment.
 
-Read `sub-skills/tools/_index.md`. For each verb in `required_capabilities`, find the matching tool:
+## Pipeline Design Format
 
-```
-required: [search_papers, write_essay, make_figure, render_pdf]
-            ↓                ↓             ↓             ↓
-tools:   paper-search    writing-helper  figure-maker  pdf-renderer
-```
+`pipeline_design.md` should look like:
 
-If a required capability has no matching tool, **stop and tell the calling task** "I can't do `search_papers` yet — no tool registered." Don't try to fake it.
+```text
+Output mode: mixed (code + doc_prose + slides)
 
-### Step 2: Pipeline composition
+## Deliverables
+- draft/project_groupID_dataset.ipynb
+- draft/report_groupID_dataset.pdf
+- draft/presentation_groupID_dataset.pdf
+- draft/requirements_groupID_dataset.txt
+- draft/submission_groupID_dataset.zip
 
-Order tools by their data dependencies. Use this rough topology:
+## Pipeline Stages
+### Sub-pipeline A: code
+1. ...
 
-```
-search_papers, make_figure, parse_pdf  →  (parallel, produce intermediates)
-                  ↓
-write_essay / solve_proof / write_code  →  (consumes intermediates)
-                  ↓
-render_pdf / render_slides / edit_video →  (produces final deliverable)
-```
+### Sub-pipeline B: doc_prose
+1. ...
 
-Before executing tools, write `work_dir/pipeline_design.md`. This is a short,
-assignment-specific plan, not a reusable global template. It should name the
-inferred output mode, planned stages, expected deliverables, verification focus,
-and any user overrides from `task_profile.yaml`.
+### Sub-pipeline C: presentation
+1. ...
 
-Concretely for the four MVP pipelines (see `tools/_index.md` "Scenario → Tool chain"):
+### Final: package
+1. ...
 
-**Paper pipeline** (type: paper):
-```
-1. paper-search    → work_dir/references.bib + references.json
-2. figure-maker    → work_dir/figures/fig_N.pdf  (parallel-eligible; opt)
-3. writing-helper  → work_dir/draft.md  (consumes references + figures)
-4. pdf-renderer    → work_dir/final.pdf
-```
+## Tool Mapping
+- code-writer
+- test-runner
+- writing-helper
+- slide-maker
+- pdf-renderer
 
-**Slides pipeline** (type: slides):
-```
-1. figure-maker    → work_dir/figures/...  (opt)
-2. slide-maker     → work_dir/slides.tex → work_dir/slides.pdf  (one tool, two phases: write .tex + compile via tectonic)
-```
+## Verification Plan
+- ...
 
-**Math pipeline** (type: math):
-```
-1. writing-helper  → work_dir/draft.md  (Markdown with inline LaTeX math via $...$)
-2. pdf-renderer    → work_dir/solution.pdf
-```
-
-**Lab pipeline** (type: lab):
-```
-1. code-writer     → work_dir/src/*.py + work_dir/src/test_*.py
-2. test-runner     → work_dir/test_report.md
-3. writing-helper  → work_dir/draft.md  (lab report, embeds test_report excerpt)
-4. pdf-renderer    → work_dir/report.pdf
+## Human Review Items
+- group ID must be filled in
+- video demo must be recorded manually
 ```
 
-**Video pipeline** (type: video):
-Out of scope for AutoStudy MVP. A separate video skill will handle this. If a calling task constructs a profile with `type: video`, return early with a friendly "video pipeline lives in a different skill" message.
+The orchestrator reads this file as a plan. It may refine wording, but it
+should not silently change output mode or deliverables. If the design is wrong,
+return to `do-homework [C]`.
 
-### Step 3: Execute
+## Execution Flow
 
-For each tool in order:
+### Step 1 - Read The Workbench
 
-1. Read the tool's `.md` file (`sub-skills/tools/<name>.md`)
-2. Construct the actual invocation using the tool's "Invocation" section
-3. Run it (typically `Bash` or `Write` then `Bash`)
-4. Verify the expected output file exists and is non-empty
-5. If failure: log the error to `work_dir/orchestrator.log`, stop, report to caller
+Read, in order:
 
-**Crucial: tools communicate via files, not return values.** Each tool reads its inputs from disk and writes outputs to disk. This makes the pipeline:
-- Inspectable (the user can `ls work_dir/` and see what's done)
-- Resumable (if step 3 fails, step 1-2 results are still there)
-- Replaceable (the user can hand-edit `draft.md` between writing-helper and pdf-renderer)
+```text
+spec.md
+pipeline_design.md
+investigation/rubric.md
+investigation/review_a.json
+investigation/user_notes.md      # if present
+investigation/user_scope.md      # if present
+problem.md                       # compatibility only
+sub-skills/tools/_index.md
+```
 
-### Step 4: Verify deliverable
+Do not read `canvas/assignment.json.description` as the problem statement. It is
+metadata only.
 
-Before returning to the calling task:
+### Step 2 - Map Stages To Tools
 
-- Check every path in `deliverables` exists and is non-empty
+Use `pipeline_design.md` "Tool Mapping" plus `sub-skills/tools/_index.md`.
+
+Common mappings:
+
+| Stage kind | Tool |
+|---|---|
+| literature search / references | `paper-search.md` |
+| prose / report / reflection | `writing-helper.md` |
+| chart / figure | `figure-maker.md` |
+| markdown or LaTeX to PDF | `pdf-renderer.md` |
+| code / notebook / source files | `code-writer.md` |
+| tests / execution report | `test-runner.md` |
+| slides / deck | `slide-maker.md` |
+
+If a mapped tool does not exist, stop and return:
+
+```yaml
+status: failed
+failures:
+  - tool: <missing tool>
+    error: "tool not registered in sub-skills/tools/_index.md"
+```
+
+Do not fake an unsupported capability.
+
+### Step 3 - Execute Stages
+
+Execute stages in the order specified by `pipeline_design.md`. Tools communicate
+through files inside `work_dir`.
+
+General rules:
+
+- Write all deliverables under `draft/` unless the tool contract says otherwise.
+- Preserve raw Canvas snapshots under `canvas/`.
+- Preserve fetched source material under `references/`.
+- Stop on first tool failure.
+- If rerun from a user revision, reuse `spec.md` and `references/`; update
+  `pipeline_design.md` and regenerate draft artifacts.
+
+### Step 4 - Verify Deliverables
+
+Before returning:
+
+- Check every deliverable named in `pipeline_design.md` exists or is listed as a
+  human/manual item.
 - Sanity checks by type:
-  - `pdf`: file is > 1 KB, magic bytes are `%PDF`
-  - `pptx`: file is a valid zip with `[Content_Types].xml`
-  - `mp4`: ffprobe returns a duration > 0
-  - `md`: file is non-empty UTF-8
-- If any check fails, report which step likely caused it (last successful intermediate)
+  - `pdf`: file is >1 KB and magic bytes are `%PDF`.
+  - `pptx`: file is a valid zip with `[Content_Types].xml`.
+  - `html`: file is non-empty and has expected slide/page structure if a deck.
+  - `ipynb`: valid JSON with notebook cells.
+  - `zip`: valid zip archive.
+  - `md` / `txt`: non-empty UTF-8.
+  - code: parses or tests run when possible.
 
-Also write two Copilot-style verification artifacts:
+Write:
 
-- `work_dir/verification_checklist.md` — the checks this assignment should pass,
-  grounded in `spec.md`, rubric text, and deliverable format.
-- `work_dir/verification.log` — measured results in `PASS | name | measured:
-  ...`, `FAIL | name | measured: ...`, or `SKIP | name | reason: ...` form.
+```text
+verification_checklist.md
+verification.log
+```
 
-If verification leaves items that need the student's judgment (for example
-"group ID missing", "notebook needs to be executed in the course environment",
-or "Google Doc rubric was unreachable"), include them in the Step 5
-`human_review_items` list. Do not hide them in prose only; `do-homework` writes
-that list into `result.json`.
+`verification_checklist.md` contains checks grounded in `spec.md`,
+`investigation/rubric.md`, and `pipeline_design.md`.
 
-### Step 5: Return summary
+`verification.log` uses measured lines:
 
-Hand back to the calling task a structured summary:
+```text
+PASS | <check> | measured: <value>
+FAIL | <check> | measured: <value>
+SKIP | <check> | reason: human_review
+```
+
+### Step 5 - Return Summary
+
+Return a structured summary to `do-homework`:
 
 ```yaml
 status: success | partial | failed
+output_mode: mixed
 deliverables_produced:
-  - path: data/homework/DSAA2043/hw3/final.pdf
+  - path: data/homework/<COURSE>/<HWID>/draft/<file>
     size_bytes: 245678
-    pages: 12   # if applicable
+    format: pdf
 intermediates:
-  - work_dir/references.json
-  - work_dir/figures/fig1.pdf
-  - work_dir/draft.md
+  - data/homework/<COURSE>/<HWID>/draft/draft.md
 tools_used:
-  - paper-search
-  - figure-maker
   - writing-helper
   - pdf-renderer
-duration_sec: 87
-verification_log_path: data/homework/DSAA2043/hw3/verification.log
+verification_log_path: data/homework/<COURSE>/<HWID>/verification.log
 human_review_items:
   - "Group ID needs to be filled in before submission"
-failures: []   # or list of {tool, error}
+failures: []
 ```
 
-The calling task uses this summary to present the result to the user.
+`do-homework` uses this summary at `[E]` and writes `result.json`.
 
-## Heuristics for type inference
+## Output Modes
 
-If the calling task is unsure of the task type, use these signals from `spec.md` first, then `problem.md` (NOT from `assignment_json.description` — that's HTML and often just a file link):
+Use Canvas Generic output vocabulary:
 
-| Signals in spec.md / problem.md / rubric | Inferred type |
+| Mode | Meaning |
 |---|---|
-| "essay", "report", "review", "critique", "paper", "annotated bibliography", "reflection" | `paper` |
-| "presentation", "slides", "PPT", "deck", "pitch", "demo" | `slides` |
-| "prove", "show that", "derive", "complexity analysis", math expressions (`$...$` density) | `math` |
-| "implement", "code", "write a function", "OJ", "submit code", `.py` / `.cpp` / `.ipynb` files | `lab` |
-| "video", "screencast", "demo recording", "summary video" | `video` (→ defer to video skill) |
-| "notes", "study guide", "summarize the lecture" | `notes` (→ falls back to `paper` pipeline) |
-| Multiple of the above | `mixed` — pick the highest-weight one or run sub-orchestrations |
+| `doc_prose` | essay, report, critique, reflection, text submission |
+| `pdf_annotated` | annotated reading PDF, highlights, answer blanks |
+| `pdf_typed` | typed problem-set / math / formal solution PDF |
+| `code` | source files, notebook, package, starter-code completion |
+| `form_answers` | short answer body for online text entry |
+| `slides` | presentation deck |
+| `mixed` | multiple output shapes |
 
 Real examples:
 
-- **DLED3020 Paper Critique** — `problem.md` says "critically evaluate this paper" → `paper` (essay structure, citation_style=APA)
-- **UCUG1077 Group presentation** — submission_types includes "online_upload" + `problem.md` mentions "PPT" → `slides`
-- **DSAA2043 Lab-Assignment 1** — title contains "Lab" + `problem.md` has "prove that... Big-O" → split: `math` for the proof portion, `lab` for the code portion. Default to `math` if mixed and rubric weights theory > implementation.
-- **DSAA2012 Project Report** — `problem.md` says "report" + "implementation" + "experiments" → `lab` (because the code is the core; the report is one section of the deliverable)
-- **DSAA2011 Project** — assignment page is empty, but `spec.md` records module PDF requirements for notebook + report + slides + zip → `mixed`.
-- **UCUG1505 FINAL project** — assignment page and Week 4 module both point to the same Google Doc spec; Week 9 slides are supporting context → likely `slides` / `mixed`, depending on the Google Doc contents.
+- **DSAA2011 Project**: `mixed` - notebook/code + report PDF + slides PDF +
+  requirements + zip package.
+- **UCUG1505 FINAL project**: `mixed` - creative code + documentation + manual
+  video demo.
 
-Confidence < 0.7? Hand back to caller and ask the user explicitly.
+## Safety Rules
 
-## Safety rules
-
-1. **No tool runs without user approval at the calling-task level.** The orchestrator assumes the calling task has already done [B] confirmation.
-2. **`source.spec_md` and `source.problem_md` must exist and be non-trivial.** Before running any deliverable tool, check that `<work_dir>/spec.md` exists and is > 1 KB and `<work_dir>/problem.md` exists. If not, stop and tell the caller — the caller's `[A3]/[A4]` skipped reconnaissance. Do NOT run tools against a missing or empty spec/problem file (they'll produce template content).
-3. **Stop on first failure, do not silently fall back.** A missing capability or a tool error must be surfaced, not papered over.
-4. **No tool may write outside `work_dir`** (one exception: `pdf-renderer` writing the final PDF to a path explicitly in `deliverables`).
-5. **Don't cache stale intermediates.** If the calling task re-invokes orchestrator with the same work_dir, regenerate everything unless the caller passes `resume: true`.
-6. **Surface `[CLARIFICATION NEEDED: ...]` markers** from any tool back to the calling task as part of the Step 5 summary. They are signals that `problem.md` was ambiguous on a specific point — the caller decides whether to interrupt the user inline or batch them for [E].
+1. **No tool runs without `do-homework [B]` approval.**
+2. **Do not invent missing source material.** If `spec.md` or `references/` is
+   incomplete, return to `do-homework`.
+3. **Do not use `assignment.description` as the prompt.**
+4. **Do not silently alter deliverables.** `pipeline_design.md` controls the
+   target artifacts.
+5. **No writes outside `work_dir`** except explicit renderer outputs already
+   named in `pipeline_design.md`.
+6. **No placeholder deliverables.** Ban `[PROBLEM N]`,
+   `[TODO: align with actual project spec]`, and `[此处由小组成员填入选题]`.
+7. **Surface `[CLARIFICATION NEEDED: ...]` markers** in the returned
+   `human_review_items`.
 
 ## Pitfalls
 
-1. **Don't make this an `Agent` tool call (sub-agent).** Sub-agents are expensive; the orchestrator is plain markdown + the main agent executing it. Keep it cheap.
-2. **Don't extend capability vocabulary ad-hoc.** New verbs go into `_index.md` first, then tools reference them.
-3. **Don't bake course-specific logic here.** If "DSAA2043 wants final.pdf in single column" — that goes in `do-homework.md`'s task-profile construction, not here.
-4. **File paths with Chinese / spaces are common** (see `docs/PITFALLS.md` #10). Always quote paths in shell calls.
+1. **Don't make this a free-form classifier again.** Classification happens in
+   problem-extractor Stage 5 and is finalized by `do-homework [C]`.
+2. **Don't resurrect `task_profile.yaml`.** It was a transitional idea; the
+   workbench plus `pipeline_design.md` is the contract.
+3. **Don't bake course-specific logic here.** Course quirks belong in `spec.md`,
+   `pipeline_design.md`, or future course overrides.
+4. **File paths with Chinese / spaces are common.** Always quote paths in shell
+   calls.
 
-## MVP scenarios validated
+## MVP Scenarios Validated
 
-The orchestrator was validated end-to-end on 4 real HKUST(GZ) assignments:
+The old fixed chains validated AutoStudy's tool base:
 
 | type | Assignment | Tool chain | Deliverable |
 |---|---|---|---|
-| `paper` | DLED3020 Paper Critique | paper-search → writing-helper → pdf-renderer | `final.pdf` |
-| `slides` | UCUG1077 Group presentation | slide-maker (tectonic) | `slides.pdf` |
-| `math` | DSAA2043 Lab-Assignment 1 | writing-helper → pdf-renderer | `solution.pdf` |
-| `lab` | DSAA2012 Project Report | code-writer → test-runner → writing-helper → pdf-renderer | `src/` + `report.pdf` |
+| `paper` | DLED3020 Paper Critique | paper-search -> writing-helper -> pdf-renderer | `final.pdf` |
+| `slides` | UCUG1077 Group presentation | slide-maker | `slides.pdf` |
+| `math` | DSAA2043 Lab-Assignment 1 | writing-helper -> pdf-renderer | `solution.pdf` |
+| `lab` | DSAA2012 Project Report | code-writer -> test-runner -> writing-helper -> pdf-renderer | `src/` + `report.pdf` |
 
-Earlier smoke test (M3 foundation, before MVP) used `type: notes` with only `render_pdf` to validate the three-layer architecture skeleton. That trace lives at `data/homework/test/`.
-
-## Future: parallelization
-
-When two tools have no data dependency (e.g. `make-figure` and `paper-search` in the report pipeline), they can run in parallel. M3 first version runs sequential; parallel comes later when we add runtime detection (M5a, see `docs/ROADMAP.md`).
+The next development step is to validate the new Canvas Generic-style
+`spec.md -> pipeline_design.md -> draft/` flow on DSAA2011 Project and UCUG1505
+FINAL project.

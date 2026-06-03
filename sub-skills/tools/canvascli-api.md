@@ -153,7 +153,7 @@ Use pattern:
 1. Fetch `assignment`, `rubric`, `front-page`, `syllabus`, `modules`, and `assignment-files`.
 2. Fetch `module-items` for every module, not only the first apparent match.
 3. Fetch `page` for every module item whose type is `Page`.
-4. Fetch `file` metadata for every file id discovered in assignment/front-page/syllabus/pages/module items.
+4. Fetch `file` metadata for every file id discovered in assignment/front-page/syllabus/pages/module items. Note: `canvascli file` takes only `<file_id>` — no `-c` flag needed because file IDs are globally unique across courses.
 5. Download only files that are plausibly part of the assignment context via `canvascli download`.
 
 Expected output shapes:
@@ -286,16 +286,29 @@ Submit a file to a Canvas assignment via `online_upload`.
 
 Canvas's `description` field may be an attachment link, a Google Doc link, an empty string, or only a small hint. Reading it directly is the most common cause of agents producing template / placeholder content.
 
-**Don't write your own extractor inline** — use `sub-skills/tools/problem-extractor.md`. It follows Canvas Copilot's source-by-source workflow:
+**Don't write your own extractor inline** — use
+`sub-skills/tools/problem-extractor.md`. It follows Canvas Copilot's
+Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
 
-1. Calls the atomic context commands above.
+1. Calls atomic context commands above: `assignment`, `rubric`,
+   `front-page`, `syllabus`, `modules`, `module-items`, `page`, `file`, and
+   `assignment-files`.
 2. Stores raw CLI JSON under `<work_dir>/canvas/`.
-3. Downloads reachable Canvas files into `<work_dir>/references/`.
-4. Writes `<work_dir>/spec.md` as the full source-by-source assignment context.
-5. Writes `<work_dir>/problem.md` as a compatibility view for existing tools.
-6. Writes `<work_dir>/investigation/{rubric.md,unreachable.txt,review_a.json}`.
+3. Reads all likely sources before judging which one is the main spec.
+4. Writes `<work_dir>/spec.md` as a standardized reconnaissance report, not a
+   raw dump.
+5. Finds grading criteria into `<work_dir>/investigation/rubric.md`.
+6. Downloads or fetches needed inputs into `<work_dir>/references/`, and logs
+   blocked resources in `<work_dir>/investigation/unreachable.txt`.
+7. Writes `<work_dir>/investigation/review_a.json` after a cold investigation
+   review.
+8. Starts `<work_dir>/pipeline_design.md` with the output mode, then keeps
+   `<work_dir>/problem.md` only as a compatibility summary for older tools.
 
-Downstream tools currently consume `problem.md`, but new orchestration should read `spec.md` first.
+Do not use or recreate an `assignment-context` aggregate command. The mature
+pattern is atomic data access plus agent judgment after reading all sources.
+Downstream tools should read `spec.md` and `pipeline_design.md` first;
+`problem.md` is temporary compatibility.
 
 ### One-liner: list file IDs embedded in a saved assignment snapshot
 

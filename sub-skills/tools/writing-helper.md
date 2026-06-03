@@ -1,11 +1,15 @@
 ---
 name: writing-helper
-description: Draft structured academic prose (essay / report / reflection) from spec.md/problem.md + rubric. The agent itself writes the markdown; this file is the spec + checklist. Output is pandoc-friendly markdown that pdf-renderer can convert to PDF.
+description: Draft structured academic prose (essay / report / reflection) from spec.md + pipeline_design.md + rubric. The agent itself writes the markdown; this file is the spec + checklist. Output is pandoc-friendly markdown that pdf-renderer can convert to PDF.
 ---
 
 # writing-helper
 
-The paper/report/reflection workhorse. Reads a `task_profile.yaml` + `spec.md` / `problem.md`, produces `draft.md` in the same `work_dir`. **The agent writes the prose directly** — there's no subprocess, no LLM call. This file is the spec the agent follows.
+The paper/report/reflection workhorse. Reads the assignment workbench
+(`spec.md`, `pipeline_design.md`, rubric, references, and user supplements),
+then produces `draft.md` in the same `work_dir`. **The agent writes the prose
+directly** — there's no subprocess and no separate LLM call. This file is the
+spec the agent follows.
 
 ## Capabilities
 
@@ -14,16 +18,27 @@ The paper/report/reflection workhorse. Reads a `task_profile.yaml` + `spec.md` /
 ## Inputs / Outputs
 
 ```
-Input:  <work_dir>/task_profile.yaml      (constraints: length, citation_style, language, partial_scope)
-        <work_dir>/spec.md                (PRIMARY: source-by-source assignment context)
-        <work_dir>/problem.md             (compatibility problem text from problem-extractor)
+Input:  <work_dir>/spec.md                (PRIMARY: standardized reconnaissance report)
+        <work_dir>/pipeline_design.md     (deliverables, prose stage, constraints, verification plan)
+        <work_dir>/investigation/rubric.md
+        <work_dir>/references/            (fetched readings/spec text/data, if any)
+        <work_dir>/problem.md             (compatibility summary; read after spec.md)
+        <work_dir>/investigation/user_notes.md  (optional)
+        <work_dir>/investigation/user_scope.md  (optional)
         <work_dir>/canvas/assignment.json (metadata only: due_at, rubric, points, submission_types)
         <work_dir>/references.bib         (optional, from paper-search)
         <work_dir>/figures/*.{pdf,png}    (optional, from figure-maker)
 Output: <work_dir>/draft.md               (pandoc-friendly markdown with YAML frontmatter)
 ```
 
-**Read `spec.md` first, then `problem.md`, completely, before writing anything.** `spec.md` shows where the assignment was found and which sources are main spec vs supporting context; `problem.md` is the compatibility view older tools consume. If both are missing or thin, refuse to proceed and write a single `[CLARIFICATION NEEDED: problem statement was not grounded; do-homework [A3] failed]` marker — do NOT pad it with template content.
+**Read `spec.md` first, then `pipeline_design.md`, rubric, references, user
+supplements, and finally `problem.md`, completely, before writing anything.**
+`spec.md` explains which source is the main spec and which sources are
+supporting context. `pipeline_design.md` explains what prose artifact this tool
+is responsible for. `problem.md` is only a compatibility summary. If `spec.md`
+or `pipeline_design.md` is missing or thin, refuse to proceed and write a single
+`[CLARIFICATION NEEDED: reconnaissance or pipeline design is incomplete]`
+marker — do not pad it with template content.
 
 ## Setup
 
@@ -47,24 +62,30 @@ monofont: Menlo
 
 The agent runs this entirely in-context — no shell commands required for content generation. Follow this order:
 
-### Step 1 — Pick the structure from the rubric
+### Step 1 — Pick the structure from the pipeline and rubric
 
-Read `spec.md` and `problem.md` end-to-end. Then read `canvas/assignment.json` plus `investigation/rubric.md` if present. Match the assignment against the three supported structures:
+Read `spec.md`, `pipeline_design.md`, `investigation/rubric.md`, and relevant
+files under `references/` end-to-end. Match the prose stage against the three
+supported structures:
 
 | Structure | Cues in problem.md / rubric | Typical sections |
 |---|---|---|
-| `essay` | "argue", "critique", "analyze", "thesis", "evaluate"  | Intro (with thesis) → 2-4 body paragraphs → Conclusion |
-| `report` | "results", "methodology", "discussion", "lab", "experiment" | Abstract → Introduction → Methods → Results → Discussion → Conclusion → References |
-| `reflection` | "reflect", "experience", "learned", "personal" | Context → What happened → What I learned → Implications |
+| `essay` | "argue", "critique", "analyze", "thesis", "evaluate" | Intro (with thesis) -> 2-4 body paragraphs -> Conclusion |
+| `report` | "results", "methodology", "discussion", "lab", "experiment" | Abstract -> Introduction -> Methods -> Results -> Discussion -> Conclusion -> References |
+| `reflection` | "reflect", "experience", "learned", "personal" | Context -> What happened -> What I learned -> Implications |
 
-If multiple cues match, default to `essay`. If `partial_scope` is set in `task_profile.yaml`, write only the requested sections.
+If multiple cues match, follow `pipeline_design.md`. If
+`investigation/user_scope.md` exists, write only the requested sections.
 
 ### Step 2 — Honor length and citation style
 
-- `length: ~1500 words` → aim ±10%. Each section gets a rough budget (essay: 200/1000/300; report: 100/300/300/400/300/200).
-- `citation_style: APA` → in-text `(Author, 2024)`, end-of-doc `## References` with hanging indent.
-- `citation_style: IEEE` → in-text `[1]`, end-of-doc `## References` with numeric list.
-- `citation_style: none` → no citations; don't fake them.
+Take length, language, citation style, required sections, and deliverable format
+from `spec.md`, `pipeline_design.md`, and `investigation/rubric.md`.
+
+- `length: ~1500 words` -> aim +/-10%. Each section gets a rough budget.
+- `citation_style: APA` -> in-text `(Author, 2024)`, end-of-doc `## References`.
+- `citation_style: IEEE` -> in-text `[1]`, end-of-doc `## References`.
+- `citation_style: none` -> no citations; do not fake them.
 
 ### Step 3 — Use `references.bib` if it exists
 
@@ -84,12 +105,18 @@ Cite the figure in-text (`see Figure 1`).
 
 Produce `<work_dir>/draft.md`. Quality bar (non-negotiable):
 
-- **Every assertion is grounded in `spec.md` / `problem.md`.** If the assignment asks "critique this paper X", the draft engages with X's actual arguments (as found in the downloaded reference sections), not with a generic "the paper makes some claims" gloss.
-- **Specific problems get specific answers.** If `problem.md` lists Problem 1 (prove BST height bound), Problem 2 (solve recurrence), Problem 3 (DP table), the draft has a section per problem with a real proof / derivation — NOT a `[PROBLEM N]` placeholder.
+- **Every assertion is grounded in `spec.md`, `references/`, and
+  `pipeline_design.md`.** If the assignment asks "critique this paper X", the
+  draft engages with X's actual arguments, not with a generic "the paper makes
+  some claims" gloss.
+- **Specific problems get specific answers.** If `spec.md` lists Problem 1
+  (prove BST height bound), Problem 2 (solve recurrence), Problem 3 (DP table),
+  the draft has a section per problem with a real proof / derivation — not a
+  `[PROBLEM N]` placeholder.
 - **For papers/critiques**: name the paper. Name its authors. Quote (with citation) at least one specific claim from the paper. Generic "this paper discusses..." sentences fail the quality bar.
 - **No `[PROBLEM N]` / `[TODO: ...]` / `[此处填入...]` placeholders.** The only acceptable markers:
   - `[CITATION NEEDED: <topic>]` — when `references.bib` lacks a needed entry. Surfaced at [E].
-  - `[CLARIFICATION NEEDED: <specific question about problem.md>]` — when `problem.md` is genuinely ambiguous on a specific point. Surfaced at [E].
+  - `[CLARIFICATION NEEDED: <specific question about spec.md or user_scope.md>]` — when the grounded workbench is genuinely ambiguous on a specific point. Surfaced at [E].
 - Every section has a topic sentence.
 - No "As an AI" / "I will discuss" filler.
 - Use rubric criteria as section emphasis (if rubric says "30% argument quality", make the argument explicit).
@@ -109,10 +136,10 @@ After writing, the orchestrator calls `pdf-renderer` with `<work_dir>/draft.md` 
 ## Pitfalls
 
 1. **Don't fake citations.** If you write `(Smith, 2023)` without a real `references.bib` entry, the bibliography is broken. Use `[CITATION NEEDED]` placeholders instead.
-2. **Match the language.** If `problem.md` is in Chinese and rubric mentions "中文写作", the draft must be Chinese — `pdf-renderer` ctexart handles both, but mismatched language gets points off.
-3. **`spec.md` / `problem.md` are the source of truth, NOT `assignment.description`.** The description is HTML and often just a file link or empty. Reading it directly produces "the assignment is about X" template content. Always read the workbench files generated by `problem-extractor`.
-4. **`partial_scope` is binding.** If the user said "only problem 2 and 4", do NOT write 1 and 3 even if the rubric says they're required. The user knows what they want.
+2. **Match the language.** If `spec.md` is in Chinese and rubric mentions "中文写作", the draft must be Chinese — `pdf-renderer` ctexart handles both, but mismatched language gets points off.
+3. **`spec.md` and `pipeline_design.md` are the source of truth, NOT `assignment.description`.** The description is HTML and often just a file link or empty. Reading it directly produces "the assignment is about X" template content. Always read the workbench files generated by `problem-extractor`.
+4. **`investigation/user_scope.md` is binding.** If the user said "only problem 2 and 4", do NOT write 1 and 3 even if the rubric says they're required. The user knows what they want.
 5. **Don't auto-conclude with "In conclusion, ..." for short reflections.** Reflections are personal — let the structure follow the rubric, not a rigid 5-paragraph template.
 6. **Frontmatter `date: \today`** — keep the backslash; pdf-renderer's LaTeX will resolve it. Don't replace with a literal date unless the user asked.
 7. **Engage with specific content.** A paper critique that doesn't name the paper, its authors, or quote a single sentence from it is failing the quality bar regardless of word count.
-8. **If `problem.md` is missing or thin** (< 1 KB), STOP. Write a single-line draft.md containing `[CLARIFICATION NEEDED: problem.md was not grounded — do-homework [A3] failed or extraction yielded no text]` and return. Do not pad with template content.
+8. **If `spec.md` or `pipeline_design.md` is missing or thin**, STOP. Write a single-line draft.md containing `[CLARIFICATION NEEDED: reconnaissance or pipeline design was incomplete]` and return. Do not pad with template content.

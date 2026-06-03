@@ -14,7 +14,8 @@
 
 Canvas Pilot 有一个叫 **canvas-generic** 的核心编排器。它的设计思路是：遇到任何作业，不急于动手，而是先做一轮完整的"侦查"，搞清楚到底要做什么，再决定怎么做。
 
-具体来说，它的侦查分三步：
+具体来说，当前最值得 AutoStudy 学的不是某个脚本，而是
+`canvas-generic` 的阶段边界：
 
 **第一步：从 Canvas 拉取所有可能相关的信息源。** 不只看作业页面的 description 和附件，还会：
 
@@ -24,21 +25,30 @@ Canvas Pilot 有一个叫 **canvas-generic** 的核心编排器。它的设计�
 - 抓取 **外部链接**（有些作业 spec 链到教授个人网站或 GitHub）
 - 下载所有 **附件**
 
-这一步的产出是一个 `spec.md`，把从所有信息源找到的内容汇总到一起。
+这一步的产出是一个标准化 `spec.md` 报告。它不是 raw dump，而是 agent
+看完来源后写出的判断：哪些来源检查过、哪个是主 spec、交付物是什么、
+证据文件在哪里、还有什么缺口。完整 PDF / Google Doc / 网页正文放在
+`references/`。
 
-**第二步：搜索评分标准（Rubric）。** 不只在 Canvas API 提供的 rubric 字段里找，还会在 spec.md 里 grep 关键词、在 module/syllabus 里搜索、甚至去外部链接里找。四层搜索确保不遗漏。
+**第二步：搜索评分标准（Rubric）。** 不只在 Canvas API 提供的 rubric 字段里找，还会在 `spec.md`、PDF、module/syllabus、外部链接里找。四层搜索确保不遗漏，结果写入 `investigation/rubric.md`。
 
-**第三步：完整性审查。** 侦查完成后，会用一个 sub-agent 审查"我们搞清楚了到底要做什么吗？"——交付物类型明确吗？rubric 找到了吗？input 文件齐了吗？如果不完整，会自动补一轮侦查。
+**第三步：定位真正需要的输入。** 下载或抓取 PDF、Google Doc、starter code、数据集、外部文本等，放到 `references/`。无法访问的资源写入 `investigation/unreachable.txt`。
+
+**第四步：完整性审查。** 侦查完成后，优先用另一个 reviewer / sub-agent 审查"我们搞清楚了到底要做什么吗？"——交付物明确吗？rubric 找到了吗？input 文件齐了吗？不可达资源是否阻塞？如果当前运行环境没有 sub-agent reviewer，就必须冷读 `spec.md`、`rubric.md`、`references/`、`unreachable.txt` 重新审一遍，并在 `investigation/review_a.json` 里记录审查方式。
+
+**第五步：分类交付物形态。** 根据 `spec.md`、rubric、submission types 和 `references/` 判断输出模式：`doc_prose`、`pdf_annotated`、`pdf_typed`、`code`、`form_answers`、`slides`、`mixed`。这个判断成为 `pipeline_design.md` 的第一行。
 
 #### 对 AutoStudy 的启发
 
-当前 AutoStudy 的 `problem-extractor` 只看 `assignment.json.description` 中的 HTML 里的附件链接，然后下载附件、提取文本。对于"作业要求都写在附件里"的场景（MVP 验证的 4 个场景）这够用了。
+AutoStudy MVP 时的 `problem-extractor` 主要看 `assignment.json.description`
+里的附件链接，然后下载附件、提取文本。对于"作业要求都写在附件里"的
+场景，这能跑通 demo，但不够稳定。
 
 但从 AutoStudy.pdf 模块 1（Course Context Manager）和模块 5（Assignment & Academic Production）的愿景来看，我们需要的是更完整的课程材料获取能力。很多课程的作业 spec 不在附件里，而是在 Modules、Syllabus、课程首页、甚至外部链接中。特别是 HKUST(GZ) 的课程，教授们的组织习惯差异很大——有的把所有东西放在 assignment description 里，有的把 spec 写在 module page 里，有的链到自己的 Google Site。
 
 #### 需要做什么
 
-这涉及 **canvascli 的扩展**，因为 AutoStudy 的架构是 canvascli 独立仓库提供数据层，skill 层通过 shell out 调用。要实现深度侦查，需要两步。
+这涉及 **canvascli 的扩展**，因为 AutoStudy 的架构是 canvascli 独立仓库提供数据层，skill 层通过 shell out 调用。数据层扩展已经完成，下一步重点在 AutoStudy 的 agent-led 侦查和 pipeline 执行。
 
 **canvascli 侧**（Copilot 式原子命令）：
 
@@ -54,12 +64,14 @@ Canvas Pilot 有一个叫 **canvas-generic** 的核心编排器。它的设计�
 
 这里明确不采用 `assignment-context` / `full-context` 聚合命令。Canvas Copilot 的成熟经验是：数据层提供稳定的单源读取能力，上层 agent 必须逐源查看，再判断哪个来源才是真正的 spec。聚合命令看似方便，但容易把"是否相关"这个判断提前固化到数据层，降低灵活性。
 
-**AutoStudy skill 侧**（改造 `problem-extractor` 或 `do-homework` 的 [A3] 步骤）：
+**AutoStudy skill 侧**（当前批准方向）：
 
-- 在现有的"从 description HTML 提取附件"之外，增加"从 modules/front-page/syllabus 补充上下文"的能力
-- 产出升级为 `spec.md`：完整记录 assignment、rubric、front page、syllabus、module hits、pages、files、external URLs、unreachable resources
-- 暂时继续写 `problem.md` 作为兼容文件，供现有 writing-helper / code-writer / slide-maker 读取；长期让这些工具逐步迁移到 `spec.md`
-- 这对模块 3（Study Material Generator）也有直接价值——自动收集课程材料需要的就是同样的 Canvas 数据获取能力
+- `problem-extractor.md` 正式采用 agent-led Canvas Generic Stage 1-5。
+- 不把 `scripts/recon_assignment.py` 作为生产路径；它只保留为历史过渡验证，证明原子 CLI 可以拿到正确来源。
+- `spec.md` 是标准化侦查报告，不是 source dump。
+- `problem.md` 只是旧工具兼容层，长期会继续缩薄。
+- `do-homework [B]` 必须向用户汇报侦查结果并询问补充信息，即使 `review_a.json.verdict == "proceed"`。
+- `do-homework [C]` 在用户补充后完成 `pipeline_design.md`，然后 `task-orchestrator` 按这个文件执行。
 
 #### 真实例子：DSAA2011 和 UCUG1505
 
@@ -168,9 +180,9 @@ data/homework/<COURSE>/<HWID>/
 
 这个过程没有硬编码的 `if type == "paper": [search, write, render]`。每一步都是根据实际需要动态决定的。
 
-#### 对比当前 AutoStudy 的方式
+#### AutoStudy 的迁移方式
 
-当前 `task-orchestrator.md` 的编排是**固定流水线**模式：
+MVP 阶段 `task-orchestrator.md` 的编排是**固定流水线**模式：
 
 ```
 paper  → search_papers → make_figure → write_essay → render_pdf
@@ -179,7 +191,7 @@ math   → write_essay → render_pdf
 lab    → write_code → run_tests → write_essay → render_pdf
 ```
 
-路由靠关键词启发式：`problem.md` 里出现 "essay" → paper，出现 "prove" → math，出现 "implement" → lab。然后查 `_index.md` 的 Scenario → Tool chain 表，走固定链。
+路由靠关键词启发式：`problem.md` 里出现 "essay" -> paper，出现 "prove" -> math，出现 "implement" -> lab。然后查 `_index.md` 的 Scenario -> Tool chain 表，走固定链。
 
 这种模式在 MVP 阶段验证的 4 个场景（paper/slides/math/lab）里工作得很好，因为每个场景确实只有一种明确的交付物类型。但它有两个结构性弱点：
 
@@ -187,19 +199,37 @@ lab    → write_code → run_tests → write_essay → render_pdf
 
 2. **扩展新类型需要改表。** 每增加一种作业类型，都需要在 `_index.md` 加一条固定链、在 `task-orchestrator.md` 的启发式表里加一行映射。这是一种"枚举所有可能"的思路，随着类型增多会越来越难维护。
 
-#### 建议的方向：从"固定流水线"到"技能包动态组合"
+#### 当前批准方向：`pipeline_design.md` 是执行契约
 
-一个可能的改进方向是：**不预设固定 pipeline，而是把每个 tool 做成独立的"技能包"，让 orchestrator 根据任务需要动态组合。**
+我们不再让 orchestrator 从 `task_profile.yaml` 或固定 `required_capabilities`
+列表启动。当前方向是：
+
+```text
+spec.md + rubric.md + references/ + user_notes
+  -> do-homework [C] writes pipeline_design.md
+  -> task-orchestrator executes pipeline_design.md
+  -> tools read the workbench and write draft/ + verification artifacts
+```
+
+也就是说，动态组合不是"临时 fallback"，而是通过 `pipeline_design.md` 变成
+单作业执行计划。`_index.md` 仍然是工具注册表，但它提供的是可用 tool 和
+能力说明，不再是固定路由表。
 
 具体来说：
 
-**保持现有的 tools 不变**——paper-search、figure-maker、writing-helper、pdf-renderer、code-writer、test-runner、slide-maker 各自仍然是独立的 skill 文件，各自定义清楚输入输出。
+**保持现有 tools 不变**——paper-search、figure-maker、writing-helper、
+pdf-renderer、code-writer、test-runner、slide-maker 各自仍然是独立的 skill
+文件，各自定义清楚输入输出。
 
-**改变 orchestrator 的编排方式**——从"查固定链"变成"根据 problem.md 分析这个任务需要哪些能力，然后按需调用"：
+**改变 orchestrator 的编排方式**——从"查固定链"变成"执行
+`pipeline_design.md`"：
 
-- 一个"搜集文献 + 代码实验 + report + slides"的作业，orchestrator 分析后生成执行计划：`[paper-search, code-writer, test-runner, writing-helper, slide-maker, pdf-renderer]`，依次调用，每一步的产出作为下一步的输入。
-- 一个纯 math proof 作业，orchestrator 可能只需要：`[writing-helper, pdf-renderer]`。
-- 一个只有代码的 lab，orchestrator 可能只需要：`[code-writer, test-runner]`。
+- 一个"搜集文献 + 代码实验 + report + slides"的作业，`pipeline_design.md`
+  会写成多个 sub-pipeline：code、report、slides、package。
+- 一个纯 math proof 作业，`pipeline_design.md` 可能只包含 typed-PDF prose
+  stage 和 render stage。
+- 一个只有代码的 lab，`pipeline_design.md` 可能只包含 code-writer 和
+  test-runner。
 
 这种方式的鲁棒性更强，因为：
 
@@ -211,11 +241,13 @@ lab    → write_code → run_tests → write_essay → render_pdf
 
 #### 与现有架构的关系
 
-这个改动是**渐进式**的，不需要一次性重写 orchestrator：
+这个改动仍然是渐进式的：
 
-1. **M3 维持不变**。当前 4 条固定链继续工作，已有的 MVP 验证不受影响。
-2. **可以先在 `task-orchestrator.md` 里加一个"自由组合"的 fallback 路径**——当启发式匹配不到任何固定类型时，不是直接问用户，而是尝试根据 problem.md 内容分析需要哪些 capabilities，然后按 `_index.md` 的 capability vocabulary 动态组合。
-3. **后续逐步把固定链也迁移到动态组合模式**。当 fallback 路径验证成熟后，固定链可以逐渐退出，统一由动态编排接管。
+1. M3 已验证的 tools 继续保留。
+2. `problem.md` 暂时保留，避免旧工具立刻断掉。
+3. 新的正式 flow 以 `spec.md -> pipeline_design.md -> draft/` 为准。
+4. 需要在 DSAA2011 Project 和 UCUG1505 FINAL project 上做真实 flow
+   连通测试，确认新文档指导下能产生和 Canvas Copilot 同等清晰的计划。
 
 ---
 
@@ -236,7 +268,7 @@ Canvas Pilot 用几个 JSON 文件来记录运行状态，让 agent 能跨 sessi
 当前 AutoStudy 没有结构化的运行状态：
 
 - `sync-status` 每次都是全量同步，没有"已处理"概念
-- `do-homework` 的中间产物（`problem.md`、`task_profile.yaml`、各种 draft）存在 `data/homework/` 下，但没有一个统一的"这个作业做到哪了"的状态记录
+- `do-homework` 的中间产物（`spec.md`、`pipeline_design.md`、各种 draft）存在 `data/homework/` 下，但没有一个统一的"这个作业做到哪了"的状态记录
 - 跨 session 恢复靠 `agent-progress.md` 的自然语言交接日志，agent 需要读完整个文件才能推断状态
 
 这不止影响 do-homework，更影响 AutoStudy.pdf 里的模块 2（Proactive Task Reminder）。要实现"DDL 提醒、优先级排序、进度追踪"，前提是有结构化的状态记录——否则 agent 无法判断"哪些作业已经做了、哪些还没开始、哪些快到期了"。
@@ -405,37 +437,38 @@ Hook 的实现很简单：在 `.claude/settings.json` 的 `hooks` 字段下配�
 
 ---
 
-## 2. 结合 ROADMAP 与 AutoStudy 愿景的开发建议
+## 2. 当前 AutoStudy 开发路线
 
-以下建议嵌入到 AutoStudy 现有的 ROADMAP（M1-M5）和 AutoStudy.pdf 的 5 模块愿景中，按优先级排列。
+这份参考现在服务于 M3.5：把 MVP 的"能产出"升级成"能稳定理解作业，再按作业现场设计执行计划"。
 
-### M3 收尾（当前 → 短期）
+### 已采用
 
-| 事项 | 来源 | 说明 |
+| 事项 | 状态 | 说明 |
 |------|------|------|
-| 清理被跟踪文档中的真实课程 ID | 安全审计 | `problem-extractor.md`、`canvascli-api.md` 等文件中的真实 ID 替换为占位符。为开源做准备。 |
-| 加 2-3 个关键 hooks | 参考 Canvas Pilot | 提交前审计 + result.json schema 验证 + 泄漏检测。具体实施前可以先做一个，验证 hook 机制跑通。 |
-| M3-SUBMIT 真实作业 E2E 验证 | feature-list | 当前 partially-verified，需要在一个真实未过期作业上跑通 3-step upload 全流程。 |
+| canvascli 原子上下文命令 | 已完成 | `assignment` / `rubric` / `front-page` / `syllabus` / `modules` / `module-items` / `page` / `file` / `assignment-files` 已成为 CLI contract；不使用 `assignment-context`。 |
+| 单作业 workbench | 已验证基础结构 | `data/homework/<COURSE>/<HWID>/` 使用 `canvas/`、`spec.md`、`references/`、`investigation/`、`pipeline_design.md`、`draft/`、`verification_*`、`result.json`；DSAA2011 / UCUG1505 已用本结构做真实验证。 |
+| scan-plan 边界 | 已完成 | `sync-status` 只扫描并生成 `pending_assignments.json` / `plan.json` / `REPORT.md`，用户选择单项后才进入 `do-homework`。 |
+| result.json | 已完成 | `do-homework` 写单作业状态收据；`review_a.json` 仍是侦查充分性的审查文件。 |
+| agent-led Canvas Generic reconnaissance | 已验证 | 正式路径是 Stage 1-5 逐源侦查，不走脚本生成 spec；DSAA2011 / UCUG1505 已跑通到 `pipeline_design.md` 与 orchestrator dry-run。 |
 
-### M4 阶段：Interactive Tutor + Spec 侦查升级 + 动态编排
+### 已完成验证
 
-M4 在 ROADMAP 里是"反问式学习助手"，对应 AutoStudy.pdf 的模块 4。这个模块的核心是"根据课程内容主动出题、反问、追踪薄弱点"。同时 M4 也是升级编排能力的好时机——M3 的固定流水线已经验证了单个 tool 的可靠性，可以开始尝试动态组合。
-
-| 事项 | 来源 | 说明 |
+| 事项 | 验证目标 | 说明 |
 |------|------|------|
-| canvascli 原子上下文命令 | 参考 Canvas Pilot 的 spec 侦查 | 补齐 assignment / rubric / front-page / syllabus / modules / module-items / page / file / assignment-files。数据层只读单源并返回 JSON，不做 assignment-context 聚合判断。 |
-| problem-extractor 升级 | 参考 canvas-generic Stage 1-3 | 在现有"从附件提取文本"之外，逐源侦查 assignment、rubric、front page、syllabus、modules、pages、files 和外链。产出 `spec.md` 作为主上下文，并保留 `problem.md` 兼容当前 tools。 |
-| orchestrator 加 fallback 动态组合路径 | 参考 canvas-generic Stage 5-6 | 当启发式匹配不到固定类型时，先分析 `spec.md` / `problem.md` 需要哪些 capabilities，再按 `_index.md` 的 capability vocabulary 动态组合 tools。不需要一次性替代固定链，先作为 fallback 验证。 |
-| 轻量 result.json | 参考 Canvas Pilot 的状态管理 | 每个 do-homework 作业完成后写一个 result.json，记录状态和交付物路径。为 sync-status 的升级和模块 2 的进度追踪打基础。 |
-| 轻量 course-overrides.yaml | 参考 Canvas Pilot 的 overlay 思想 | 不需要 Canvas Pilot 那么复杂的 overlay 机制，但一个简单的 `data/course-overrides.yaml` 可以记录"这门课的作业 spec 通常在哪里"、"这门课偏好的交付格式是什么"、"这门课常用的技能组合是什么"。当前不同课程用完全相同的 heuristics，但实际上教授们的组织习惯差异很大。 |
+| DSAA2011 Project 真实 flow | 已通过 | 按原子来源完整读取，确认 assignment 页面为空、module PDF 是主 spec，写出 mixed `pipeline_design.md`：notebook/code、report PDF、presentation PDF、requirements、package；dry-run 正确停在 group/dataset/style-file human blockers。 |
+| UCUG1505 FINAL project 真实 flow | 已通过 | 确认 assignment page 与 Week 4 module 指向同一个 Google Doc spec，Week 9 slides 是 supporting context，写出 mixed `pipeline_design.md`：code/source zip、documentation、video demo human item；dry-run 正确停在 partner/concept/code/video blockers。 |
+| task-orchestrator 连通 | 已通过 dry-run | 用 `pipeline_design.md` 执行入口检查，而不是从 `task_profile.yaml` 或固定 scenario chain 启动；当前验证没有生成草稿，因为两例都需要用户补充。 |
+| 工具逐步迁移 | 持续 | writing-helper / code-writer / slide-maker 已改为读 `spec.md + pipeline_design.md`；后续实际 flow 中继续压缩 `problem.md` 的作用。 |
+| M3-SUBMIT 真实作业 E2E | 待 sandbox | 仍需要一个真实未过期低风险作业验证 Canvas 三步 submit。 |
 
-### M5 阶段：多平台 + 主动提醒
+### 之后再考虑
 
-| 事项 | 来源 | 说明 |
-|------|------|------|
-| plan.json + pending_assignments.json | 参考 Canvas Pilot 的 scan/plan 状态 | 让 sync-status 从"每次只列 Canvas 数据"变成"给出助手式建议计划"。`pending_assignments.json` 记录当前可行动作业，`plan.json` 记录建议下一步，`result.json` 反哺本地进度。 |
-| _processed.json | 参考 Canvas Pilot 的跨天 ledger | 先不急着实现；等 scan-plan 和 do-homework 的 result.json 跑稳后，再决定是否需要跨天账本。 |
-| 轻量 cron 自动化 | 参考 Canvas Pilot 的 cron 框架 | Canvas Pilot 有 669 行的 cron 框架，我们不需要那么重。但一个简单的定时检查（"有没有新作业发布了"、"有没有快到期的作业还没开始"）是模块 2 的核心。可以用 Claude Code 的 `/loop` 或系统 cron 触发 sync-status。 |
+| 事项 | 说明 |
+|------|------|
+| 轻量 hooks | 提交前审计、result schema 验证、敏感信息泄漏检测。 |
+| course-overrides.yaml | 记录课程习惯，比如 spec 常见位置、常用交付格式、偏好的 pipeline 形状。 |
+| _processed.json | 先不急；等 scan-plan + result.json + do-homework 真实 flow 稳定后，再判断是否需要跨天账本。 |
+| 轻量 cron 自动化 | 对应主动提醒模块，但应在单作业 flow 稳定后再做。 |
 
 ---
 
@@ -474,9 +507,48 @@ M4 在 ROADMAP 里是"反问式学习助手"，对应 AutoStudy.pdf 的模块 4�
 
 AutoStudy 当前的 MVP（M3）已经验证了核心作业辅助能力。从 Canvas Pilot 的调查中，最值得吸收的不是代码或架构，而是四个设计思想：
 
-1. **深度侦查再动手** — 不只看附件，从 Canvas 的多个信息源完整获取作业 spec。这需要 canvascli 扩展，也是模块 1 和模块 3 的数据层基础。
-2. **从固定流水线到技能包动态组合** — 不预设 paper/slides/math/lab 四条固定链，而是让 orchestrator 根据任务需要动态组合已有的 tools。鲁棒性更强，自然支持混合任务，扩展新 tool 不需要改路由表。
-3. **结构化状态记录** — 用 JSON 文件（result.json）记录每个作业的状态，让 agent 跨 session 恢复，支撑模块 2 的进度追踪。
+1. **深度侦查再动手** — 不只看附件，从 Canvas 的多个信息源完整获取作业 spec；`spec.md` 是标准化判断报告，不是 raw dump。
+2. **用 `pipeline_design.md` 现场设计执行** — 不从 `task_profile.yaml` 或固定 scenario chain 启动，而是让 do-homework 在用户补充后写出单作业计划，orchestrator 执行它。
+3. **结构化状态记录** — 用 `result.json` 记录每个作业的状态，让 agent 跨 session 恢复，支撑模块 2 的进度追踪。
 4. **关键路径代码强制** — 用 2-3 个 hooks 把最重要的安全规则从 prose 变成代码强制执行。
 
-这些改动都是增量式的，不需要重构现有架构，可以逐步加入现有 ROADMAP 的各个阶段。最推荐的第一步是"技能包动态组合"——从给 orchestrator 加一个 fallback 路径开始，让它在匹配不到固定类型时尝试动态组合，验证通过后再逐步替代固定链。
+这些改动都是增量式的，不需要推翻现有 tools。当前第一步已经完成：DSAA2011 和 UCUG1505 两个真实任务跑通到 `spec.md -> pipeline_design.md -> task-orchestrator dry-run`。下一步不是重写侦查，而是把 do-homework 的用户补充、human blockers、草稿执行与 revision loop 做顺。
+
+---
+
+## 6. Copilot canvas-generic 完整 11 阶段与 AutoStudy 对比
+
+Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3 个 sub-agent 审查和 1 个验证重试循环。AutoStudy 当前已完成前 5 个 Stage 的验证，后续 Stage 作为开发方向逐步对齐。
+
+| Stage | 名称 | Copilot 做法 | AutoStudy 状态 | 差异说明 |
+|---|---|---|---|---|
+| 0 | load per-cluster learnings overlay | 读 `_private/canvas-generic-<course>-<cluster>.md`，加载累积用户偏好 | ❌ 未做 | AutoStudy 规划三层偏好体系：任务级 → 课程级 → 用户级（见 ROADMAP） |
+| 1 | fetch-context | 拉所有来源 → 写 `spec.md` | ✅ 已验证 | AutoStudy 用 `canvascli` 原子命令实现，agent-led |
+| 2 | find-rubric | 4 层搜索 → `investigation/rubric.md` | ✅ 已验证 |  |
+| 3 | locate-inputs | 下载文件 → `references/` + `unreachable.txt` | ✅ 已验证 |  |
+| 4 | Sub-agent A: review investigation | 完整性审查 → `review_a.json` | ⚠️ 已做但仅 cold self-review | 后续升级为独立 sub-agent |
+| 5 | classify-output | 判断输出模式 → 写 `pipeline_design.md` 第一行 | ✅ 已验证 | AutoStudy 后续将输出模式 skills 化 |
+| **6** | **design-pipeline** | 根据输出模式设计管线阶段 | ⚠️ 在 do-homework [C] 完成 | AutoStudy 的管线设计强调动态 skills 组合，不绑固定 pipeline |
+| **7** | **generate** | 执行管线，产出 `draft/` | ❌ 待开发 | AutoStudy 强调多轮迭代：单次做不好可以继续打磨 |
+| **8** | **Sub-agent B: design verification checklist** | 从 rubric 设计可量化验证清单 | ❌ 待开发 | 后续加入 |
+| **9** | **verify + retry loop** | 运行验证，失败则重回 Stage 7（最多 3 次） | ❌ 待开发 | AutoStudy 的迭代不限于 3 次，支持跨轮次持续优化 |
+| **10** | **Sub-agent C: review verification** | 审查验证覆盖度，防 false-pass | ❌ 待开发 | 后续加入 |
+| **11** | **export + result.json** | 最终化草稿文件名，写 `result.json` | ⚠️ 部分实现 | AutoStudy 的 `result.json` 需支持 `revision_needed` 状态 |
+
+### 关键架构差异
+
+| 维度 | Canvas Copilot | AutoStudy |
+|---|---|---|
+| **产品形态** | 自动化批处理：scan → plan → approval → batch execute → report | 助手式交互：用户说一句话 → agent 侦查 → 汇报确认 → 执行 → 审查 → 可迭代 |
+| **管线设计** | 6 种输出模式各有固定 pipeline 模板 | 动态 skills 组合：`pipeline_design.md` 由 agent 现场设计，skills 按需加载 |
+| **迭代模型** | 单次走完 pipeline，失败最多重试 3 次（Stage 9→7 loop） | 多轮迭代：单轮中断恢复 + 跨轮次持续优化，`result.json` 支持 `revision_needed` |
+| **审查机制** | 3 个固定 sub-agent（A/B/C） | 审查前置：pipeline 中每个阶段可按需声明审查点 + 验收清单，不限于固定 3 个 |
+| **偏好管理** | per-cluster learnings overlay 文件 | 三层偏好：任务级（[B] 采集）→ 课程级（overlay 沉淀）→ 用户级（Claude Code memory） |
+| **提交行为** | `result.json` 状态永远 `draft_ready`，从不自动提交 | 同样不自动提交，但 [E] 检查点提供更丰富的选项（提交 / 我先看 / 迭代修改） |
+
+### AutoStudy 不照搬的部分
+
+- **固定 pipeline 模板**：Copilot 为每种输出模式定义了固定阶段序列。AutoStudy 选择更灵活的动态组合，因为 Claude Code 的 agent 能力足够强，不需要预先枚举所有可能。
+- **单次 batch execute**：Copilot 的 `canvas-execute` 一次性分发所有审批项。AutoStudy 的 `do-homework` 只处理用户选择的单项，保留助手式的节奏控制。
+- **Humanizer**：Copilot 在 doc_prose 模式中集成了 AI 内容人性化。AutoStudy 不做这个——"agent 负责脏活，用户负责审核"的定位与 humanizer 矛盾。
+- **Stop hook 强锁**：Copilot 用 Stop hook 阻止 session 在未完成所有作业时结束。AutoStudy 是助手，不应该阻止用户随时离开。

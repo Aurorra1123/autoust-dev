@@ -2,6 +2,29 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-03 — Establish M3.5+ design principles and Copilot 11-stage gap analysis
+
+Deep-dived into the Canvas Copilot reference project at `/Users/deepwisdom/Desktop/project/canvas_copilot/`. Previous sessions only read the distilled notes in `docs/canvas-pilot-reference.md`; this session read the actual Copilot codebase including `canvas-generic` SKILL.md (11 stages, 3 sub-agents, verification retry loop), framework skills (scan/execute/skip/bootstrap/setup), per-course generic skills, hooks system, and 2026-06-01 real run records.
+
+Key findings: Copilot's `canvas-generic` has 11 stages (0-11), not just the 5 that AutoStudy has been referencing. Stages 6-10 (pipeline design, generate, verification checklist, verify+retry, verification review) are missing from AutoStudy. The 3 sub-agents (A: investigation review, B: verification checklist design, C: verification coverage review) are also not yet implemented.
+
+User clarified five design principles for M3.5+ development:
+1. **Assistant, not automation** — borrow Copilot's mechanisms but keep user-in-loop
+2. **Dynamic skills composition** — no fixed pipelines, leverage Claude Code's agent ability to compose skills on-the-fly for complex tasks
+3. **Multi-turn iteration** — complex tasks won't be done well in one session; design for in-session interrupt/resume AND cross-session iterative refinement; `result.json` should support `revision_needed`
+4. **Three-layer preference system** — task-level (`[B]` collection) → course-level (overlay) → user-level (Claude Code memory)
+5. **Review-first design** — composable sub-agent review points per pipeline stage, not limited to Copilot's fixed 3
+
+Documents updated: ROADMAP.md (added "设计理念" section under M3.5), COLLABORATION.md (added Design Principles section), AGENTS.md (added principle summary), canvas-pilot-reference.md (added Section 6: full 11-stage comparison table and architecture diff table).
+
+## 2026-06-02 — Adopt agent-led Canvas Generic homework flow
+
+User approved replacing the script-led reconnaissance direction with Canvas Copilot `canvas-generic` style agent-led Stage 1-5: fetch context, find rubric, locate inputs, review investigation, and classify output mode. Docs now define `spec.md` as the standardized reconnaissance report, `problem.md` as compatibility only, and `pipeline_design.md` as the do-homework -> task-orchestrator execution contract; `scripts/recon_assignment.py` is historical transition evidence, not the production path.
+
+Validated the new agent-led flow on two real Canvas cases. DSAA2011 Project inspected assignment/rubric/front-page/syllabus/all 4 modules and 69 items, found the main spec in module 12955 file 625115, downloaded the project-module PDFs, wrote `spec.md`, `rubric.md`, `review_a.json`, and a mixed `pipeline_design.md`; orchestrator dry-run stopped correctly on group/dataset/style-file blockers. UCUG1505 FINAL project inspected assignment/rubric/front-page/syllabus/all 14 modules and 64 items, confirmed the assignment page and Week 4 module point to the same Google Doc, fetched the spec plus documentation template, wrote the same workbench files, and dry-run stopped correctly on partner/concept/code/video blockers.
+
+Because no sub-agent reviewer tool is available in this runtime, Stage 4 used cold self-review and recorded `review_method: cold_read_self_review_no_sub_agent_available` in both local `review_a.json` files. `M3.5-WORKDIR-STRUCTURE`, `M3.5-DEEP-RECON`, and `M3.5-PIPELINE-DESIGN` are now marked `passing`; the generated `data/homework/...` workbenches remain gitignored local evidence, with durable evidence recorded in `docs/plans/feature-list.json`. Next: improve the do-homework user supplement UX and turn these dry-run blockers into a smooth execution/revision loop.
+
 ## 2026-06-02 — Stable plan-item handoff for do-homework
 
 Added `scripts/select_plan_item.py` so a user choice like "do plan item 1" is resolved from `data/runs/<today>/plan.json` plus `pending_assignments.json` into a stable handoff object for `do-homework`: `course_id`, `assignment_id`, `assignment_name`, `recommended_action`, `existing_result_path`, and `suggested_work_dir`. Updated `sync-status.md`, `do-homework.md`, and `docs/canvas-pilot-reference.md` to use this selector instead of asking the agent to re-match assignment titles after the user has picked a numbered item.

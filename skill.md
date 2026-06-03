@@ -54,7 +54,7 @@ sub-skills/
 │   ├── canvascli-setup.md        ← one-time install + login
 │   ├── canvascli-api.md          ← command reference, JSON shapes
 │   ├── _index.md                 ← tool registry (M3 orchestrator reads this)
-│   ├── problem-extractor.md      ← Canvas multi-source recon → spec.md + problem.md
+│   ├── problem-extractor.md      ← Canvas Generic recon → spec.md + rubric + references
 │   ├── pdf-renderer.md           ← markdown → PDF (pandoc + tectonic)
 │   ├── writing-helper.md         ← essay / report / reflection drafts
 │   ├── paper-search.md           ← arxiv search → references.bib
@@ -64,7 +64,7 @@ sub-skills/
 │   └── slide-maker.md            ← guizang HTML deck (default) or LaTeX beamer
 └── tasks/
     ├── sync-status.md            ← M2 flagship task
-    ├── task-orchestrator.md      ← M3 pipeline composer
+    ├── task-orchestrator.md      ← M3 pipeline executor from pipeline_design.md
     └── do-homework.md            ← MVP flagship: real Canvas assignment E2E
 data/                             ← JSON snapshots + downloaded files (gitignored)
 ```
@@ -75,7 +75,7 @@ into the local `.venv` with `pip install git+https://github.com/Aurorra1123/canv
 Same philosophy as AutoPku's `pku3b` — keep the data acquisition tool independent so it
 can serve other agents too.
 
-This skill is at **MVP (M3 core)**: the 4 flagship homework scenarios — paper / slides / math / lab — have each been validated end-to-end on real HKUST(GZ) Canvas assignments. See `docs/ROADMAP.md` for what's coming next (interactive tutor, multi-runtime, proactive reminders).
+This skill is at **MVP (M3 core)**: the 4 flagship homework scenarios — paper / slides / math / lab — have each been validated end-to-end on real HKUST(GZ) Canvas assignments. The current M3.5 work is upgrading homework handling to Canvas Generic-style reconnaissance (`spec.md -> investigation/ -> pipeline_design.md`) while keeping AutoStudy's assistant-style user checkpoints. See `docs/ROADMAP.md` for what's coming next.
 
 ## Safety rules (non-negotiable)
 
@@ -87,7 +87,7 @@ These apply to every task in this skill:
 4. **On session expiration / 401 from any canvascli command**: redirect to `canvascli-setup.md` step 3. Do not retry. Do not run `canvascli init` just to check status; use `whoami` for that.
 5. **Capture canvascli's JSON to disk** (e.g. `canvascli courses > data/courses.json`), then read and summarize. Don't try to summarize from stdout buffers directly.
 6. **`AskUserQuestion` only** for interactive flow. The Claude Code `!` bash channel has no TTY — Python `input()` will EOF immediately. See `docs/PITFALLS.md` if curious why.
-7. **Ground homework deliverables in `spec.md` / `problem.md`, not the assignment title.** Canvas's `assignment.description` may be empty, a file link, a Google Doc link, or only one hint among many. Before producing any draft / code / slides, `do-homework.md [A3]` must run `tools/problem-extractor.md` to inspect assignment, rubric, front page, syllabus, modules, pages, files, and external URLs. It writes `spec.md` as the main context and `problem.md` as a compatibility file for current tools. **Never produce deliverables containing `[PROBLEM N]` / `[TODO: align with actual project spec]` / `[此处由小组成员填入选题]` placeholders.** The only acceptable inline markers are `[CITATION NEEDED: ...]` and `[CLARIFICATION NEEDED: ...]`, both surfaced for user resolution at the [E] checkpoint.
+7. **Ground homework deliverables in `spec.md`, `references/`, and `pipeline_design.md`, not the assignment title.** Canvas's `assignment.description` may be empty, a file link, a Google Doc link, or only one hint among many. Before producing any draft / code / slides, `do-homework.md [A3]` must run the agent-led `tools/problem-extractor.md` workflow: inspect assignment, rubric, front page, syllabus, every module's items, pages, files, and external URLs; write a standardized `spec.md`; find rubric criteria in `investigation/rubric.md`; locate inputs under `references/`; cold-review the investigation in `investigation/review_a.json`; and start `pipeline_design.md` with the output mode. `problem.md` is only a compatibility summary for older tools. **Never produce deliverables containing `[PROBLEM N]` / `[TODO: align with actual project spec]` / `[此处由小组成员填入选题]` placeholders.** The only acceptable inline markers are `[CITATION NEEDED: ...]` and `[CLARIFICATION NEEDED: ...]`, both surfaced for user resolution at the [E] checkpoint.
 
 ## Telling the user what just happened
 
