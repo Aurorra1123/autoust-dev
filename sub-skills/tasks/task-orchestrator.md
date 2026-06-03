@@ -75,53 +75,26 @@ tools against an ungrounded assignment.
 
 ## Pipeline Design Format
 
-`pipeline_design.md` should look like:
+`pipeline_design.md` follows the stage-based format defined in
+`docs/skills-architecture-spec.md §5`. Each stage declares:
+tool, lang, type, reads, writes, verify, review, post-process, fallback, min_quality.
 
-```text
-Output mode: mixed (code + doc_prose + slides)
-
-## Deliverables
-- draft/project_groupID_dataset.ipynb
-- draft/report_groupID_dataset.pdf
-- draft/presentation_groupID_dataset.pdf
-- draft/requirements_groupID_dataset.txt
-- draft/submission_groupID_dataset.zip
-
-## Pipeline Stages
-### Sub-pipeline A: code
-1. ...
-
-### Sub-pipeline B: doc_prose
-1. ...
-
-### Sub-pipeline C: presentation
-1. ...
-
-### Final: package
-1. ...
-
-## Tool Mapping
-- code-writer
-- test-runner
-- writing-helper
-- slide-maker
-- pdf-renderer
-
-## Verification Plan
-- ...
-
-## Human Review Items
-- group ID must be filled in
-- video demo must be recorded manually
-```
-
-The orchestrator reads this file as a plan. It may refine wording, but it
-should not silently change output mode or deliverables. If the design is wrong,
-return to `do-homework [C]`.
+The format is written by `do-homework [C]` — the orchestrator reads and executes it.
+Do not redesign the format here.
 
 ## Execution Flow
 
 ### Step 1 - Read The Workbench
+
+**Path discovery:** Before reading any skill files, determine the skill directory:
+
+1. Read `pipeline_design.md` and look for `repo_root:` in the metadata section
+2. If found, set `SKILLS_DIR = repo_root + "/sub-skills/tools/"`
+3. If not found, infer: `REPO_ROOT = WORK_DIR/../../..` (3 levels up from data/homework/COURSE/HWID)
+4. If inference fails, run: `git -C "$WORK_DIR" rev-parse --show-toplevel`
+5. All skill file references use `SKILLS_DIR` as the base path
+
+The `_index.md` is at `SKILLS_DIR/_index.md`.
 
 Read, in order:
 
@@ -133,7 +106,7 @@ investigation/review_a.json
 investigation/user_notes.md      # if present
 investigation/user_scope.md      # if present
 problem.md                       # compatibility only
-sub-skills/tools/_index.md
+SKILLS_DIR/_index.md          # path discovered above
 ```
 
 Do not read `canvas/assignment.json.description` as the problem statement. It is

@@ -123,6 +123,16 @@ data/homework/<COURSE>/<HWID>/
 └── result.json
 ```
 
+After creating directories, compute the repository root for downstream path discovery:
+
+```bash
+REPO_ROOT="$(git -C 'data/homework/<COURSE>/<HWID>' rev-parse --show-toplevel)"
+echo "repo_root: ${REPO_ROOT}"
+```
+
+This `REPO_ROOT` will be injected into `pipeline_design.md` metadata at [C].
+All skill file paths resolve as `REPO_ROOT/sub-skills/tools/<name>.md`.
+
 #### [A3] Canvas Generic Reconnaissance - Mandatory
 
 Invoke `tools/problem-extractor.md` as an agent-led workflow. Do **not** run
@@ -270,31 +280,55 @@ pipeline_design.md
 sub-skills/tools/_index.md
 ```
 
+Use the following common pipeline shapes as **reference guidance** — the agent
+composes freely based on the actual assignment, not a fixed chain.
+
+| Scenario | type | Typical tool chain | Final deliverable |
+|---|---|---|---|
+| **paper** | `paper` | paper-search → figure-maker (opt) → writing-helper → pdf-renderer | `final.pdf` |
+| **slides** | `slides` | figure-maker (opt) → slide-maker | `slides.pdf` |
+| **math** | `math` | writing-helper (LaTeX math) → pdf-renderer | `solution.pdf` |
+| **lab** | `lab` | code-writer → test-runner → writing-helper → pdf-renderer | `src/` + `report.pdf` |
+| **mixed** | `mixed` | Multiple sub-pipelines composed from above | multiple files |
+
+For mixed assignments, write multiple sub-pipelines in pipeline_design.md.
+
 Complete `pipeline_design.md`. It is the single-assignment execution plan,
 modeled after Canvas Copilot:
 
-```text
-Output mode: mixed (code + doc_prose + slides)
+```markdown
+# Pipeline: <COURSE> <assignment>
 
-## Deliverables
-- draft/<expected file>
+## Metadata
+repo_root: <absolute path from [A2]>
 
-## Pipeline Stages
-### Sub-pipeline A: code
-...
+## Output
+- mode: mixed (code + doc_prose + slides)
+- deliverables: [notebook.ipynb, report.pdf, ...]
 
-### Sub-pipeline B: doc_prose
-...
+## Constraints
+- [quantifiable constraints from spec]
 
-## Tool Mapping
-- code-writer
-- test-runner
-- writing-helper
-- slide-maker
-- pdf-renderer
+## Stages
 
-## Verification Plan
-- ...
+### Stage 1 — <name>
+- tool: code-writer
+- lang: python
+- reads: spec.md §3, references/project_announce.pdf
+- writes: draft/notebook.ipynb
+- verify: notebook executes without errors
+- review: false
+
+### Stage 2 — <name>
+- tool: writing-helper
+- type: report
+- reads: spec.md, rubric.md, draft/notebook.ipynb outputs
+- writes: draft/report.md
+- verify: covers every rubric criterion
+- review: true
+- post-process: humanize     # optional
+- fallback: if pdf-renderer fails → fpdf2 + quality note
+- min_quality: PDF > 10KB, pages >= 5
 
 ## Human Review Items
 - ...
