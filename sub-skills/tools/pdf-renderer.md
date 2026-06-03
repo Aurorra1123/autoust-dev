@@ -220,6 +220,31 @@ def render_pdf(md_path, pdf_path, *, with_callouts=False, font="PingFang SC"):
 render_pdf("draft.md", "data/homework/DSAA2043/hw3/final.pdf")
 ```
 
+## Post-processing (fallback chain)
+
+If the primary rendering path fails, try in order:
+
+1. **Tectonic two-step** (preferred) — `pandoc → tex → tectonic → PDF`
+2. **Pandoc + xelatex** — `pandoc --pdf-engine=xelatex → PDF`
+3. **fpdf2 pure Python** — if neither LaTeX engine is available:
+   ```bash
+   pip install fpdf2
+   ```
+   Render a simplified text-only PDF. Record in `human_review_items`:
+   "PDF rendered via fpdf2 fallback — formatting quality may be degraded."
+
+If the final PDF is suspiciously small (<10KB for a multi-page report),
+it likely failed silently. Re-run with a different path.
+
+## Self-check
+
+- [ ] Output PDF exists and is > 1KB
+- [ ] Magic bytes are `%PDF` (run: `head -c 4 output.pdf`)
+- [ ] Page count matches expectations (run: `pdfinfo output.pdf | grep Pages` if available)
+- [ ] Chinese characters render correctly (not tofu boxes) — open and visually verify
+- [ ] No LaTeX errors in stderr output
+- [ ] For multi-page documents: page count >= 3 (sanity minimum)
+
 ## Pitfalls
 
 These came from AutoPku phase 11 and our own validation — fix them once, here, for everyone:
