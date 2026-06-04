@@ -2,6 +2,43 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-03 — UCUG1505 end-to-end validation + DSAA2011 trajectory deep-dive
+
+UCUG1505 Creative Coding Final Project 验证。从 canvas/ 原始数据开始，子代理完整走完侦查→设计→执行流程。**首轮 P0-P5 全部 FIXED**，无需迭代。
+
+### 测试设计
+
+与 DSAA2011 不同，workbench 只保留 canvas/ 原始 JSON 快照（无预写 pipeline_design.md、无预写 spec.md）。子代理从零开始侦查，测试动态 pipeline 组合能力。
+
+### UCUG1505 验证结果
+
+| 维度 | 状态 | 关键指标 |
+|---|---|---|
+| P0 Skill 读取 | FIXED | 7 个文件，三层加载顺序正确 |
+| P1 Stage→Tool | FIXED | 4/4 stage 声明与执行完全一致 |
+| P2 代码真实性 | FIXED | sketch.js 340行/9.8KB，完整 Particle 类 |
+| P3 PDF 回退 | FIXED | pandoc→tectonic 两步法，28KB PDF |
+| P4 目录结构 | FIXED | 全部在 draft/ 下 |
+| P5 Write 工具 | FIXED | 11/11 Write 成功，0 Bash hack |
+
+### DSAA2011 心路历程分析
+
+并发派子代理深度分析 DSAA2011 两轮执行的完整行为轨迹，输出逐步追踪文档：
+- 每个工具调用的行为依据（skill 指导 vs 自身判断）
+- Skill 依从度 >85%，自主决策 ~25%（集中在环境调试）
+- 两轮对比：Round 1 修 P3（fallback chain），Round 2 修 humanizer
+
+### 产出文件
+
+- `docs/pipeline-trace-audit-ucug1505.md` — UCUG1505 审计报告
+- `docs/dsaa2011-execution-trajectory.md` — DSAA2011 心路历程轨迹
+
+### 下一步
+
+- 两个项目的技能架构验证均已完成
+- 待验证项目：可考虑其他课程作业（如 DSAA2043、UCUG1077）进一步验证
+- M3.5 剩余：ITERATION、SUB-AGENT-REVIEW、PREFERENCE-SYSTEM
+
 ## 2026-06-03 — Skills architecture refactoring + end-to-end validation
 
 Completed the full skills architecture refactoring cycle triggered by the pipeline trace audit (P0-P5). Followed the superpowers workflow: brainstorm → spec → plans → subagent-driven implementation → 2-round end-to-end validation with trace analysis.

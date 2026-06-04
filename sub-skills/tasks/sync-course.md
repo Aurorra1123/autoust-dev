@@ -115,14 +115,28 @@ For each file to download, classify by filename/folder path:
 ```python
 import re
 
-def classify(filename, folder):
+def classify(filename, folder=''):
     name = (filename or '').lower()
     path = (folder or '').lower()
-    patterns_lecture = r'lecture|lec|\.l\d|课件|slide|week\s*\d'
-    patterns_reading = r'reading|paper|article|论文|ref|bib'
-    if re.search(patterns_lecture, name + ' ' + path):
+    # Lab assignments: LA followed by digit → other
+    if re.search(r'[-_]la\d', name):
+        return 'other'
+    # Exam/project materials → other
+    if re.search(r'exam|project_announce|final_review|midterm_review', name):
+        return 'other'
+    # Lecture slides: L+digit, both -L and _L, PDF only
+    if re.search(r'[-_]l\d{1,2}[_-]', name) and name.endswith('.pdf'):
         return 'lectures'
-    if re.search(patterns_reading, name + ' ' + path):
+    # LA0 intro lecture
+    if re.search(r'-LA0\.pdf$', name):
+        return 'lectures'
+    # Books and references
+    if name.startswith('book ') or name.startswith('reference'):
+        return 'readings'
+    # Fallback patterns
+    if re.search(r'lecture|lec|课件|slide|week\s*\d', name + ' ' + path):
+        return 'lectures'
+    if re.search(r'reading|paper|article|论文|ref|bib', name + ' ' + path):
         return 'readings'
     return 'other'
 ```
@@ -179,18 +193,22 @@ files = json.load(open('$COURSE_DIR/canvas_sync/files_index.json'))
 # Count files by category
 cats = {}
 for f in (files if isinstance(files, list) else []):
-    fname = f.get('display_name', f.get('filename', ''))
+    fname = f.get('display_name', f.get('name', f.get('filename', '')))
     folder = f.get('folder', '')
-    # Use same classify logic
+    # Use same classify logic as 2e
     import re
-    name = fname.lower()
-    path = folder.lower()
-    if re.search(r'lecture|lec|\.l\d|课件|slide|week\s*\d', name + ' ' + path):
-        cat = 'lectures'
-    elif re.search(r'reading|paper|article|论文|ref|bib', name + ' ' + path):
-        cat = 'readings'
-    else:
-        cat = 'other'
+    def classify(fname, folder=''):
+        n = (fname or '').lower()
+        p = (folder or '').lower()
+        if re.search(r'[-_]la\d', n): return 'other'
+        if re.search(r'exam|project_announce|final_review|midterm_review', n): return 'other'
+        if re.search(r'[-_]l\d{1,2}[_-]', n) and n.endswith('.pdf'): return 'lectures'
+        if re.search(r'-LA0\.pdf$', n): return 'lectures'
+        if n.startswith('book ') or n.startswith('reference'): return 'readings'
+        if re.search(r'lecture|lec|课件|slide|week\s*\d', n + ' ' + p): return 'lectures'
+        if re.search(r'reading|paper|article|论文|ref|bib', n + ' ' + p): return 'readings'
+        return 'other'
+    cat = classify(fname, folder)
     cats.setdefault(cat, []).append(fname)
 
 lines = [
@@ -233,14 +251,18 @@ meta = json.load(open('$COURSE_DIR/meta.json'))
 files = json.load(open('$COURSE_DIR/canvas_sync/files_index.json'))
 cats = {}
 for f in (files if isinstance(files, list) else []):
-    fname = f.get('display_name', f.get('filename', '')).lower()
-    folder = f.get('folder', '').lower()
-    if re.search(r'lecture|lec|\.l\d|课件|slide|week\s*\d', fname + ' ' + folder):
-        cat = 'lectures'
-    elif re.search(r'reading|paper|article|论文|ref|bib', fname + ' ' + folder):
-        cat = 'readings'
-    else:
-        cat = 'other'
+    fname = f.get('display_name', f.get('name', f.get('filename', '')))
+    folder = f.get('folder', '')
+    name = fname.lower()
+    path = folder.lower()
+    if re.search(r'[-_]la\d', name): cat = 'other'
+    elif re.search(r'exam|project_announce|final_review|midterm_review', name): cat = 'other'
+    elif re.search(r'[-_]l\d{1,2}[_-]', name) and name.endswith('.pdf'): cat = 'lectures'
+    elif re.search(r'-LA0\.pdf$', name): cat = 'lectures'
+    elif name.startswith('book ') or name.startswith('reference'): cat = 'readings'
+    elif re.search(r'lecture|lec|课件|slide|week\s*\d', name + ' ' + path): cat = 'lectures'
+    elif re.search(r'reading|paper|article|论文|ref|bib', name + ' ' + path): cat = 'readings'
+    else: cat = 'other'
     cats[cat] = cats.get(cat, 0) + 1
 meta['file_counts'] = cats
 json.dump(meta, open('$COURSE_DIR/meta.json', 'w'), ensure_ascii=False, indent=2)
