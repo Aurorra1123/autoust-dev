@@ -16,6 +16,8 @@ Try natural language. Common intents:
 | "看看这周作业" / "what's due" / "同步课程状态" | → `sub-skills/tasks/sync-status.md` |
 | "帮我完成 DLED3020 paper critique" / "做一下 DSAA2012 lab" | → `sub-skills/tasks/do-homework.md` |
 | "下载 DSAA2043 的 midterm 资料" / "fetch course files" | → use `canvascli download` (see `sub-skills/tools/canvascli-api.md`) |
+| "同步 DSAA2011 的资料" / "下载课件" / "sync course materials" | → `sub-skills/tasks/sync-course.md` |
+| "写 DSAA2043 的笔记" / "课程笔记" / "generate course notes" | → `sub-skills/tasks/write-course-notes.md` |
 | "登录失败了" / "重新登录" | → first check `.venv/bin/canvascli whoami`; only run `canvascli-setup.md` step 3 if the saved session is missing/expired |
 | (first time using AutoStudy) | → `sub-skills/tools/canvascli-setup.md` from step 1 |
 
@@ -64,8 +66,10 @@ sub-skills/
 │   └── slide-maker.md            ← guizang HTML deck (default) or LaTeX beamer
 └── tasks/
     ├── sync-status.md            ← M2 flagship task
+    ├── sync-course.md            ← Course-level material archiving
     ├── task-orchestrator.md      ← M3 pipeline executor from pipeline_design.md
-    └── do-homework.md            ← MVP flagship: real Canvas assignment E2E
+    ├── do-homework.md            ← MVP flagship: real Canvas assignment E2E
+    └── write-course-notes.md     ← Parallel Agent course note generation
 data/                             ← JSON snapshots + downloaded files (gitignored)
 ```
 

@@ -28,6 +28,13 @@ see `sub-skills/tasks/do-homework.md [C]`.
 
 > Loading order: read this file first → read the matched tool's .md → if tool lists appendices, load relevant appendix on demand.
 
+## Task registry
+
+| Task | File | One-line capability | Trigger |
+|---|---|---|---|
+| **sync-course** | [../tasks/sync-course.md](../tasks/sync-course.md) | Persistent course material sync (files, announcements, modules) | "同步课程资料", "下载课件" |
+| **write-course-notes** | [../tasks/write-course-notes.md](../tasks/write-course-notes.md) | Parallel Agent notes from lecture PDFs (Obsidian style) | "写笔记", "课程笔记" |
+
 ## Capability vocabulary
 
 | Verb | Meaning |
