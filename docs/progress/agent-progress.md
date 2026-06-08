@@ -2,6 +2,21 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-08 — Development validation bridge for alignment loop
+
+Clarified the two-line model for homework flow testing: real user-facing
+runtime has only the Main Agent and its subagents, while development validation
+wraps that runtime in outer Main Agent A, runtime coordinator B, child agents C,
+and D/E trajectory review. `docs/development-validation-standard.md` now
+requires A to bridge live simulated-user answers at `do-homework [B]` without
+rewriting B's questions or turning `[DEV]` comments into user intent.
+
+Task 10's coordinator prompt now includes explicit pause markers for testing the
+multi-round alignment loop:
+`WAITING_FOR_SIMULATED_USER_B_ROUND_<N>` and
+`WAITING_FOR_ALIGNMENT_BRIEF_CONFIRMATION`. B may enter `[C]` only after A
+forwards the user's confirmation of `investigation/alignment_brief.md`.
+
 ## 2026-06-08 — Post-recon alignment brief contract added
 
 Redesigned `do-homework [B]` from a one-shot supplement checkpoint into a

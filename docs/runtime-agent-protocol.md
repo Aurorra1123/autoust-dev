@@ -120,6 +120,18 @@ subagents only for the validation run. If the coordinator cannot dispatch child
 subagents, the run may still validate file contracts through `inline_fallback`,
 but it does not validate true executor/reviewer isolation.
 
+This exception creates a second, development-only line around the normal runtime
+line. In real user-facing work there is only the Main Agent and its subagents:
+the Main Agent talks to the user during `do-homework [B]` and writes the
+confirmed `alignment_brief.md`. In development validation, the current session
+is outer Main Agent A, which launches coordinator B to simulate that real Main
+Agent. A may prepare clean startup evidence, inject B's stable id, bridge live
+simulated-user answers during `[B]`, export transcripts, and dispatch trajectory
+reviewers. A must not feed B hidden development diagnoses, rewrite B's
+alignment questions, or turn the human reviewer's development comments into user
+intent. The detailed launch and bridge rules live in
+`docs/development-validation-standard.md`.
+
 Validation evidence must be stable enough for another agent to audit later. The
 runtime coordinator summary must record a stable coordinator agent id or
 transcript handle; "current thread" alone is not sufficient. The coordinator is

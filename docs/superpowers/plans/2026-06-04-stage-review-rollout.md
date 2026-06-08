@@ -1044,6 +1044,19 @@ stage receipts, previous verification logs, previous summaries, or hidden draft
 artifacts as startup context. Perform the normal `do-homework` flow from
 reconnaissance through draft generation and verification.
 
+When `do-homework [B]` needs live simulated-user input, do not invent the user's
+answer and do not continue to `[C]`. Return the exact next alignment question
+plus `WAITING_FOR_SIMULATED_USER_B_ROUND_<N>`. The outer Main Agent A will
+forward that question to the human reviewer and send back only
+`SIMULATED_USER_ANSWER_B_ROUND_<N>: <answer>`. After each answer, append
+`investigation/user_notes.md`, then either ask the next single alignment
+question with the next waiting marker or write `investigation/alignment_brief.md`.
+When the terminal brief is ready, return its concise summary plus
+`WAITING_FOR_ALIGNMENT_BRIEF_CONFIRMATION`; enter `[C]` only after A sends
+`SIMULATED_USER_ALIGNMENT_CONFIRMATION: confirmed`. If A sends
+`SIMULATED_USER_ALIGNMENT_CORRECTION: <correction>`, update the notes and brief,
+then wait for confirmation again.
+
 If the declared mode is `repair_flow`, simulate a user returning after reviewing
 the first draft. Preserve the current draft as the object being repaired, write
 `repair_request.md` or `repair_plan.md`, and build a repair pipeline whose

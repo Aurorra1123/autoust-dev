@@ -8,6 +8,67 @@ workflows.
 Use this standard before dispatching a runtime coordinator or validation
 subagent.
 
+## Two Flow Lines
+
+Keep the user-facing runtime line separate from the development-validation line.
+They share the same task artifacts, but they do not have the same actors.
+
+In the real user line, the current Claude Code Main Agent is the runtime Main
+Agent. It reads `skill.md`, routes to `do-homework.md`, performs
+reconnaissance, runs the `[B]` alignment loop directly with the user, writes
+`alignment_brief.md`, plans `pipeline_design.md`, dispatches normal stage
+workers as needed, and hands the draft back at `[E]`.
+
+In the development-validation line, the current session is Main Agent A: an
+outer test harness, not the runtime coordinator being tested. A prepares a
+clean launch state, shows the startup inventory to the human reviewer, dispatches
+a fresh runtime coordinator B, bridges live simulated-user answers when the run
+reaches `[B]`, exports transcripts after B stops, and dispatches D/E reviewers.
+B must still behave like the real user-facing Main Agent and must use only the
+runtime surface named in the launch boundary. A's development analysis,
+expectations, and hidden diagnoses are not runtime context for B.
+
+For `[B]` alignment-loop validation, use this bridge rule:
+
+1. B asks the next single alignment question.
+2. A forwards that question to the human reviewer without improving it,
+   answering for the user, or bundling extra context.
+3. The human reviewer answers as the simulated end user. If they also need to
+   give development instructions to A, prefix them with `[DEV]`; A must not
+   forward `[DEV]` content to B as user intent.
+4. A forwards only the simulated user's answer back to B.
+5. B appends `investigation/user_notes.md` for every round and writes
+   `investigation/alignment_brief.md` only when it has no necessary alignment
+   question left.
+6. A forwards B's final brief summary to the human reviewer for confirmation.
+   Only after the reviewer confirms may B enter `[C]`.
+
+This lets development testing exercise the real `do-homework [B]` behavior
+without letting the outer developer session pre-solve the alignment problem.
+
+When the run uses a live simulated user instead of a fully specified startup
+prompt, the coordinator prompt must require an explicit pause protocol:
+
+- When B needs a user answer, it returns the exact question plus
+  `WAITING_FOR_SIMULATED_USER_B_ROUND_<N>` and does not continue to `[C]`.
+- A forwards the question to the human reviewer and sends B only:
+  `SIMULATED_USER_ANSWER_B_ROUND_<N>: <answer>`.
+- B appends the round to `investigation/user_notes.md`, then either asks the
+  next single question with the next waiting marker or writes
+  `investigation/alignment_brief.md`.
+- When B writes the terminal brief, it returns a concise brief summary plus
+  `WAITING_FOR_ALIGNMENT_BRIEF_CONFIRMATION`.
+- A forwards the summary to the human reviewer and sends B only
+  `SIMULATED_USER_ALIGNMENT_CONFIRMATION: confirmed` or
+  `SIMULATED_USER_ALIGNMENT_CORRECTION: <correction>`.
+- If B receives a correction, it appends another `user_notes.md` round, replaces
+  `alignment_brief.md`, and waits for confirmation again.
+
+For a non-interactive validation run, all simulated user supplements must be in
+the launch prompt or accepted startup inventory. Even then, B should still write
+`user_notes.md` and `alignment_brief.md`; the test simply does not exercise the
+live multi-round bridge.
+
 ## Iteration Modes
 
 Before dispatching any runtime coordinator, the Main Agent must declare the
@@ -105,7 +166,8 @@ The structured inventory should include:
   "active_dirs_before_launch": [],
   "archive_evidence_path": "archive/<iteration-id>/",
   "retained_startup_files": [],
-  "user_supplements_source": "simulated_user_prompt"
+  "user_supplements_source": "simulated_user_prompt_or_live_B_bridge",
+  "alignment_interaction_source": "live_simulated_user_bridge | simulated_user_prompt"
 }
 ```
 
@@ -228,6 +290,16 @@ The coordinator must not receive:
 The Main Agent and later trajectory reviewers may use internal protocol docs as
 the audit standard. The runtime coordinator should experience the same public
 skill/task interface a normal AutoStudy user-facing agent would load.
+
+During a live `[B]` alignment-loop validation, the Main Agent is only the
+message bridge between B and the human reviewer acting as simulated user. A must
+not rewrite B's question to make it better, combine several B questions into a
+batch, add hidden assignment facts, or summarize the user's answer into a more
+favorable form. If the human reviewer gives mixed content, A forwards only the
+simulated-user answer and keeps `[DEV]` instructions on the development side.
+The coordinator's `user_notes.md` and final `alignment_brief.md` must therefore
+reflect B's actual questioning and the user's actual answers, not A's preferred
+interpretation of how the alignment loop should have gone.
 
 After dispatch returns the coordinator's stable agent/thread id, the Main Agent
 must provide that id to the coordinator if it was not known at initial prompt
