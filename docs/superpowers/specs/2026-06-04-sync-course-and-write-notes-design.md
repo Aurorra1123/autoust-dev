@@ -42,7 +42,7 @@ AutoStudy 当前所有数据围绕 do-homework 组织，课程本身没有持久
 
 ```
 [A] 环境检查
-    .venv/bin/canvascli --version
+    .venv/bin/canvascli version
     .venv/bin/canvascli whoami
     → 失败则重定向到 canvascli-setup.md
 

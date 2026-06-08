@@ -82,6 +82,23 @@ logs, and lightweight state files. It should not blindly copy Copilot's batch
 automation defaults when an assistant-style checkpoint, explanation, or user
 supplement step better fits AutoStudy.
 
+### Superpowers: Workflow Reference
+
+Superpowers is AutoStudy's reference for agent workflow discipline, not a
+runtime dependency. AutoStudy should not require a user to install Superpowers
+to complete Canvas or study tasks.
+
+Borrowed practices:
+
+- clarify intent before execution, as in `brainstorming`
+- write a stable spec before writing an implementation plan
+- keep the main agent as coordinator and give subagents precise context packs
+- separate "did we satisfy the spec?" review from "is the artifact good?" review
+- require verification evidence before claiming completion
+
+The AutoStudy translation of these practices lives in
+`docs/runtime-agent-protocol.md`.
+
 Current approved homework direction:
 
 - Reconnaissance follows Canvas Copilot `canvas-generic` Stage 1-5: fetch
@@ -92,9 +109,10 @@ Current approved homework direction:
 - `spec.md` is a standardized report written after reading all sources; full
   source text belongs in `references/`, not in a raw context dump.
 - `problem.md` is temporary compatibility for older tools.
-- After the user supplement checkpoint, `do-homework` writes
-  `pipeline_design.md`; `task-orchestrator` executes that plan instead of
-  reading `task_profile.yaml`.
+- After the post-recon alignment loop, `do-homework` writes a confirmed
+  `investigation/alignment_brief.md`, then writes `pipeline_design.md`;
+  `task-orchestrator` executes that plan instead of reading
+  `task_profile.yaml`.
 
 ### Skills Architecture
 
@@ -118,8 +136,9 @@ Key design decisions:
    post-processing; code-writer delegates to test-runner for verification.
    Nesting is conditional — the skill checks context before loading sub-skills.
 
-4. **Preference integration**: Defaults in skill files → overridden by
-   `pipeline_design.md` stage declarations (task-level) → overridden by
+4. **Preference integration**: Defaults in skill files → overridden by confirmed
+   task alignment (`investigation/alignment_brief.md`, then
+   `pipeline_design.md` stage declarations) → overridden by
    `data/course-overrides/` (course-level, not yet implemented) → overridden by
    Claude Code memory (user-level, not yet implemented).
 
@@ -150,12 +169,14 @@ reference to Canvas Copilot but serve AutoStudy's assistant-oriented identity:
    continue from an existing draft rather than starting over. `result.json`
    should support `revision_needed` status.
 
-4. **Three-layer preference system.** Task-level preferences collected at
-   `[B]` → stored in `investigation/user_notes.md`. Course-level preferences
-   accumulated across assignments → stored in `data/course-overrides/<COURSE>.md`.
-   User-level preferences → stored in Claude Code project memory
-   (`~/.claude/projects/.../memory/`). Each layer has a different lifecycle
-   and serves a different purpose.
+4. **Three-layer preference system.** Task-level preferences are aligned at
+   `[B]` through a focused user conversation: process notes go to
+   `investigation/user_notes.md`, while the confirmed final agreement goes to
+   `investigation/alignment_brief.md` and drives `pipeline_design.md`.
+   Course-level preferences accumulated across assignments are stored in
+   `data/course-overrides/<COURSE>.md`. User-level preferences are stored in
+   Claude Code project memory (`~/.claude/projects/.../memory/`). Each layer has
+   a different lifecycle and serves a different purpose.
 
 5. **Review-first design.** Insert sub-agent review points wherever valuable.
    Not limited to Copilot's three fixed sub-agents (A/B/C). Each pipeline

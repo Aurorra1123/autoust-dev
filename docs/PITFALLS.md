@@ -119,6 +119,37 @@ except RuntimeError as e:
 
 **规则强化**（写进 `skill.md` Safety #7 + `do-homework.md` Safety #7）：deliverable 文件里**禁止出现** `[PROBLEM N]` / `[TODO: align...]` / `[此处由小组成员填入...]` 这种占位符。只允许 `[CITATION NEEDED: ...]` 和 `[CLARIFICATION NEEDED: ...]` 两种 marker，且都要在 do-homework `[E]` 一次性回流给用户。
 
+### 6c. Notebook 有图、report 没图：这是工具接口断裂
+
+**现象**：DSAA2011 Project 的 notebook 生成了 12 张 PNG，slides 也嵌了图，但
+`draft/report.md` 没有任何图片引用，`pdfimages` 显示
+`report_G01_dropout.pdf` 里 0 张嵌入图片。验证只检查了 report 文本覆盖任务，
+于是 text-only report 被当成 acceptable risk。
+
+**根因**：
+- notebook 代码直接 `plt.savefig('tsne_2d.png')`，把图平铺到 `draft/`
+- `writing-helper.md` 只提示读取 `figures/fig_N.*`，没有扫描/整理 `draft/*.png`
+- report quality review 没把“有可用实验图但 report 未嵌入”视为可自动修复质量问题
+
+**正确做法**：
+- notebook / figure-maker 输出统一进 `draft/figures/`
+- `draft/report.md` 用相对路径引用：`![caption](figures/tsne_2d.png){width=70%}`
+- ML/data report 至少嵌入支撑主要结论的代表图（t-SNE、clustering、confusion/ROC、feature importance 等）
+- 若已有图但 report 没嵌，分类为 `auto_fixable`，触发 report/asset repair stage
+
+### 6d. Pandoc + XeLaTeX 默认不保留中间 `.tex`
+
+**现象**：`report_G01_dropout.pdf` 的 metadata 显示 `Creator: LaTeX via pandoc`
+和 `Producer: xdvipdfmx`，但 workbench 里找不到 `.tex` / `.log`。
+
+**根因**：`pandoc --pdf-engine=xelatex` 走 native PDF 路径时会用临时 TeX
+文件，成功后默认清理；不是 AutoStudy 特意删除了原始 XeLaTeX 文件。
+
+**正确做法**：
+- PDF stage receipt 记录渲染引擎：`pandoc+xelatex` / `pandoc->tectonic` / fallback
+- 需要 provenance 时额外写 `draft/render/<report>.tex` 和日志
+- 渲染带图 markdown 时加 resource path，确保 `figures/foo.png` 能找到
+
 **HKUST(GZ) 6 门课当前学期附件分布观察**（grep `assignment.description` 里的 `/files/`）：
 - 96 个 assignments 里有 ~70% 的 description 包含至少一个 PDF / DOCX 链接
 - 群组作业 (UCUG) 通常附件是题目说明 + rubric；lab 类作业附件是数据集 + 题目

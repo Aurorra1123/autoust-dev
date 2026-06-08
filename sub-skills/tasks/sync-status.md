@@ -20,7 +20,7 @@ study-assistant recommendation, not a batch automation queue.
 ## Preconditions
 
 Before running, check:
-1. `.venv/` exists with `canvascli` installed (test: `.venv/bin/canvascli --version`)
+1. `.venv/` exists with `canvascli` installed (test: `.venv/bin/canvascli version`)
 2. A saved session exists (test: `.venv/bin/canvascli whoami` returns 0)
 
 If either is missing, redirect to `canvascli-setup.md`. Do NOT proceed silently.
@@ -150,7 +150,7 @@ Selector actions:
 |---|---|
 | `recon` | Start `do-homework.md` with the selected identifiers. |
 | `review_or_submit` | Read `existing_result_path` / `suggested_work_dir` and help the user review or submit the existing draft instead of re-running reconnaissance by default. |
-| `continue` | Inspect the previous `result.json` error and ask the user whether to retry. |
+| `continue` | Inspect the previous `result.json` error or revision-needed state and ask the user whether to retry. |
 | `manual_review` | Tell the user the item likely needs manual Canvas interaction; do not treat it like a normal draftable homework item. |
 
 **Do NOT auto-download anything.** Files are only fetched when the user explicitly asks.

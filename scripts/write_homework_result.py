@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 
-VALID_STATUSES = {"skipped", "draft_ready", "submitted", "error"}
+VALID_STATUSES = {"skipped", "draft_ready", "revision_needed", "submitted", "error"}
 TERMINAL_SUCCESS_STATUSES = {"draft_ready", "submitted"}
 
 

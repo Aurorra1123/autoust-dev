@@ -285,10 +285,11 @@
       "2026-06-02 task-orchestrator.md now requires pipeline_design.md, verification_checklist.md, verification.log, and human_review_items in the orchestrator summary",
       "2026-06-02 docs updated so task-orchestrator reads spec.md + pipeline_design.md instead of task_profile.yaml",
       "2026-06-02 live agent-led workbenches created under data/homework/DSAA2011/project and data/homework/UCUG1505/final-project with canvas/, spec.md, references/, investigation/, pipeline_design.md, draft/, verification_checklist.md, and verification.log",
-      "2026-06-02 DSAA/UCUG workbench verification logs recorded orchestrator dry-run PASS/SKIP outcomes; data/ remains gitignored local evidence"
+      "2026-06-02 DSAA/UCUG workbench verification logs recorded orchestrator dry-run PASS/SKIP outcomes; data/ remains gitignored local evidence",
+      "2026-06-05 DSAA2011 asset/provenance follow-up added workbench conventions for transcripts/, draft/figures/, and draft/render/ so child transcript exports, report figures, and PDF render sidecars have stable homes"
     ],
     "status": "passing",
-    "notes": "Workbench structure is now validated on two real Canvas cases. Generated data/homework artifacts remain local/gitignored; durable evidence is recorded in progress and feature-list docs."
+    "notes": "Workbench structure is validated on real Canvas cases and now includes explicit homes for runtime transcripts, report figures, and PDF render provenance. Generated data/homework artifacts remain local/gitignored; durable evidence is recorded in progress and feature-list docs."
   },
   {
     "id": "M3.5-DEEP-RECON",
@@ -305,7 +306,7 @@
       "继续生成 problem.md 兼容现有 writing-helper / code-writer / slide-maker",
       "在 DSAA2011 Project 上能找到 module item PDF 主 spec，在 UCUG1505 FINAL project 上能识别 Google Doc spec 和邻近 slides 上下文",
       "正式 do-homework 路径不运行 scripts/recon_assignment.py；该脚本只保留为历史过渡验证",
-      "侦查后 [B] 必须向用户汇报来源判断并询问补充信息，即使 review_a verdict 为 proceed"
+      "侦查后 [B] 必须向用户汇报来源判断并运行 alignment loop，即使 review_a verdict 为 proceed"
     ],
     "evidence": [
       "2026-06-01 /tmp/autoust-recon-verify/dsaa2011: spec.md 45,709 B; references include DSAA2011-26sp-project_announce-L01.pdf; module-items-12955 inspected",
@@ -314,6 +315,7 @@
       "Template extracted from problem-extractor.md and py_compile passed before real verification",
       "Historical transition: scripts/recon_assignment.py added and proved atomic canvascli sources can reach DSAA2011/UCUG1505 context",
       "do-homework.md [B] updated to include mandatory user supplement checkpoint after recon",
+      "2026-06-08 do-homework.md [B] upgraded from one-shot supplements to the alignment loop: process notes go to user_notes.md and terminal user-confirmed intent goes to alignment_brief.md",
       "2026-06-02 /tmp/autoust-recon-script-verify/dsaa2011: scripts/recon_assignment.py produced spec.md 66,322 B, problem.md 155,415 B, 4 modules / 69 module items, assignment description 0 B, project PDF file 625115 downloaded, review_a verdict proceed",
       "2026-06-02 /tmp/autoust-recon-script-verify/ucug1505: scripts/recon_assignment.py produced spec.md 22,527 B, problem.md 14,274 B, 14 modules / 64 module items, Final project Google Doc and Week 9 slides recorded, media GIFs inspected-not-downloaded, review_a verdict proceed",
       "2026-06-02 docs pivot: problem-extractor.md, do-homework.md, task-orchestrator.md, tools, PITFALLS, ROADMAP, and canvas-pilot-reference now define agent-led Canvas Generic Stage 1-5 as the official path",
@@ -328,12 +330,12 @@
     "id": "M3.5-PIPELINE-DESIGN",
     "category": "architecture",
     "priority": "P0",
-    "description": "将 do-homework / task-orchestrator 迁移到 spec.md -> pipeline_design.md -> draft/ 的单作业执行契约",
+    "description": "将 do-homework / task-orchestrator 迁移到 spec.md -> alignment_brief.md -> pipeline_design.md -> draft/ 的单作业执行契约",
     "acceptance": [
-      "do-homework [C] 在用户补充后完成 pipeline_design.md，而不是写 task_profile.yaml",
+      "do-homework [C] 在用户确认 alignment_brief.md 后完成 pipeline_design.md，而不是写 task_profile.yaml",
       "pipeline_design.md 明确 output mode、deliverables、sub-pipelines、tool mapping、verification plan、human review items",
-      "task-orchestrator 只从 workbench 读取 spec.md、pipeline_design.md、investigation/rubric.md、references/ 和 problem.md 兼容摘要",
-      "writing-helper / code-writer / slide-maker / paper-search 从 spec.md + pipeline_design.md 获取任务约束，不再要求 task_profile.yaml",
+      "task-orchestrator 只从 workbench 读取 spec.md、alignment_brief.md、pipeline_design.md、investigation/rubric.md、references/ 和 problem.md 兼容摘要",
+      "writing-helper / code-writer / slide-maker / paper-search 从 spec.md + alignment_brief.md + pipeline_design.md 获取任务约束，不再要求 task_profile.yaml",
       "DSAA2011 Project 能生成 mixed pipeline：code/notebook、report、presentation、requirements、package",
       "UCUG1505 FINAL project 能生成 mixed pipeline：code/source zip、documentation、video demo human review item",
       "至少完成一次真实 flow 连通测试，证明 task-orchestrator 可以按 pipeline_design.md 执行或清晰返回 human review blockers"
@@ -344,10 +346,11 @@
       "2026-06-02 tools/_index.md, writing-helper.md, code-writer.md, slide-maker.md, and paper-search.md updated to read the workbench and pipeline_design.md",
       "2026-06-02 DSAA2011 pipeline_design.md validated: Output mode mixed (code + doc_prose + slides + package), deliverables notebook/report PDF/presentation PDF/requirements/zip, registered tools mapped, orchestrator dry-run stopped on human blockers for group/dataset/style files instead of fabricating outputs",
       "2026-06-02 UCUG1505 pipeline_design.md validated: Output mode mixed (code + doc_prose + video_manual + package), deliverables documentation/code zip/video URL, registered tools mapped for automatable parts, orchestrator dry-run stopped on human blockers for partner/concept/code/video details",
-      "2026-06-02 verification_checklist.md and verification.log written for both local workbenches; result.json intentionally not written because no user-approved draft/submission terminal state occurred"
+      "2026-06-02 verification_checklist.md and verification.log written for both local workbenches; result.json intentionally not written because no user-approved draft/submission terminal state occurred",
+      "2026-06-08 do-homework.md, task-orchestrator.md, runtime-agent-protocol.md, skill.md, AGENTS.md, COLLABORATION.md, docs/canvas-pilot-reference.md, and docs/skills-architecture-spec.md now require confirmed alignment_brief.md before pipeline_design.md and orchestrator execution"
     ],
     "status": "passing",
-    "notes": "spec.md -> pipeline_design.md -> task-orchestrator dry-run is validated on the two required real cases. Next work should turn the dry-run blocker handling into a smoother do-homework user supplement and execution experience."
+    "notes": "spec.md -> alignment_brief.md -> pipeline_design.md -> task-orchestrator is now the current contract. Earlier dry-runs validated the file pipeline; next real homework validation should exercise the alignment loop with both a clear DSAA2011-style task and an open-ended UCUG1505-style task."
   },
   {
     "id": "M3.5-RESULT-JSON",
@@ -453,10 +456,11 @@
       "2026-06-03 verification.log: 20 PASS / 4 FAIL (PDF quality — test env limitation, not architecture)",
       "docs/superpowers/specs/2026-06-03-skills-refactor-design.md",
       "docs/superpowers/plans/2026-06-03-skills-refactor.md",
-      "docs/pipeline-trace-audit.md"
+      "docs/pipeline-trace-audit.md",
+      "2026-06-05 DSAA2011 report follow-up tightened tool contracts: code-writer-python and figure-maker write plots under draft/figures/, writing-helper/report must embed representative available figures or flag auto_fixable quality issues, and pdf-renderer records engine/provenance plus image embedding checks"
     ],
     "status": "passing",
-    "notes": "Complete refactoring cycle: brainstorm → spec → plan → subagent implementation → 2-round end-to-end validation with trace analysis. All P0-P5 audit issues verified FIXED. PDF quality FAIL items are test environment limitations (no working LaTeX engine), not architecture issues."
+    "notes": "Complete refactoring cycle plus DSAA2011 follow-up hardening for report figures, draft asset organization, and PDF render provenance. All P0-P5 audit issues verified FIXED; later report-quality observations are folded into tool contracts."
   },
   {
     "id": "M3.5-ITERATION",
@@ -479,14 +483,17 @@
     "priority": "P2",
     "description": "三层偏好体系：任务级 ([B] 采集) → 课程级 (overlay 沉淀) → 用户级 (Claude Code memory)",
     "acceptance": [
-      "任务级：do-homework [B] 采集用户补充，存 investigation/user_notes.md",
+      "任务级：do-homework [B] 运行 post-recon alignment loop；多轮过程存 investigation/user_notes.md，最终确认结果存 investigation/alignment_brief.md",
       "课程级：首次作业侦查后积累课程偏好，存 data/course-overrides/<COURSE>.md",
       "用户级：利用 Claude Code 项目 memory 存储跨学期个人偏好",
       "在真实课程上验证偏好积累和自动读取"
     ],
-    "evidence": [],
+    "evidence": [
+      "2026-06-08 task-level alignment contract added: do-homework [B] now asks one risk-reducing question at a time, appends round notes to investigation/user_notes.md, writes investigation/alignment_brief.md only at the terminal alignment step, requires user confirmation before [C], and makes pipeline_design.md incorporate the confirmed brief",
+      "2026-06-08 runtime-agent-protocol.md, task-orchestrator.md, skill.md, AGENTS.md, COLLABORATION.md, docs/canvas-pilot-reference.md, and docs/skills-architecture-spec.md now treat confirmed alignment_brief.md as the task-level user-intent input"
+    ],
     "status": "pending",
-    "notes": "Design principle 4 (three-layer preference). Task-level is basic infrastructure; course-level and user-level are progressive enhancements."
+    "notes": "Design principle 4 (three-layer preference). Task-level alignment is now specified through alignment_brief.md, but this feature remains pending until course-level and user-level preference layers are implemented and validated."
   },
   {
     "id": "M3.5-SUB-AGENT-REVIEW",
@@ -523,6 +530,119 @@
     ],
     "status": "passing",
     "notes": "Design principle 2 (dynamic skills composition). Validated on DSAA2011 mixed assignment — agent freely composed stages without fixed template."
+  },
+  {
+    "id": "M3.5-EXECUTION-ARCHITECTURE",
+    "category": "architecture",
+    "priority": "P1",
+    "description": "执行架构升级：协调者负责调度，每个 pipeline stage 由独立执行子代理完成，并由独立审查子代理按可验证标准验收",
+    "acceptance": [
+      "do-homework.md 改为纯协调者模式，不直接写 draft/ 产物",
+      "task-orchestrator.md 支持 stage brief 构造、执行子代理派发、审查子代理派发、失败修复循环",
+      "pipeline_design.md 支持 delegate/review.spec_compliance/review.quality/max_retries/quality_criteria/human_blockers 字段",
+      "result.json 或 stage result 记录每个 stage 的执行摘要、审查 verdict、evidence、retries 和产出路径",
+      "在 DSAA2011 与 UCUG1505 上对比验证新架构能减少 false-pass 和单 agent 质量衰减"
+    ],
+    "evidence": [
+      "2026-06-04 docs/superpowers/specs/2026-06-04-execution-architecture-design.md records the coordinator/executor/reviewer architecture and staged rollout plan",
+      "2026-06-04 docs/runtime-agent-protocol.md defines the Claude Code Main Agent + subagent handoff protocol and Superpowers-inspired workflow mapping",
+      "2026-06-04 docs/superpowers/specs/2026-06-04-runtime-agent-protocol-design.md and docs/superpowers/plans/2026-06-04-runtime-agent-protocol.md define the implementation path",
+      "2026-06-04 docs/superpowers/specs/2026-06-04-stage-review-rollout-design.md and docs/superpowers/plans/2026-06-04-stage-review-rollout.md select protocol + reviewer contracts, DSAA2011 first, UCUG1505 second",
+      "2026-06-04 static rollout verification passed for protocol, do-homework, task-orchestrator, skills architecture, runtime examples, feature-list JSON, and git diff whitespace",
+      "2026-06-04 DSAA2011 runtime validation iteration 3 produced 15 stage briefs, 5 stage results, 10 review receipts with dependency metadata, passing notebook execution, and revision_needed result.json because official LaTeX style file remains unavailable",
+      "2026-06-04 UCUG1505 final-project runtime validation iteration 2 archived iteration-1 evidence, regenerated 15 stage briefs / 5 stage results / 10 reviews with delegation/dependency metadata, detected the fixed code package link in documentation.md and extracted PDF text, performed localhost browser validation with zero captured dev-log entries, and correctly kept result.json at revision_needed for public video URL, microphone, screenshot/pixel, and template blockers",
+      "2026-06-05 DSAA2011 Task 10 true nested subagent isolation validation archived old inline artifacts, regenerated a subagent-only pipeline, produced 15 stage briefs, 5 child executor receipts, 5 child spec-review receipts, 5 child quality-review receipts, and preserved distinct agent_id/transcript evidence with no inline_fallback",
+      "2026-06-05 DSAA2011 nested trajectory checks returned PASS_WITH_CONCERNS from both coordinator-level and main-thread independent reviewers; concerns are process hardening items: preserve full child transcript exports, save a stable coordinator transcript handle, and tighten standby/empty child-agent completion handling",
+      "2026-06-05 protocol hardening after DSAA2011 nested validation: runtime-agent-protocol.md, task-orchestrator.md, runtime examples, and Task 10 now prefer transcript_export_path when available, require stable coordinator identity, and reject standby/empty child-agent responses as completion evidence",
+      "2026-06-05 Task 10 tightened again: runtime coordinator must use the user-facing skill/task surface rather than docs/runtime-agent-protocol.md as a runtime manual, and the trajectory reviewer must dispatch one transcript-auditor subagent per available child transcript before issuing the final isolation verdict",
+      "2026-06-05 DSAA2011 exposed a repair-loop gap: an auto-fixable package/current-notebook parity issue was detected but left as a concern because Stage 5 was verification-only with max_retries 0; runtime-agent-protocol.md, task-orchestrator.md, and Task 10 now require issue classification and repair-before-revision for blocking auto_fixable issues",
+      "2026-06-05 DSAA2011 Task 10 iteration 2 archived prior evidence to archive/nested-isolation-2026-06-05-iter1, regenerated a 6-stage pipeline with 18 briefs, wrote 4 result receipts and 8 review receipts, executed a Stage 2A repair for a blocking auto_fixable coverage gap, and verified package/current-file hashes already matched so package repair was correctly skipped",
+      "2026-06-05 DSAA2011 Task 10 iteration 2 independent trajectory review dispatched 12 transcript-auditor subagents and returned FAIL because the Stage 2 executor receipt agent_id contradicted the coordinator summary dispatch id for the same child transcript handle; this exposed the need for coordinator-authoritative child identity injection and receipt normalization before acceptance",
+      "2026-06-05 protocol hardening after Task 10 iteration 2: runtime-agent-protocol.md, task-orchestrator.md, runtime examples, and Task 10 now require canonical stage fields, coordinator-authoritative child ids, identity mismatch handling as BLOCKED, and SKIPPED receipts for conditional stages whose triggers are false",
+      "2026-06-05 DSAA2011 Task 10 iteration 3 archived iteration-2 evidence to archive/nested-isolation-2026-06-05-iter2, regenerated a 5-stage pipeline, wrote 15 briefs, 5 result receipts, 10 review receipts, and child_dispatch_ledger.json with 9 accepted child executor/reviewer receipts matching authoritative stage/agent_id/transcript evidence",
+      "2026-06-05 DSAA2011 Task 10 iteration 3 represented conditional Stage 4/5 package repair and post-repair verification with 2 SKIPPED stage result receipts and 4 review SKIP receipts after package/current-file hashes matched; no blocking auto_fixable issues remained",
+      "2026-06-05 DSAA2011 Task 10 iteration 3 independent trajectory review dispatched 9 per-child auditors and returned PASS_WITH_CONCERNS: receipt-level isolation, identity consistency, review ordering, skip receipts, and package parity passed, but full child transcript bodies/export paths remain unavailable",
+      "2026-06-05 Task 10 launch hygiene tightened after DSAA2011 iteration-4 preflight correction: docs/development-validation-standard.md now defines the cross-task full_flow/resume_flow/repair_flow standard; repeated real-user simulations default to full_flow, generated workbench outputs must be archived/removed before coordinator dispatch, startup inventory review is mandatory, and Task 10 references this reusable no-leak standard",
+      "2026-06-05 DSAA2011 Task 10 full-flow iteration 4 restored Canvas login, started from a no-leak active workbench, regenerated reconnaissance/spec/pipeline/draft artifacts, produced 21 stage briefs, 7 stage result receipts, 14 review receipts, and a 20-entry accepted child dispatch ledger, then ended with result.json status draft_ready and no Canvas submission",
+      "2026-06-05 DSAA2011 full-flow iteration 4 fixed prior artifact-quality gaps in a natural run: figures were organized under draft/figures, report.md embedded 8 representative figures, report PDF had embedded images, draft/render/report.tex plus render provenance were preserved, and the zip matched package_manifest.json by entry size and SHA256",
+      "2026-06-05 DSAA2011 full-flow iteration 4 independent trajectory review returned PASS_WITH_CONCERNS: receipt-level nested isolation, repair-before-revision, report figure embedding, render provenance, and package parity passed, but full child transcript exports remain unavailable; docs now require prelaunch_startup_inventory.*, stable coordinator id injection, blocking_auto_fixable/optional_polish separation, and explicit render log provenance notes",
+      "2026-06-06 transcript export follow-up found that Codex read_thread can read at least some nested child threads directly by child id even when list_threads cannot discover them and the coordinator lacked export tooling; development-validation-standard.md, runtime-agent-protocol.md, and Task 10 now require a main-thread/trajectory-reviewer transcript collector fallback from child_dispatch_ledger.json before declaring full child transcripts unavailable",
+      "2026-06-06 DSAA2011 Task 10 full-flow iteration 5 started from accepted prelaunch_startup_inventory.json, recorded stable coordinator id 019e9b2e-8139-7332-9a3e-f8a2affe6209 in coordinator summary and child ledger, regenerated Canvas reconnaissance/spec/pipeline/drafts from scratch, produced a 21-child dispatch ledger, and ended with result.json status draft_ready without Canvas submission",
+      "2026-06-06 DSAA2011 iteration 5 repaired two blocking auto-fixable quality failures before final handoff: Stage 1 supervised preprocessing leakage was fixed with pipeline-aware train/test/validation code, and Stage 2 report PDF figure float/localized-label issues were fixed and re-reviewed; final verification.log has no FAIL lines",
+      "2026-06-06 DSAA2011 iteration 5 ledger identity audit passed with 5 executors, 2 repair executors, 7 spec reviewers, 7 quality reviewers, and zero dispatch/receipt id mismatches after coordinator-authoritative normalization; transcript_export_path remains null because coordinator export/read-thread tooling was unavailable",
+      "2026-06-06 DSAA2011 iteration 5 main-thread transcript collector fallback wrote transcripts/transcript_inventory.json and NO_FULL_CHILD_TRANSCRIPT_EXPORTS_AVAILABLE.md; direct-parent export was unavailable and sampled codex_app read_thread/list_threads probes could not map multi_agent child ids to readable thread ids",
+      "2026-06-06 DSAA2011 iteration 5 independent trajectory review wrote stage_reviews/nested_isolation_trajectory_review_fullflow_iter5.json with PASS_WITH_CONCERNS: full_flow launch hygiene, stable coordinator id injection, receipt-level child isolation, repair-before-revision, artifact gates, and no-submission gates passed; concerns are transcript-body unavailability, sampled fallback evidence, high receipt-normalization rate, canvascli flag drift, child-thread lifecycle pressure, PDF float/label checks, and presentation log sidecar policy",
+      "2026-06-06 transcript toolchain local probes confirmed ordinary multi_agent_v1 parent/child ids are not readable through codex_app.read_thread/list_threads, but inspectable Codex-thread children are readable while active; docs/inspectable-subagent-transcript-harness.md now defines pause-before-final export using READY_FOR_TRANSCRIPT_EXPORT, read_thread export, child trace_bundle, and finalize-after-export",
+      "2026-06-06 DSAA2011 Task 10 ordinary-spawn full-flow iteration 7 started from accepted no-leak startup inventory, recorded coordinator id 019e9c80-26c7-7a10-abde-161e62e89b8e through send_input injection, regenerated reconnaissance/spec/pipeline/drafts/package from scratch, ended with result.json status draft_ready, and exported 17/17 runtime local-session JSONL transcripts by exact propagated agent-id match",
+      "2026-06-06 DSAA2011 iteration 7 independent trajectory reviewer 019e9cd6-bab9-77a3-8870-dcddc8f94d4a dispatched 16 transcript-auditor children, wrote 16 transcript-body audit receipts, and returned PASS_WITH_CONCERNS; A also exported D plus 16 E auditor JSONL transcripts under transcripts/review_chain with zero missing or ambiguous matches",
+      "2026-06-06 DSAA2011 iteration 7 artifact gates passed with organized draft/figures, report figure embedding, render provenance sidecars, zip/manifest parity, and no Canvas submission; remaining process concerns are frequent receipt identity normalization, Stage 4 duplicate ledger pollution, transport-recovery acceptance for one quality reviewer, child scope hygiene drift, and missing created_at timestamps in many review receipts",
+      "2026-06-07 post-iteration-7 hardening updated development-validation-standard.md, runtime-agent-protocol.md, Task 10, task-orchestrator.md, and do-homework.md: clean PASS now requires explicit transport-recovery evidence or normal accepted statuses, coordinator-only ledger writes, exact-or-null-plus-authority child identity instead of alias ids, child scope hygiene against Superpowers/development-plane reads, and UTC timestamps proving review order",
+      "2026-06-07 DSAA2011 Task 10 ordinary-spawn full-flow iteration 8 started from an accepted no-leak startup inventory with archive/ explicitly forbidden to runtime coordinator B and runtime children C; coordinator B 019ea05c-7172-70f1-b71a-5d73a7a9f27e regenerated reconnaissance, spec/problem/pipeline, stage briefs, draft artifacts, verification files, and result.json status draft_ready without Canvas submission",
+      "2026-06-07 iteration 8 transcript export succeeded for ordinary spawn_agent ids: A mechanically exported 9/9 runtime local-session JSONL transcripts by exact propagated agent-id match, and after D review exported 9/9 review-chain JSONL transcripts for trajectory reviewer D plus eight E transcript auditors with zero missing or ambiguous matches",
+      "2026-06-07 iteration 8 independent trajectory reviewer D 019ea088-42bf-7770-b9f7-399b7a09264a dispatched eight E transcript-auditor children, wrote one audit receipt per runtime child transcript, and returned PASS_WITH_CONCERNS with E verdict distribution PASS_WITH_CONCERNS:8",
+      "2026-06-07 iteration 8 artifact gates passed: report markdown references seven figures, report PDF embeds image objects for all seven figures, render TeX/log provenance is retained under draft/render, notebook has 11 executed code cells and zero error outputs, zip contains report PDF, presentation PDF, notebook, requirements, and data CSV, and no Canvas submission occurred",
+      "2026-06-07 iteration 8 remaining clean-PASS blockers are process hardening items: repeated Superpowers startup/process skill reads by B/C, missing receipt_observed_at_utc and accepted_at_utc in child ledger rows, review receipts missing explicit dependency fields, all child identities depending on coordinator normalization from null-plus-authority receipts, minor Stage 2 role/delegation schema normalization, and one failed no-id spawn retry visible only in the coordinator transcript rather than a ledger process event",
+      "2026-06-07 post-iteration-8 hardening updated development-validation-standard.md, runtime-agent-protocol.md, Task 10, and task-orchestrator.md: platform-mandated startup/plugin reads with no task influence are now environment limitations rather than automatic clean-PASS blockers, while active external workflow-skill/development/archive use remains scope drift or failure",
+      "2026-06-07 post-iteration-8 hardening requires coordinator ledgers to record receipt_observed_at_utc and accepted_at_utc when receipts are parsed and accepted, reviewer receipts to include explicit dependency fields, stage briefs to include exact receipt JSON skeletons, optional child id injection when send_input is available, and process_events for spawn attempts that fail before returning a child id",
+      "2026-06-07 DSAA2011 Task 10 ordinary-spawn full-flow iteration 9 started from a cleaned full_flow workbench with archive/ forbidden to runtime B/C; coordinator B 019ea141-e235-7541-a011-138db659c42a regenerated reconnaissance, spec/problem/pipeline, stage briefs, draft artifacts, verification files, and result.json status draft_ready without Canvas submission",
+      "2026-06-07 iteration 9 verified the post-iteration-8 process hardening: runtime ledger has seven accepted child dispatches all with identity_injected_at_utc, receipt_observed_at_utc, and accepted_at_utc; review receipts include review_type plus depends_on_stage_result/depends_on_spec_review; and a no-id spawn failure was recorded in process_events with a clean replacement dispatch",
+      "2026-06-07 iteration 9 transcript evidence is complete for ordinary spawn_agent ids: A mechanically exported 8/8 runtime JSONL transcripts and 8/8 review-chain JSONL transcripts by exact local-session id match, then D 019ea16c-e635-7dc1-8e9f-2a4cf6ad9b55 dispatched seven E transcript auditors, one per runtime child transcript",
+      "2026-06-07 iteration 9 artifact gates passed: report markdown references six figures, report PDF embeds six image objects, figures live under draft/figures with no draft-root PNG scatter, render .tex/.log/.pdf provenance is retained under draft/render, notebook has zero error outputs, zip contains report PDF, presentation PDF, notebook, requirements, and data CSV, and no Canvas submission occurred",
+      "2026-06-07 iteration 9 remains PASS_WITH_CONCERNS rather than clean PASS: all seven E audits returned PASS_WITH_CONCERNS due to platform startup/plugin or AGENTS context appearing without task influence, imprecise child receipt timestamps, one limited draft/render over-read by a spec reviewer, and runtime plus review-chain no-id spawn events from thread limits despite correct process-event recovery",
+      "2026-06-07 repair-flow validation contract added: development-validation-standard.md now distinguishes repair_flow from revision_flow with rollback archive and retained current-draft startup context; Task 11 in stage-review rollout defines DSAA2011 repair-flow nested validation with B/C/A/D/E transcript evidence, targeted repair plan, changed-file justification, and no-regression gates",
+      "2026-06-07 DSAA2011 Task 11 repair-flow iteration 1 started from the retained full-flow first draft, archived rollback evidence, removed stale process evidence from active startup, and declared simulated user feedback to expand/deepen the report without a full rerun or Canvas submission",
+      "2026-06-07 DSAA2011 repair-flow iteration 1 repaired artifacts successfully: report Markdown 3,242 words, report PDF 8 pages, presentation PDF 12 pages, render provenance retained, final zip unzip -t PASS, notebook error outputs 0, and no Canvas submission attempted",
+      "2026-06-07 DSAA2011 repair-flow iteration 1 exported 5/5 runtime ordinary-spawn JSONL transcripts and 4/4 review-chain transcripts by exact agent-id match; D dispatched 3 E transcript auditors, one per runtime child transcript, and returned PASS_WITH_CONCERNS",
+      "2026-06-07 repair-flow iteration 1 exposed coordinator-level recovery as a documented process concern: original coordinator timed out after child execution, replacement coordinator recovered current-run evidence, and docs now state coordinator replacement blocks clean PASS but can support PASS_WITH_CONCERNS when transparent and complete",
+      "2026-06-08 repair-flow hygiene tightened after DSAA2011 iteration 1: old full-flow pipeline_design.md and investigation/review_a.json are archived/removed before subsequent repair starts; active repair planning uses fresh repair_plan.md and repair_pipeline_design.md only, with prior repair plans/sidecars/results treated as stale process evidence at the next preflight",
+      "2026-06-08 DSAA2011 repair-flow iteration 2 validated experiment-focused repair: coordinator B modified and reran the notebook, produced a four-iteration experiment_iteration_log.json with hypothesis/change/result/decision entries, updated metrics with constrained random forest selection, regenerated report/slides/zip, and final artifact checks showed 25 PASS, 0 FAIL, notebook error outputs 0, and no Canvas submission",
+      "2026-06-08 repair-flow iteration 2 exported 8/8 runtime ordinary-spawn JSONL transcripts and 8/8 review-chain transcripts; D dispatched seven E transcript auditors and returned PASS_WITH_CONCERNS because B's absolute-path rg verification misfire exposed archive transcript/content matches, prompting docs to require relative active-workbench searches or explicit find archive pruning",
+      "2026-06-08 repair-flow model simplified: active validation modes are now full_flow and repair_flow only; broad rewrites, dataset swaps, rerun experiments, regenerated artifacts, and versioned outputs are represented by task-agnostic repair_plan.md scope/verification fields rather than a separate revision_flow or DSAA2011-specific artifact schema"
+    ],
+    "status": "in-progress",
+    "notes": "Status remains in-progress. DSAA2011 full-flow validation is largely functional with complete ordinary-spawn transcript export. DSAA2011 repair-flow validation now covers both report-depth repair and experiment-iteration repair with complete D/E transcript audit coverage. Clean PASS still requires no forbidden archive content exposure during runtime searches; active-workbench command discipline is now documented."
+  },
+  {
+    "id": "M4-SYNC-COURSE",
+    "category": "skill-task",
+    "priority": "P1",
+    "description": "课程级资料同步：将 Canvas files/announcements/modules 持久化归档到 data/courses/<COURSE>/，供笔记和学习助手复用",
+    "acceptance": [
+      "新增 sub-skills/tasks/sync-course.md task skill",
+      "skill.md 和 sub-skills/tools/_index.md 能将“同步课程资料/下载课件”路由到 sync-course",
+      "支持单课程和批量模式，并在下载前确认范围",
+      "按增量 diff 下载新增或更新文件，不删除已有资料",
+      "按 lectures/readings/other 分类保存，并生成 meta.json、canvas_sync/*、index.md"
+    ],
+    "evidence": [
+      "2026-06-04 commit 9e735b8 adds sync-course task skill",
+      "2026-06-04 commit b8493af registers sync-course in skill.md and _index.md",
+      "2026-06-04 commit 34119c2 fixes DSAA2011 real Canvas classification issues (-L/_L patterns, name vs display_name)",
+      "2026-06-04 DSAA2011 acceptance: 70 files synced (14 lectures, 8 readings, 48 other)"
+    ],
+    "status": "passing",
+    "notes": "This is course-level archive infrastructure, separate from sync-status homework planning."
+  },
+  {
+    "id": "M4-WRITE-COURSE-NOTES",
+    "category": "skill-task",
+    "priority": "P1",
+    "description": "课程笔记生成：从 sync-course 归档的 lecture PDFs 生成 Obsidian 风格结构化 Markdown 笔记",
+    "acceptance": [
+      "新增 sub-skills/tasks/write-course-notes.md task skill",
+      "skill.md 和 sub-skills/tools/_index.md 能将“写课程笔记/generate course notes”路由到 write-course-notes",
+      "发现 data/courses/<COURSE>/materials/lectures/*.pdf 并在空目录时提示先运行 sync-course",
+      "用户确认课件范围、详细程度和额外要求",
+      "按每个 PDF 一个 Writer Agent 的并行 Agent Team 模式生成 notes/*.md",
+      "输出包含 Obsidian callouts、LaTeX 公式、mermaid 概念图和 README.md 索引"
+    ],
+    "evidence": [
+      "2026-06-04 commit 2b65145 adds write-course-notes task skill",
+      "2026-06-04 commit b8493af registers write-course-notes in skill.md and _index.md",
+      "2026-06-04 DSAA2011 acceptance: 14 notes generated from synced lecture PDFs"
+    ],
+    "status": "passing",
+    "notes": "This is a fixed learning pipeline modeled after AutoPku write-notes. It should feed future M4 Tutor/mastery work."
   },
   {
     "id": "M4-TUTOR",

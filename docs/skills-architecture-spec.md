@@ -6,6 +6,11 @@
 > 本文档是 M3.5+ 开发的核心设计参考。所有 skill 文件的编写和修改
 > 都应遵循本文档中确立的原则。
 
+Runtime handoff rules live in `docs/runtime-agent-protocol.md`. This file
+defines skill structure and pipeline design conventions; the runtime protocol
+defines how the Main Agent turns those plans into stage briefs, results,
+reviews, and final verification evidence.
+
 ---
 
 ## 1. 设计定位
@@ -174,7 +179,10 @@ skill 可以在 Post-processing 中引用其他 skill。但不是硬编码调用
 **自检（生成后）**：每个 skill 完成后按自检清单逐项验证。
 
 **Sub-agent 审查（可选）**：pipeline_design.md 中按需声明
-"此 stage 后需要审查"，审查 agent 读取 spec + deliverable 做语义 diff。
+"此 stage 后需要审查"。当 review 启用时，Main Agent 先运行 spec
+compliance review，对比 artifact、`spec.md`、rubric、user notes 和 stage
+brief；spec compliance 通过后，才运行 artifact-specific quality review。
+审查输出写入 `stage_reviews/`。
 
 ### 4.3 文件传递
 
@@ -197,7 +205,8 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ## 5. Pipeline Design 格式
 
-`pipeline_design.md` 由 do-homework [C] 在侦查 + 用户补充后写。
+`pipeline_design.md` 由 do-homework [C] 在侦查 + 用户确认
+`alignment_brief.md` 后写。
 格式示例：
 
 ```markdown
@@ -216,31 +225,87 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 ## Stages
 
 ### Stage 1 — 核心算法实现
-- tool: code-writer
+- id: stage_01_notebook
+- tool: sub-skills/tools/code-writer.md
+- delegate: subagent
 - lang: python
-- reads: spec.md §3, references/project_announce.pdf
-- writes: draft/notebook.ipynb, draft/requirements.txt
-- verify: notebook 能从头运行无报错
-- review: false
+- review:
+  - spec_compliance: true
+  - quality: true
+- max_retries: 1
+- reads:
+  - spec.md
+  - investigation/rubric.md
+  - investigation/alignment_brief.md
+  - references/project_announce.pdf
+- writes:
+  - draft/notebook.ipynb
+  - draft/requirements.txt
+  - draft/metrics.json
+- quality_criteria:
+  - notebook 能从 clean kernel 从头运行无报错
+  - 报告引用的 metrics 必须来自实际执行输出
+- human_blockers:
+  - dataset choice if the spec allows multiple datasets and user has not chosen
 
 ### Stage 2 — 实验报告
-- tool: writing-helper
+- id: stage_02_report
+- tool: sub-skills/tools/writing-helper.md
+- delegate: subagent
 - type: report
 - lang: en
-- reads: spec.md, investigation/rubric.md, draft/notebook.ipynb 运行结果
-- writes: draft/report.md → 后续 render 成 report.pdf
-- verify: 覆盖 rubric 每个评分点、字数满足要求
-- review: true  ← sub-agent 审查
+- review:
+  - spec_compliance: true
+  - quality: true
+- max_retries: 1
+- reads:
+  - spec.md
+  - investigation/rubric.md
+  - investigation/alignment_brief.md
+  - draft/metrics.json
+- writes:
+  - draft/report.md
+- quality_criteria:
+  - 覆盖 rubric 每个评分点
+  - 数值结论来自 draft/metrics.json 或可追溯 reference
+- human_blockers:
+  - group member names if required by the assignment
 
 ### Stage 3 — 渲染 PDF
-- tool: pdf-renderer
-- reads: draft/report.md
-- writes: draft/report.pdf
+- id: stage_03_pdf
+- tool: sub-skills/tools/pdf-renderer.md
+- delegate: subagent
+- review:
+  - spec_compliance: false
+  - quality: true
+- max_retries: 1
+- reads:
+  - draft/report.md
+  - investigation/alignment_brief.md
+- writes:
+  - draft/report.pdf
+- quality_criteria:
+  - PDF exists and magic bytes are %PDF
+  - file size and page count meet min_quality
+- fallback: sequential renderer fallback declared by pdf-renderer.md
+- min_quality: PDF > 10KB, pages >= 5
 
 ### Stage 4 — Presentation
-- tool: slide-maker
-- reads: draft/report.md, spec.md
-- writes: draft/slides.pdf
+- id: stage_04_slides
+- tool: sub-skills/tools/slide-maker.md
+- delegate: subagent
+- review:
+  - spec_compliance: true
+  - quality: true
+- max_retries: 1
+- reads:
+  - draft/report.md
+  - spec.md
+  - investigation/alignment_brief.md
+- writes:
+  - draft/slides.pdf
+- quality_criteria:
+  - slide count and format match assignment deliverable requirements
 
 ### Final Review
 - 全量交付物审查（spec vs deliverable）
@@ -248,11 +313,17 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 ```
 
 每个 stage 可包含：
+- `id`：稳定 stage id，例如 `stage_01_report`
 - `tool`：调用的顶层 skill
+- `delegate`：`main-agent` 或 `subagent`
 - `lang`：覆盖默认语言（code-writer 读取）
 - `type`：覆盖默认类型（writing-helper 读取）
 - `constraints`：从 spec 提取的约束
-- `review`：true/false，是否需要 sub-agent 审查
+- `review.spec_compliance`：true/false，是否审查 artifact 是否答对题
+- `review.quality`：true/false，spec compliance 通过后是否做质量审查
+- `max_retries`：进入 human review 前允许重跑 executor 的次数
+- `quality_criteria`：executor 和 reviewer 都使用的可量化检查
+- `human_blockers`：stage 前后需要用户在 alignment loop 或最终复核中处理的信息
 - `post-process`：可选后处理步骤（如 humanize）
 - `fallback`：首选工具不可用时的回退方案（防止反复试错）
 - `min_quality`：最低质量门槛（如 `PDF > 10KB`、`pages >= 5`）
@@ -265,14 +336,14 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 | 层级 | 来源 | 存储位置 | 状态 |
 |---|---|---|---|
-| **任务级** | do-homework [B] 用户补充 | `pipeline_design.md` stage 声明 | ✅ 当前实现方式 |
+| **任务级** | do-homework [B] 对齐循环 | `investigation/alignment_brief.md` -> `pipeline_design.md` stage 声明 | ✅ 当前实现方式 |
 | **课程级** | 跨作业积累的课程偏好 | `data/course-overrides/<COURSE>.md` | 🔲 待实现 |
 | **用户级** | 用户主动声明或推断 | Claude Code 项目 memory | 🔲 待实现 |
 
 ### 6.1 任务级偏好（当前实现）
 
-agent 在写 `pipeline_design.md` 时，根据侦查结果和用户 [B] 补充，
-在每个 stage 中声明具体参数：
+agent 在写 `pipeline_design.md` 时，根据侦查结果和 [B] 结束时确认的
+`investigation/alignment_brief.md`，在每个 stage 中声明具体参数：
 
 ```
 Stage 1: code-writer, lang: python
@@ -281,7 +352,10 @@ Stage 2: writing-helper, type: report, lang: en
 
 这些信息来自：
 - spec.md 的内容（作业要求什么语言、什么格式）
-- 用户在 [B] 的补充（"用中文写"、"帮我用 PyTorch"）
+- `alignment_brief.md` 的 confirmed decisions、delegated decisions、
+  non-negotiables 和 open final-review items
+- `user_notes.md` 的多轮对话记录只作为过程证据；它不替代最终
+  `alignment_brief.md`
 
 ### 6.2 课程级偏好（待实现）
 
@@ -358,17 +432,26 @@ agent 在写 `pipeline_design.md` 时从 spec 提取可量化约束。
 
 ### 8.3 Sub-agent 审查（可选，按 stage 声明）
 
-当 `pipeline_design.md` 的 stage 声明 `review: true` 时：
+当 `pipeline_design.md` 的 stage 声明 `review.spec_compliance: true` 或
+`review.quality: true` 时，Main Agent 生成 reviewer brief 并按顺序审查：
 
-```
-spawn 1 audit agent:
-  输入: spec.md + rubric.md + constraints + 当前 stage 的 draft/*
-  输出: JSON gap 数组 [{severity, gap, spec_anchor, fix_suggestion}]
-  如果有 HIGH gap → 修复 → 重审 → 最多 3 轮
+```text
+1. spec compliance reviewer
+   输入: stage brief + artifact + spec.md + rubric.md + user notes
+   输出: stage_reviews/<stage_id>_spec_review.json
+   目的: 判断 artifact 是否答对题、覆盖 deliverables/rubric/constraints
+
+2. quality reviewer
+   前提: spec compliance verdict == PASS
+   输入: stage brief + artifact + tool self-check / quality_criteria
+   输出: stage_reviews/<stage_id>_quality_review.json
+   目的: 判断 artifact 是否高质量、可运行、可渲染、证据扎实
 ```
 
-审查框架是统一的（spec vs deliverable 语义 diff），
-但审查内容由每个 skill 的自检清单和 stage 的 constraints 决定。
+如果 spec compliance `FAIL` 且 `max_retries` 未耗尽，Main Agent 根据
+`fix_suggestions` 写 fix brief 并重跑 executor。Quality review 永远不能早于
+spec compliance。审查内容由 stage 的 `quality_criteria`、skill 的 Self-check、
+以及 `docs/runtime-agent-protocol.md` 的 reviewer contract 共同决定。
 
 ---
 

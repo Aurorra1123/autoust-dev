@@ -26,7 +26,20 @@ which sections are required and their relative weight.
 ## Report-specific guidance
 
 - **Figures and tables**: each gets a number (Figure 1, Table 1) and a caption.
-  Referenced in text as "see Figure 1". Use `figures/` outputs from figure-maker.
+  Referenced in text as "see Figure 1". Use `draft/figures/` outputs from code
+  or figure-maker stages, referenced from `draft/report.md` as
+  `figures/<name>.png`.
+- **Minimum visual integration for ML/data reports**: when generated plots are
+  available, embed at least the figures needed to support the main claims. A
+  typical ML project report should include, when available:
+  - one dataset/preprocessing or class-distribution figure;
+  - one dimensionality-reduction or clustering figure;
+  - one model evaluation figure such as confusion matrix, ROC curve, or model
+    comparison;
+  - one open-ended exploration figure such as feature importance.
+  If the report omits available figures, classify it as an `auto_fixable`
+  quality issue unless the spec explicitly asks for text-only output or a strict
+  page limit makes figures impossible.
 - **Data integrity**: if the report presents experimental results (accuracy, loss,
   timing), these numbers must come from actual code execution in a prior stage.
   Never estimate metrics like "accuracy ~0.75 based on typical sklearn performance".

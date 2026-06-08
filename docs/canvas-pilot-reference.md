@@ -70,8 +70,9 @@ AutoStudy MVP 时的 `problem-extractor` 主要看 `assignment.json.description`
 - 不把 `scripts/recon_assignment.py` 作为生产路径；它只保留为历史过渡验证，证明原子 CLI 可以拿到正确来源。
 - `spec.md` 是标准化侦查报告，不是 source dump。
 - `problem.md` 只是旧工具兼容层，长期会继续缩薄。
-- `do-homework [B]` 必须向用户汇报侦查结果并询问补充信息，即使 `review_a.json.verdict == "proceed"`。
-- `do-homework [C]` 在用户补充后完成 `pipeline_design.md`，然后 `task-orchestrator` 按这个文件执行。
+- `do-homework [B]` 必须向用户汇报侦查结果并运行 alignment loop，即使 `review_a.json.verdict == "proceed"`。简单作业少问几轮，开放性作业持续追问，直到 Main Agent 能不靠脑补开始执行。
+- `do-homework [B]` 的多轮过程写入 `investigation/user_notes.md`；只有当 Main Agent 判断没有必须继续问的问题时，才写 `investigation/alignment_brief.md` 并请求用户确认。
+- `do-homework [C]` 在确认后的 `alignment_brief.md` 基础上完成 `pipeline_design.md`，然后 `task-orchestrator` 按这个文件执行。
 
 #### 真实例子：DSAA2011 和 UCUG1505
 
@@ -205,7 +206,7 @@ lab    → write_code → run_tests → write_essay → render_pdf
 列表启动。当前方向是：
 
 ```text
-spec.md + rubric.md + references/ + user_notes
+spec.md + rubric.md + references/ + confirmed alignment_brief.md
   -> do-homework [C] writes pipeline_design.md
   -> task-orchestrator executes pipeline_design.md
   -> tools read the workbench and write draft/ + verification artifacts
@@ -245,7 +246,7 @@ pdf-renderer、code-writer、test-runner、slide-maker 各自仍然是独立的 
 
 1. M3 已验证的 tools 继续保留。
 2. `problem.md` 暂时保留，避免旧工具立刻断掉。
-3. 新的正式 flow 以 `spec.md -> pipeline_design.md -> draft/` 为准。
+3. 新的正式 flow 以 `spec.md -> alignment_brief.md -> pipeline_design.md -> draft/` 为准。
 4. 需要在 DSAA2011 Project 和 UCUG1505 FINAL project 上做真实 flow
    连通测试，确认新文档指导下能产生和 Canvas Copilot 同等清晰的计划。
 
@@ -458,7 +459,7 @@ Hook 的实现很简单：在 `.claude/settings.json` 的 `hooks` 字段下配�
 | DSAA2011 Project 真实 flow | 已通过 | 按原子来源完整读取，确认 assignment 页面为空、module PDF 是主 spec，写出 mixed `pipeline_design.md`：notebook/code、report PDF、presentation PDF、requirements、package；dry-run 正确停在 group/dataset/style-file human blockers。 |
 | UCUG1505 FINAL project 真实 flow | 已通过 | 确认 assignment page 与 Week 4 module 指向同一个 Google Doc spec，Week 9 slides 是 supporting context，写出 mixed `pipeline_design.md`：code/source zip、documentation、video demo human item；dry-run 正确停在 partner/concept/code/video blockers。 |
 | task-orchestrator 连通 | 已通过 dry-run | 用 `pipeline_design.md` 执行入口检查，而不是从 `task_profile.yaml` 或固定 scenario chain 启动；当前验证没有生成草稿，因为两例都需要用户补充。 |
-| 工具逐步迁移 | 持续 | writing-helper / code-writer / slide-maker 已改为读 `spec.md + pipeline_design.md`；后续实际 flow 中继续压缩 `problem.md` 的作用。 |
+| 工具逐步迁移 | 持续 | writing-helper / code-writer / slide-maker 已改为读 `spec.md + alignment_brief.md + pipeline_design.md`；后续实际 flow 中继续压缩 `problem.md` 的作用。 |
 | M3-SUBMIT 真实作业 E2E | 待 sandbox | 仍需要一个真实未过期低风险作业验证 Canvas 三步 submit。 |
 
 ### 之后再考虑
@@ -508,11 +509,11 @@ Hook 的实现很简单：在 `.claude/settings.json` 的 `hooks` 字段下配�
 AutoStudy 当前的 MVP（M3）已经验证了核心作业辅助能力。从 Canvas Pilot 的调查中，最值得吸收的不是代码或架构，而是四个设计思想：
 
 1. **深度侦查再动手** — 不只看附件，从 Canvas 的多个信息源完整获取作业 spec；`spec.md` 是标准化判断报告，不是 raw dump。
-2. **用 `pipeline_design.md` 现场设计执行** — 不从 `task_profile.yaml` 或固定 scenario chain 启动，而是让 do-homework 在用户补充后写出单作业计划，orchestrator 执行它。
+2. **用 `pipeline_design.md` 现场设计执行** — 不从 `task_profile.yaml` 或固定 scenario chain 启动，而是让 do-homework 在用户确认 `alignment_brief.md` 后写出单作业计划，orchestrator 执行它。
 3. **结构化状态记录** — 用 `result.json` 记录每个作业的状态，让 agent 跨 session 恢复，支撑模块 2 的进度追踪。
 4. **关键路径代码强制** — 用 2-3 个 hooks 把最重要的安全规则从 prose 变成代码强制执行。
 
-这些改动都是增量式的，不需要推翻现有 tools。当前第一步已经完成：DSAA2011 和 UCUG1505 两个真实任务跑通到 `spec.md -> pipeline_design.md -> task-orchestrator dry-run`。下一步不是重写侦查，而是把 do-homework 的用户补充、human blockers、草稿执行与 revision loop 做顺。
+这些改动都是增量式的，不需要推翻现有 tools。当前第一步已经完成：DSAA2011 和 UCUG1505 两个真实任务跑通到 `spec.md -> pipeline_design.md -> task-orchestrator dry-run`。下一步不是重写侦查，而是在真实 clear/open 作业上验证 `alignment_brief.md` 对齐循环、human blockers、草稿执行与 revision loop。
 
 ---
 
@@ -589,7 +590,7 @@ Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3
 
 4. **Overlay 加载**：每个 skill 第一步读 overlay 获取课程级知识。
    AutoStudy 的实现：三层偏好系统（当前只实现了任务级，通过
-   `pipeline_design.md` stage 声明传递）。
+   `alignment_brief.md` 和 `pipeline_design.md` stage 声明传递）。
 
 5. **Stage-by-stage 校准**：首次运行逐阶段审查。AutoStudy 的实现：
-   do-homework [B] 的用户补充 + pipeline_design.md 的 review 声明。
+   do-homework [B] 的 alignment brief + pipeline_design.md 的 review 声明。

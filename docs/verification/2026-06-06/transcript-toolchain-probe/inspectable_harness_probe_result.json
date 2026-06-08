@@ -1,0 +1,46 @@
+{
+  "schema": "autostudy_transcript_toolchain_probe_v1",
+  "probe_name": "inspectable_harness_pause_export_finalize",
+  "created_at": "2026-06-06T16:02:00+08:00",
+  "thread_id": "019e9be8-93a1-7a03-a454-f2cc0f25c378",
+  "marker": "TRANSCRIPT_PROBE_MARKER_20260606_INSPECTABLE_HARNESS",
+  "receipt_path": "docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_receipt.json",
+  "trace_bundle_path": "docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_trace_bundle.json",
+  "read_thread_export_path": "docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_read_thread_export.json",
+  "finalize_message_sent": true,
+  "steps": [
+    {
+      "step": "create_thread",
+      "result": "success",
+      "thread_id": "019e9be8-93a1-7a03-a454-f2cc0f25c378"
+    },
+    {
+      "step": "child_writes_receipt_and_trace_bundle",
+      "result": "success",
+      "evidence": [
+        "inspectable_child_receipt.json",
+        "inspectable_child_trace_bundle.json"
+      ]
+    },
+    {
+      "step": "read_thread_while_active",
+      "result": "success",
+      "evidence": "read_thread output contained delegation prompt, child commentary, fileChange diff, marker, receipt path, trace bundle path, and READY_FOR_TRANSCRIPT_EXPORT"
+    },
+    {
+      "step": "persist_export",
+      "result": "success",
+      "evidence": "inspectable_child_read_thread_export.json"
+    },
+    {
+      "step": "send_finalize_after_export",
+      "result": "success",
+      "evidence": "send_message_to_thread accepted finalize prompt"
+    }
+  ],
+  "conclusion": {
+    "functionality_implemented_as_harness": true,
+    "clean_pass_transcript_strategy": "Use inspectable Codex-thread children that pause at READY_FOR_TRANSCRIPT_EXPORT, export read_thread evidence while active, preserve child trace bundles, and only then finalize.",
+    "remaining_platform_gap": "Ordinary multi_agent_v1 ids still are not readable as codex_app thread ids and direct parent multi_agent contexts still lack transcript export tools."
+  }
+}

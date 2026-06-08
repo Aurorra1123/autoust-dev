@@ -1,0 +1,7 @@
+{
+  "marker": "TRANSCRIPT_PROBE_MARKER_20260606_INSPECTABLE_HARNESS",
+  "stage": "transcript_harness_probe",
+  "role": "executor",
+  "status": "READY_FOR_TRANSCRIPT_EXPORT",
+  "transcript_export_path": null
+}

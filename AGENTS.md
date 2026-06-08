@@ -33,11 +33,18 @@ Canvas Copilot is the design reference for this project. Prefer the local clone 
 
 AutoStudy's distilled notes live in `docs/canvas-pilot-reference.md`. Treat that file as the first stop for "what should we borrow from Canvas Copilot?" and go to the source repo when implementation details matter.
 
+Superpowers is the workflow reference for agent handoff discipline: brainstorm
+before plans, plans before execution, fresh subagents with curated context, and
+independent review before completion claims. It is a design reference, not a
+runtime dependency. AutoStudy translates these practices into its own runtime
+protocol in `docs/runtime-agent-protocol.md`.
+
 Current M3.5 homework direction is recorded in `docs/COLLABORATION.md` and
 `docs/canvas-pilot-reference.md`: use agent-led Canvas Generic Stage 1-5
 reconnaissance, write a standardized `spec.md`, keep `problem.md` only as
-compatibility, and execute through `pipeline_design.md` instead of
-`task_profile.yaml`.
+compatibility, run a post-recon alignment loop that writes confirmed
+`investigation/alignment_brief.md`, and execute through `pipeline_design.md`
+instead of `task_profile.yaml`.
 
 Five design principles govern M3.5+ development (full text in
 `docs/COLLABORATION.md` → Design Principles):
@@ -60,7 +67,8 @@ Key rules:
   Post-processing → Self-check
 - Skills compose via files in the workbench, not direct calls
 - Language/type specifics go in appendix files, not the main skill or `_index.md`
-- Defaults live in skill files; overrides come from `pipeline_design.md` (task),
+- Defaults live in skill files; overrides come from confirmed
+  `investigation/alignment_brief.md` plus `pipeline_design.md` (task),
   `data/course-overrides/` (course, not yet implemented), or Claude Code memory
   (user, not yet implemented)
 
@@ -88,6 +96,7 @@ Don't close out a session without:
 | What | Where |
 |---|---|
 | Roadmap (the big picture) | [docs/ROADMAP.md](./docs/ROADMAP.md) |
+| Runtime agent handoff protocol | [docs/runtime-agent-protocol.md](./docs/runtime-agent-protocol.md) |
 | Skill entry for end-users | [skill.md](./skill.md) at repo root |
 | Marketing scenarios | [docs/MARKETING.md](./docs/MARKETING.md) |
 | Burnt-once pitfalls | [docs/PITFALLS.md](./docs/PITFALLS.md) |

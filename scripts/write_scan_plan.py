@@ -185,6 +185,8 @@ def action_for(item: dict[str, Any], result: dict[str, Any] | None) -> tuple[str
         status = result.get("status")
         if status == "draft_ready":
             return "review_or_submit", "local draft is ready; user should review or submit"
+        if status == "revision_needed":
+            return "continue", "local draft needs revision; inspect result.json before retrying"
         if status == "error":
             return "continue", "previous workflow ended with an error; inspect result.json before retrying"
         if result.get("deferred_to_next_run"):

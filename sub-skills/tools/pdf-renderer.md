@@ -24,6 +24,7 @@ Input:  path/to/document.md         (UTF-8 markdown)
         + optional: path/to/figures/  (referenced images)
         + optional: title, author, date metadata in frontmatter
 Output: path/to/document.pdf
+        + render provenance under path/to/render/ when practical
 ```
 
 ## Setup
@@ -102,11 +103,48 @@ mv "$(dirname OUTPUT.pdf)/autostudy_render.pdf" OUTPUT.pdf
 pandoc INPUT.md \
   -o OUTPUT.pdf \
   --pdf-engine=xelatex \
+  --resource-path="$(dirname INPUT.md):." \
   -V mainfont="PingFang SC" \
   -V monofont="Menlo" \
   -V geometry:margin=1in \
   -V documentclass=article
 ```
+
+Pandoc native does not preserve the generated `.tex` or `.log` files by
+default. If later review needs render provenance, also write a standalone TeX
+sidecar before or after rendering:
+
+```bash
+mkdir -p "$(dirname INPUT.md)/render"
+pandoc INPUT.md \
+  -o "$(dirname INPUT.md)/render/$(basename INPUT.md .md).tex" \
+  --standalone \
+  --resource-path="$(dirname INPUT.md):." \
+  -V mainfont="PingFang SC" \
+  -V monofont="Menlo" \
+  -V geometry:margin=1in
+```
+
+Record the exact engine path in the stage receipt, e.g. `pandoc+xelatex` or
+`pandoc->tectonic`, plus whether TeX/log sidecars were preserved. For
+development validation and final deliverable PDFs, preserve the log sidecar
+under `draft/render/` when the renderer exposes one and the stage has permission
+to copy it. If the engine does not expose a log under the allowed write set, or
+the stage intentionally records only a warning summary, record that reason in
+render provenance. Do not leave a reviewer guessing why no `.tex` or `.log`
+file exists.
+
+For report PDFs with multiple figures, preserve enough render provenance for
+reviewers to diagnose float placement: source Markdown, generated TeX when
+available, log or warning summary, page count, and image-embedding evidence.
+If figures drift into an unrelated later section in the rendered PDF, treat it
+as an auto-fixable report-quality issue when the source can be adjusted with
+float barriers, size changes, or section breaks.
+
+For English deliverables rendered through CTeX or other localized templates,
+check generated labels such as table of contents and figure/table prefixes. If
+the PDF mixes localized labels into an otherwise English report, configure
+English names or record the remaining issue explicitly.
 
 ### With LaTeX math and code highlighting (works for both paths)
 
@@ -176,6 +214,7 @@ mkdir -p data/tools  # if it doesn't exist
 pandoc INPUT.md \
   -o OUTPUT.pdf \
   --pdf-engine=xelatex \
+  --resource-path="$(dirname INPUT.md):." \
   --lua-filter=data/tools/callout.lua \
   -H <(echo '\usepackage{tcolorbox}\tcbuselibrary{breakable,skins}') \
   -V mainfont="PingFang SC" \
@@ -199,6 +238,7 @@ def render_pdf(md_path, pdf_path, *, with_callouts=False, font="PingFang SC"):
     cmd = [
         "pandoc", str(md_path), "-o", str(pdf_path),
         "--pdf-engine=xelatex",
+        "--resource-path", f"{md_path.parent}:.",
         "-V", f"mainfont={font}",
         "-V", "monofont=Menlo",
         "-V", "geometry:margin=1in",
@@ -265,6 +305,14 @@ record this as a FAIL in verification.log and add to `human_review_items`.
 - [ ] Chinese characters render correctly (not tofu boxes) — open and visually verify
 - [ ] No LaTeX errors in stderr output
 - [ ] For multi-page documents: page count >= 3 (sanity minimum)
+- [ ] Referenced images are embedded (for reports with figures, run
+      `pdfimages -list output.pdf` or inspect the PDF visually)
+- [ ] Stage receipt records render engine and whether `.tex`/`.log`
+      provenance was preserved, or why a separate log sidecar is unavailable
+- [ ] Multi-figure reports keep figures near their intended sections; important
+      figures do not float under unrelated later headings
+- [ ] Language-specific labels match the deliverable language, or the mismatch
+      is explicitly classified
 
 ## Pitfalls
 
@@ -277,6 +325,14 @@ These came from AutoPku phase 11 and our own validation — fix them once, here,
 5. **` ` (non-breaking space) in markdown breaks pandoc.** If you generated the markdown from web text, normalize: `sed 's/\xc2\xa0/ /g' input.md > clean.md`.
 6. **Mermaid diagrams don't render natively.** If a markdown file has ` ```mermaid ` blocks, pre-process with `mermaid-cli` to PNG/SVG first, then pandoc renders the image. Do not ignore — they'll silently become text dumps.
 7. **lualatex differs from xelatex.** Some workflows online show `lualatex` config — don't paste those wholesale, our setup is `xelatex`-specific.
+8. **Pandoc native hides intermediate TeX.** `pandoc --pdf-engine=xelatex`
+   creates temporary TeX files and deletes them. If provenance matters, write a
+   sidecar under `draft/render/` with `pandoc --standalone -o ...tex`.
+   A missing `.log` is acceptable only when render provenance records the
+   engine, warnings, and the reason the log could not be preserved.
+9. **Image paths are relative to render cwd unless resource paths are set.**
+   Use `--resource-path="$(dirname INPUT.md):."` so `draft/report.md` can embed
+   `figures/foo.png` reliably.
 
 ## What this tool is NOT for
 

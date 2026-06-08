@@ -24,7 +24,9 @@ has explicit format requirements, follow the spec.
   - `investigation/user_notes.md` (optional)
   - `investigation/user_scope.md` (optional)
   - `references.bib` (optional, from paper-search)
-  - `figures/*.{pdf,png}` (optional, from figure-maker)
+  - `draft/figures/*.{pdf,png}` or `figures/*.{pdf,png}` (optional, from code
+    or figure-maker stages)
+  - `draft/*.{pdf,png}` (compatibility scan only; prefer organized figures)
 - **writes:**
   - `draft.md` (pandoc-friendly markdown with YAML frontmatter)
 - **preconditions:**
@@ -63,8 +65,28 @@ inline — surfaced at do-homework [E].
 
 ### Embed figures
 
-If `figures/fig_N.{pdf,png}` exist, reference in markdown:
-`![Caption text](figures/fig_1.pdf){width=60%}` and cite in-text.
+For experimental reports, figures are part of the argument, not loose
+attachments. Scan for generated images in this order:
+
+1. `draft/figures/*.{pdf,png}` when the report is `draft/report.md`;
+2. `figures/*.{pdf,png}` for older workbench-level figure-maker output;
+3. `draft/*.{pdf,png}` only as a compatibility fallback.
+
+If relevant figures exist, embed a representative set in the report and cite
+them in text:
+
+```markdown
+![2D t-SNE projection of the standardized feature space.](figures/tsne_2d.png){width=70%}
+```
+
+Use paths relative to the markdown file. For `draft/report.md`, this usually
+means `figures/<name>.png`, not `draft/figures/<name>.png`.
+
+If useful figures exist only as flat `draft/*.png`, either move/copy them into
+`draft/figures/` before writing the report or explicitly record a blocking
+`auto_fixable` concern for the organizer/report stage. Do not accept a text-only
+experimental report when generated plots are available unless the assignment
+explicitly forbids figures or the report is already over a strict page limit.
 
 ### Write the draft
 
@@ -118,4 +140,6 @@ Quality bar:
 - [ ] No `[PROBLEM N]` / `[TODO]` / `[此处填入...]` placeholders
 - [ ] Language matches spec requirements (en/zh)
 - [ ] Figures referenced and cited in-text (if any exist)
+- [ ] Experimental reports embed representative generated figures when plots are
+      available; text-only reports with available plots are flagged for repair
 - [ ] For reports: data/numbers come from actual execution results, not estimates

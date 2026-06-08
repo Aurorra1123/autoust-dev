@@ -1,0 +1,19 @@
+{
+  "marker": "TRANSCRIPT_PROBE_MARKER_20260606_INSPECTABLE_HARNESS",
+  "stage": "transcript_harness_probe",
+  "role": "executor",
+  "files_read": [
+    "/Users/deepwisdom/.codex/plugins/cache/openai-curated/superpowers/2cb26e7b/skills/using-superpowers/SKILL.md"
+  ],
+  "files_written": [
+    "/Users/deepwisdom/Desktop/project/autoust/docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_receipt.json",
+    "/Users/deepwisdom/Desktop/project/autoust/docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_trace_bundle.json"
+  ],
+  "commands_or_tools_summary": [
+    "Checked current working directory and listed files under docs/verification/2026-06-06/transcript-toolchain-probe.",
+    "Read the Superpowers using-superpowers skill enough to confirm delegated subagent probes skip the workflow.",
+    "Created the inspectable child receipt and trace bundle JSON files."
+  ],
+  "forbidden_context_read": false,
+  "status": "READY_FOR_TRANSCRIPT_EXPORT"
+}

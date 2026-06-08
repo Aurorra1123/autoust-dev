@@ -15,7 +15,7 @@ future learning tools.
 ## Preconditions
 
 Before running, check:
-1. `.venv/` exists with `canvascli` installed (test: `.venv/bin/canvascli --version`)
+1. `.venv/` exists with `canvascli` installed (test: `.venv/bin/canvascli version`)
 2. A saved session exists (test: `.venv/bin/canvascli whoami` returns 0)
 
 If either is missing, redirect to `canvascli-setup.md`. Do NOT proceed silently.

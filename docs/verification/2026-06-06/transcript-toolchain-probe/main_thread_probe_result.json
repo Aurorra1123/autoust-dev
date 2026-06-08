@@ -1,0 +1,56 @@
+{
+  "schema": "autostudy_transcript_toolchain_probe_v1",
+  "probe_name": "main_thread_readability_probe",
+  "created_at": "2026-06-06T15:45:00+08:00",
+  "workspace": "/Users/deepwisdom/Desktop/project/autoust",
+  "parent_multi_agent_id": "019e9be1-334f-7e00-a76d-1af9366469f6",
+  "nested_child_multi_agent_id": "019e9be1-8e64-78f0-bb8f-ffe197f38143",
+  "main_codex_thread_id_control": "019e960b-e506-7e20-9b71-410bd5f11346",
+  "direct_parent_evidence": {
+    "path": "docs/verification/2026-06-06/transcript-toolchain-probe/parent_probe_result.json",
+    "direct_parent_export_attempted": false,
+    "direct_parent_export_success": false,
+    "limitation": "Parent subagent observed multi_agent lifecycle tools and nodeRepl.requestMeta metadata only; no read/export-thread/transcript tool was exposed."
+  },
+  "main_thread_read_tests": [
+    {
+      "target": "019e9be1-334f-7e00-a76d-1af9366469f6",
+      "target_type": "top_level_multi_agent_parent",
+      "tool": "codex_app.read_thread",
+      "result": "failed",
+      "error": "read_thread received invalid arguments"
+    },
+    {
+      "target": "019e9be1-8e64-78f0-bb8f-ffe197f38143",
+      "target_type": "nested_multi_agent_child",
+      "tool": "codex_app.read_thread",
+      "result": "failed",
+      "error": "read_thread received invalid arguments"
+    },
+    {
+      "target": "019e9be1",
+      "target_type": "multi_agent_id_prefix",
+      "tool": "codex_app.list_threads",
+      "result": "not_found",
+      "threads": []
+    },
+    {
+      "target": "019e960b-e506-7e20-9b71-410bd5f11346",
+      "target_type": "main_codex_thread_control",
+      "tool": "codex_app.read_thread",
+      "result": "success",
+      "control_observation": "codex_app.read_thread returned the current Codex app thread and recent turns, proving the read_thread tool works for Codex app thread ids."
+    }
+  ],
+  "conclusion": {
+    "direct_parent_can_export_nested_child_transcript": false,
+    "main_thread_can_read_multi_agent_parent_or_child_by_returned_id": false,
+    "main_thread_can_read_codex_app_thread_by_codex_thread_id": true,
+    "root_cause_hypothesis": "multi_agent_v1 returned agent ids are not accepted as codex_app thread ids and no id-to-readable-thread mapping is exposed to the parent or main thread."
+  },
+  "recommended_next_local_test_after_any_fix": [
+    "Repeat this probe.",
+    "Require direct_parent_export_success=true or codex_app.read_thread success for parent and nested child ids.",
+    "Assert the exported/read transcript contains TRANSCRIPT_PROBE_MARKER_20260606_PARENT_CHILD."
+  ]
+}

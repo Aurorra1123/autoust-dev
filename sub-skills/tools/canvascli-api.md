@@ -95,6 +95,11 @@ List assignments. Defaults to all courses in the latest active Canvas term.
 .venv/bin/canvascli assignments --term "2025-26 Spring"
 ```
 
+`assignments` uses `--course-id`; do not assume every command has the same
+short option aliases. When a command example and the installed CLI disagree,
+run `<command> --help` and follow the installed CLI contract, then record the
+drift as a docs/tool concern.
+
 Output shape (per item):
 ```json
 {

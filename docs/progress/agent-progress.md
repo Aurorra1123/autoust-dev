@@ -2,6 +2,626 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-08 — Post-recon alignment brief contract added
+
+Redesigned `do-homework [B]` from a one-shot supplement checkpoint into a
+post-recon alignment loop. The Main Agent now asks one drift-risk-reducing
+question at a time, appends process notes to `investigation/user_notes.md`, and
+writes `investigation/alignment_brief.md` only when it has no necessary
+alignment question left; the brief must then be confirmed by the user before
+`pipeline_design.md` and `task-orchestrator` run.
+
+Updated the runtime protocol, task orchestrator, skill architecture, entry
+skill, collaboration docs, AGENTS handoff, Canvas Pilot reference notes, and
+feature list so confirmed `alignment_brief.md` is the task-level user-intent
+input. Course-level and user-level preference layers remain pending.
+
+## 2026-06-08 — Repair flow model simplified
+
+Simplified the validation mode model to two active modes: `full_flow` and
+`repair_flow`. Broad rewrites, dataset swaps, rerun experiments, regenerated
+artifacts, and versioned outputs are now handled inside `repair_flow` when they
+are based on an existing user-visible draft or workbench. The coordinator must
+express the actual scope dynamically in `repair_plan.md` and
+`repair_pipeline_design.md`; the plan contract is task-agnostic and records
+retained context, forbidden context, repair objectives, planned changes,
+unchanged/out-of-scope targets, verification criteria, dependency order, and
+stop conditions rather than assuming notebook/report/slides/package artifacts.
+
+## 2026-06-08 — DSAA2011 Task 11 repair-flow iteration 2
+
+Ran the second DSAA2011 `repair_flow` validation as an experiment-focused
+repair. The active workbench was archived to
+`archive/nested-isolation-2026-06-08-repairflow-iter2-experiment-repair-rollback/`,
+stale repair/runtime evidence was removed from active startup context, and
+`prelaunch_startup_inventory.json` declared simulated feedback asking for
+human-like iterative ML experimentation rather than another report-only repair.
+
+Runtime repair coordinator B `019ea52f-9253-7aa0-b55c-932b48f70b29` wrote fresh
+`repair_plan.md` and `repair_pipeline_design.md`, dispatched seven runtime
+children, and completed a targeted repair. The notebook was modified and rerun
+with zero error outputs, `draft/experiment_iteration_log.json` records four
+hypothesis/change/result/decision iterations, `draft/metrics.json` now records a
+constrained random forest selection, `experiment_comparison.png` was added, the
+report/slides PDFs were regenerated, the zip includes metrics, experiment log,
+figures, notebook, report, slides, requirements, and data, and `verification.log`
+has 25 PASS lines, 0 FAIL lines, and 2 manual SKIP lines. No Canvas submission
+was attempted.
+
+Main Agent A mechanically exported 8/8 runtime ordinary-spawn JSONL transcripts
+for B plus all seven C children, then trajectory reviewer D
+`019ea557-3280-7673-983c-df4327af8c23` dispatched seven E transcript auditors,
+one per runtime child transcript. A then exported 8/8 review-chain transcripts
+for D plus all E auditors. D wrote
+`stage_reviews/nested_isolation_trajectory_review_repairflow_iter2_experiment.json`
+with verdict `PASS_WITH_CONCERNS`; E receipt distribution was `PASS: 2` and
+`PASS_WITH_CONCERNS: 5`. Artifact gates passed, but clean process `PASS` is
+blocked because B's final verification used an absolute-path `rg` command whose
+archive exclusion failed and printed archive transcript/content matches into the
+runtime transcript. Docs now require active-workbench searches to use relative
+paths from the workbench or explicit `find ... -prune`, and to treat archive
+content exposure as a clean-PASS blocker even when task decisions were not
+influenced.
+
+## 2026-06-07 — DSAA2011 Task 11 repair-flow iteration 1
+
+Ran the first DSAA2011 `repair_flow` validation from the retained full-flow
+first draft. The active workbench was archived to
+`archive/nested-isolation-2026-06-07-repairflow-iter1-restart1-repair-rollback/`,
+old process evidence was removed from active startup context, and
+`prelaunch_startup_inventory.json` declared the simulated feedback: the first
+draft was complete but the report was too short and the experiment discussion
+needed more depth.
+
+Runtime repair coordinator B wrote `repair_plan.md` and
+`repair_pipeline_design.md`, dispatched a repair executor child, and the draft
+was repaired without a full rerun: report Markdown grew to 3,242 words, report
+PDF to 8 pages, presentation PDF to 12 pages, render provenance stayed under
+`draft/render/`, the zip passed `unzip -t`, notebook error outputs remained
+zero, and no Canvas submission was attempted. The original coordinator stalled
+after child execution, so Main Agent A closed it and dispatched replacement
+coordinator B2, which recorded `replacement_coordinator_recovery` in
+`stage_reviews/child_dispatch_ledger.json`, preserved the original coordinator
+and child ids, accepted current-run receipts with explicit recovery evidence,
+and wrote `result.json` with status `DONE_WITH_CONCERNS`.
+
+Main Agent A mechanically exported 5/5 runtime local-session JSONL transcripts
+and 4/4 review-chain transcripts by exact propagated agent-id match. Trajectory
+reviewer D `019ea21b-0e49-7480-82ac-ce3d829ac39f` dispatched three transcript
+auditor children E, one per runtime child transcript, and wrote
+`stage_reviews/nested_isolation_trajectory_review_repairflow_iter1_restart1.json`
+with overall verdict `PASS_WITH_CONCERNS`. Artifact gates and E coverage passed,
+but clean `PASS` is blocked by coordinator replacement/transport recovery,
+executor accepted with transport recovery, ledger-authority child identity
+normalization, and non-impacting external startup skill reads in child
+transcripts.
+
+Follow-up cleanup tightened repair startup hygiene: old full-flow
+`pipeline_design.md` is no longer retained in active root for repair starts.
+It should be archived with rollback evidence, while active repair planning uses
+`repair_plan.md` plus `repair_pipeline_design.md`. The completed DSAA2011 active
+root was cleaned accordingly by moving the old full-flow pipeline to
+`archive/nested-isolation-2026-06-07-repairflow-iter1-restart1-repair-rollback/postrun-active-cleanup/pipeline_design.full_flow.md`
+with a README explaining that this was post-run organization, not a rewrite of
+the launch inventory. The same cleanup moved `investigation/review_a.json` to
+`postrun-active-cleanup/investigation/review_a.full_flow.json` because it is a
+full-flow reconnaissance review receipt, while `investigation/rubric.md` and
+`investigation/user_notes.md` remain valid repair context.
+
+## 2026-06-07 — Repair flow validation contract drafted
+
+Defined `repair_flow` and `revision_flow` separately from `full_flow`.
+`repair_flow` starts from a user-visible first draft plus concrete feedback,
+archives the active workbench as rollback evidence, removes stale process
+evidence from active startup context, retains only explicit current-draft files,
+and requires the coordinator to write a repair request/plan before dispatching
+repair children. `revision_flow` is broader next-version work and must declare
+whether outputs are edited in place or written to a versioned directory.
+
+Added Task 11 to the stage-review rollout plan for a DSAA2011 repair-flow
+validation. The suggested simulated feedback is: the first draft is complete,
+but the report is too short and experiment discussion is not deep enough; repair
+the current draft toward a stronger 8-9 page submission, deepen the experiment
+discussion, update slides/render/package, do not submit to Canvas, and do not
+redo the assignment from scratch. The B/C/A/D/E transcript evidence chain stays
+the same as Task 10, while D/E additionally audit retained context, rollback
+archive discipline, targeted repair scope, changed-file justification, and
+no-regression gates.
+
+## 2026-06-07 — Task 10 read-scope rule changed to blacklist-first
+
+Clarified the clean-PASS read-scope rule after reviewing DSAA2011 iteration 9.
+Stage reviewers should not be constrained by a brittle fixed whitelist of exact
+files for every assignment type. Required/allowed reads are expected starting
+evidence, while current-run artifacts directly relevant to the assigned stage or
+reviewed deliverable may be inspected. The hard boundary is the blacklist:
+archive/prior-run evidence, prior diagnostics, development-plane docs,
+validation plans/progress docs, external workflow/plugin skill files as task
+context, coordinator-owned ledgers, and unrelated workbench evidence. The Stage
+2 spec reviewer reading report/slides render provenance under `draft/render/`
+is therefore task-relevant, not a clean-PASS blocker; future E audits should
+focus on whether any forbidden class was read or used as task evidence.
+
+## 2026-06-07 — DSAA2011 Task 10 ordinary-spawn full-flow iteration 9
+
+Ran DSAA2011 Task 10 again in `full_flow` mode with ordinary
+`multi_agent_v1.spawn_agent`. The active workbench was archived to
+`archive/nested-isolation-2026-06-07-fullflow-iter9-prelaunch-archive/`,
+cleaned to only `archive/` plus `prelaunch_startup_inventory.json`, and the
+inventory recorded `archive/` as forbidden startup context for runtime
+coordinator B and runtime children C. Runtime coordinator B
+`019ea141-e235-7541-a011-138db659c42a` regenerated reconnaissance,
+`spec.md`, `problem.md`, `pipeline_design.md`, stage briefs, draft artifacts,
+verification files, and `result.json` with status `draft_ready`; no Canvas
+submission was attempted.
+
+The post-iteration-8 fixes largely held. The runtime dispatch ledger has seven
+accepted child dispatches, all with `identity_injected_at_utc`,
+`receipt_observed_at_utc`, and `accepted_at_utc`; review receipts include
+`review_type`, `depends_on_stage_result`, and `depends_on_spec_review`; and the
+Stage 2 no-id spawn failure caused by the thread limit was recorded in ledger
+`process_events` and replaced by a clean dispatch. Main Agent A mechanically
+exported 8/8 runtime JSONL transcripts and 8/8 review-chain JSONL transcripts
+by exact local-session id match, with zero missing or ambiguous exports.
+
+Trajectory reviewer D `019ea16c-e635-7dc1-8e9f-2a4cf6ad9b55` dispatched seven
+transcript-auditor children E, one per runtime child transcript, and returned
+`PASS_WITH_CONCERNS`; all seven E receipts were `PASS_WITH_CONCERNS`. Artifact
+gates passed: report Markdown references six figures, the report PDF embeds six
+image objects, figures are organized under `draft/figures/`, render `.tex` and
+`.log` provenance is retained under `draft/render/`, the notebook has zero
+error outputs, and the zip contains the required deliverables. Remaining
+clean-PASS blockers are platform startup/plugin or AGENTS context appearing in
+transcripts without task influence, imprecise receipt timestamps, one limited
+`draft/render/` over-read by a spec reviewer, and runtime plus review-chain
+no-id spawn events from thread limits despite correct process-event recovery.
+
+## 2026-06-07 — Post-iteration-8 clean-PASS contract hardening
+
+Updated the validation/runtime docs after DSAA2011 Task 10 iteration 8 returned
+`PASS_WITH_CONCERNS`. The scope-hygiene rule now distinguishes avoidable
+runtime contamination from unavoidable host-platform startup/plugin reads:
+runtime-facing prompts and stage briefs should avoid naming development workflow
+frameworks, and a platform-mandated startup read with no task influence is an
+environment limitation rather than a clean-PASS blocker. Active use of external
+workflow skills, development docs, validation plans, prior diagnostics, or
+archive evidence as task material remains a process concern or failure.
+
+Also hardened the concrete process gaps from iteration 8. `task-orchestrator.md`
+now requires stage briefs to include exact receipt JSON skeletons, reviewer
+receipts to include `review_type`, `depends_on_stage_result`, and
+`depends_on_spec_review`, coordinator ledgers to add `receipt_observed_at_utc`
+and `accepted_at_utc` when receipts are parsed and accepted, optional child id
+injection via `send_input` when available, and a coordinator-owned
+`process_events` entry for spawn attempts that fail before returning a child id.
+Next DSAA2011 full-flow validation should verify these changes before moving to
+another assignment.
+
+## 2026-06-07 — DSAA2011 Task 10 ordinary-spawn full-flow iteration 8
+
+Ran DSAA2011 Task 10 again in `full_flow` mode using ordinary
+`multi_agent_v1.spawn_agent`, not the inspectable Codex-thread harness. The
+active workbench was emptied before launch and the accepted startup inventory
+recorded `archive/` as post-run audit-only evidence forbidden to runtime
+coordinator B and runtime children C. Runtime coordinator B
+`019ea05c-7172-70f1-b71a-5d73a7a9f27e` regenerated Canvas reconnaissance,
+`spec.md`, `problem.md`, `pipeline_design.md`, stage briefs, draft artifacts,
+verification files, and `result.json` with status `draft_ready`; Canvas
+submission was not performed.
+
+Main Agent A mechanically exported 9/9 runtime local-session JSONL transcripts
+from `.codex/sessions` by exact propagated agent-id match: B plus eight runtime
+children, with zero missing or ambiguous exports. Trajectory reviewer D
+`019ea088-42bf-7770-b9f7-399b7a09264a` dispatched eight transcript-auditor
+children E, one per runtime child transcript; A then exported 9/9 review-chain
+JSONL transcripts for D plus all E auditors. D wrote
+`stage_reviews/nested_isolation_trajectory_review_fullflow_iter8.json` and
+returned `PASS_WITH_CONCERNS`; all eight E audit receipts were
+`PASS_WITH_CONCERNS`.
+
+Artifact gates passed: report Markdown references seven figures, the report PDF
+contains embedded image objects for all seven figures, render `.tex`/`.log`
+provenance is preserved under `draft/render/`, the notebook has 11 executed code
+cells and no error outputs, the zip contains report PDF, presentation PDF,
+notebook, requirements, and data CSV, and no Canvas submission occurred.
+Remaining clean-PASS blockers are process hardening items: repeated Superpowers
+startup/process skill reads by B/C despite no task-context contamination, child
+ledger rows missing `receipt_observed_at_utc` and `accepted_at_utc`, review
+receipts missing explicit dependency fields, all child identities relying on
+coordinator normalization from `agent_id: null` plus ledger authority, minor
+role/delegation schema normalization in Stage 2, and one failed no-id spawn
+retry visible only in the coordinator transcript rather than as a process event
+in the ledger.
+
+## 2026-06-07 — Task 10 clean-PASS gates hardened after DSAA2011 iteration 7
+
+Hardened the Task 10 validation and runtime contracts for the five concerns
+found in DSAA2011 ordinary-spawn full-flow iteration 7. The docs now require
+explicit transport-recovery states and evidence checks; coordinator-only writes
+to `stage_reviews/child_dispatch_ledger.json`; child receipt identity as either
+an exact runtime id or `agent_id: null` plus `identity_authority`, never alias
+ids such as `C4`; child scope hygiene forbidding Superpowers/development-plane
+reads unless listed in the brief; and UTC timestamp fields on result/review
+receipts plus dispatch ledger entries. Clean Task 10 `PASS` now requires no
+transport recovery, no child-side ledger writes, no alias ids, sufficient
+ordering timestamps, and no scope-hygiene drift.
+
+## 2026-06-06 — DSAA2011 Task 10 ordinary-spawn full-flow iteration 7
+
+Ran DSAA2011 Task 10 in `full_flow` mode from the accepted no-leak startup
+inventory using ordinary `multi_agent_v1.spawn_agent`, not the inspectable
+Codex-thread harness. Runtime coordinator B
+`019e9c80-26c7-7a10-abde-161e62e89b8e` regenerated reconnaissance, `spec.md`,
+`pipeline_design.md`, stage briefs, draft artifacts, package manifest, final
+`verification.log`, and `result.json` with status `draft_ready`; Canvas
+submission was not performed. Main Agent A then mechanically exported 17/17
+runtime local-session JSONL transcripts from `.codex/sessions` using exact
+agent-id filename matches, including B plus accepted and superseded child ids,
+with zero missing or ambiguous exports.
+
+Independent trajectory reviewer D `019e9cd6-bab9-77a3-8870-dcddc8f94d4a`
+dispatched 16 transcript-auditor children E and wrote 16 transcript-body audit
+receipts; A also exported D plus all E auditor JSONL transcripts under
+`transcripts/review_chain/` with zero missing or ambiguous matches. D returned
+`PASS_WITH_CONCERNS`: artifact gates passed (figures under `draft/figures/`,
+report figures embedded, render provenance preserved, zip/manifest parity, no
+Canvas submission), but process concerns remain around frequent receipt identity
+normalization, Stage 4 duplicate ledger pollution, transport-recovery acceptance
+for one quality reviewer, child scope hygiene drift from reading Superpowers
+startup instructions, and missing `created_at` timestamps in many review
+receipts.
+
+## 2026-06-06 — Task 10 nested transcript evidence role chain clarified
+
+Updated `docs/development-validation-standard.md`,
+`docs/runtime-agent-protocol.md`, and
+`docs/superpowers/plans/2026-06-04-stage-review-rollout.md` to preserve the
+initial nested-transcript role-chain consensus. Task 10 explicitly validates the chain
+`Main Agent A -> runtime coordinator B -> runtime child agents C*`, followed by
+`Main Agent A` exporting B and every C by propagated child identity, then
+dispatching trajectory review coordinator D, which must dispatch one
+transcript-auditor child E per exported C transcript. The key operational rule
+was later corrected by controlled probes below: ordinary `spawn_agent` ids are
+not Codex app `read_thread` ids. Missing child id propagation is still a process
+failure, but transcript export for ordinary `spawn_agent` children must use
+local-session JSONL exact-match export rather than `read_thread`.
+
+Follow-up clarification: `read_thread` transcript collection must use cursor
+pagination. A single call can return only the latest/finalize turns, so future
+Task 10 full-flow runs must page older turns until the initial assignment prompt
+is captured or no cursor remains. `transcripts/transcript_inventory.json` should
+record page count, `pagination_complete`, and stop reason for each coordinator,
+runtime child, trajectory reviewer, and transcript-auditor thread.
+
+Second clarification after controlled probes: ordinary
+`multi_agent_v1.spawn_agent` returns a multi-agent agent id, not a Codex app
+`read_thread` id. The agent id works for `multi_agent_v1.wait_agent` /
+`resume_agent` final status, and a full local session JSONL exists under
+`.codex/sessions/**/<agent_id>.jsonl`, but `codex_app.read_thread` rejects these
+ids. Inspectable Codex-thread harness children are real Codex app threads and
+can be read with `read_thread`, but they create visible project conversations;
+those can be archived after export, though they still exist. For the next
+DSAA2011 full-flow iteration, use ordinary `spawn_agent`: A acts only as a
+mechanical local-session JSONL export broker, while D/E perform semantic
+transcript audits over the exported raw JSONL files.
+
+## 2026-06-06 — DSAA2011 Task 10 iteration 6 prelaunch paused for review
+
+Prepared the next DSAA2011 Task 10 `full_flow` validation using the inspectable
+Codex-thread transcript harness. Archived the previous active iteration-5
+workbench outputs to
+`data/homework/DSAA2011/project/archive/nested-isolation-2026-06-06-fullflow-iter5/`
+and removed generated active startup context (`canvas/`, `references/`,
+`investigation/`, `draft/`, `stage_briefs/`, `stage_results/`,
+`stage_reviews/`, `transcripts/`, `spec.md`, `problem.md`,
+`pipeline_design.md`, prior summaries, verification files, and `result.json`).
+Wrote
+`data/homework/DSAA2011/project/prelaunch_startup_inventory_pending.json` with
+`no_leak_check.status: PASS` and stopped before coordinator dispatch for human
+startup review, per `docs/development-validation-standard.md`.
+
+## 2026-06-06 — DSAA2011 Task 10 full-flow iteration 5 coordinator run
+
+Follow-up transcript toolchain probe wrote evidence under
+`docs/verification/2026-06-06/transcript-toolchain-probe/`. A parent subagent
+spawned one nested child with marker `TRANSCRIPT_PROBE_MARKER_20260606_PARENT_CHILD`;
+the child receipt exists, but the parent had no read/export transcript tool.
+Main-thread `codex_app.read_thread` could read the current Codex app thread as
+a control, but rejected both the top-level `multi_agent_v1` parent id and nested
+child id with `invalid arguments`, and `list_threads` found no `019e9be1`
+mapping. This confirms the current gap is a tool/id-domain gap, not just a
+DSAA2011 workflow issue.
+
+A second probe found an implementable workaround: inspectable Codex-thread
+children. `codex_app.create_thread` threads are readable with
+`codex_app.read_thread` while still active, but completed probes are not
+reliably readable afterward. The working harness is therefore
+pause-before-final: the child writes its receipt and `trace_bundle.json`, emits
+`READY_FOR_TRANSCRIPT_EXPORT`, the parent exports `read_thread` evidence under
+`transcripts/`, and only then sends a finalize message. The harness contract is
+now documented in `docs/inspectable-subagent-transcript-harness.md`, with local
+probe evidence in
+`docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_harness_probe_result.json`.
+
+Ran Task 10 in `full_flow` mode from the accepted no-leak startup inventory
+`data/homework/DSAA2011/project/prelaunch_startup_inventory.json`, with stable
+coordinator id `019e9b2e-8139-7332-9a3e-f8a2affe6209` recorded in both
+`nested_isolation_coordinator_summary.md` and `stage_reviews/child_dispatch_ledger.json`.
+The coordinator regenerated Canvas reconnaissance, `spec.md`, `problem.md`,
+`investigation/`, `pipeline_design.md`, stage briefs, draft artifacts,
+`verification.log`, `result.json`, and a 21-child dispatch ledger; final
+`result.json.status` is `draft_ready`, and Canvas submission was not attempted.
+
+Nested isolation evidence is stronger than iteration 4 at the receipt level:
+the ledger has 5 executors, 2 repair executors, 7 spec reviewers, and 7 quality
+reviewers with zero dispatch/receipt identity mismatches after coordinator
+normalization. Two blocking auto-fixable quality failures were repaired before
+handoff: Stage 1 supervised preprocessing leakage and Stage 2 report figure
+float/localized-label issues. Full child transcript export was still unavailable
+inside the coordinator tool surface, so transcript paths remain null and the
+main-thread collector fallback must use the stable child ids in the ledger.
+
+Main-thread transcript fallback then wrote
+`transcripts/transcript_inventory.json` and
+`transcripts/NO_FULL_CHILD_TRANSCRIPT_EXPORTS_AVAILABLE.md`. Direct-parent
+export was unavailable, and sampled `codex_app.read_thread` /
+`codex_app.list_threads` probes could not map the `multi_agent` coordinator or
+child ids to readable Codex app threads. Independent trajectory review wrote
+`stage_reviews/nested_isolation_trajectory_review_fullflow_iter5.json` with
+`PASS_WITH_CONCERNS`: receipt-level isolation and artifact gates passed, but
+full child transcript bodies remain unavailable and 19 of 21 child receipts
+needed coordinator normalization. Follow-up hardening is now in
+`docs/development-validation-standard.md`, `docs/runtime-agent-protocol.md`,
+Task 10, `task-orchestrator.md`, `pdf-renderer.md`, and `canvascli-api.md`:
+fallback inventories must be machine-readable, receipt normalization is a
+process concern when frequent, child-thread cleanup must preserve ledger
+evidence, report reviews must catch figure float/localized-label issues, render
+log sidecar policy is explicit, and `canvascli assignments` uses `--course-id`.
+
+## 2026-06-05 — DSAA2011 Task 10 full-flow iteration 4
+
+Ran Task 10 in `full_flow` mode from a no-leak active workbench after restoring
+the Canvas session. The runtime coordinator re-created Canvas reconnaissance,
+`spec.md`, `problem.md`, `investigation/`, `pipeline_design.md`, draft
+artifacts, 21 stage briefs, 7 stage result receipts, 14 review receipts, and a
+20-entry child dispatch ledger. Final `result.json.status` is `draft_ready`;
+Canvas submission was not attempted.
+
+Artifact quality improved over the earlier DSAA2011 runs: generated figures are
+organized under `draft/figures/`, `draft/report.md` references 8 representative
+figures, `pdfimages` confirms embedded report images, `draft/render/report.tex`
+and `report_render_provenance.json` are present, and
+`draft/G01_student_dropout.zip` matches `package_manifest.json` by entries,
+sizes, and SHA256 hashes. The coordinator triggered and re-reviewed two
+blocking auto-fixable repairs: Stage 1 notebook inline-figure/warning cleanup
+and Stage 2 report confusion-matrix coverage.
+
+Independent trajectory review wrote
+`stage_reviews/nested_isolation_trajectory_review_fullflow_iter4.json` with
+verdict `PASS_WITH_CONCERNS`: receipt-level isolation passed with 20 distinct
+child ids and no ledger/receipt identity mismatches, but no full child
+transcript exports were available, so no transcript-auditor subagents could be
+dispatched. New process hardening from this run: future full-flow launches must
+write a `prelaunch_startup_inventory.*` artifact, inject the coordinator's
+stable thread id into coordinator evidence after dispatch, separate
+blocking-auto-fixable issues from optional polish, and record PDF log-sidecar
+absence through render provenance rather than leaving it ambiguous.
+
+Follow-up tool inspection found that the Main Agent can read at least some
+nested child threads directly by ledger id with Codex `read_thread`, even when
+`list_threads` cannot discover those ids and the coordinator lacked an
+export-thread tool. The validation standard, runtime protocol, and Task 10 now
+require a two-level transcript collector: direct-parent coordinator export
+first, then Main Agent / trajectory reviewer fallback from
+`child_dispatch_ledger.json` stable child ids before declaring full child
+transcripts unavailable.
+
+## 2026-06-05 — Task 10 full-flow launch hygiene clarified
+
+During DSAA2011 Task 10 iteration-4 preflight, the intended validation mode was
+clarified: "run the task again" means a full real-user flow unless explicitly
+scoped as resume or repair. The active workbench must therefore not retain
+generated `draft/`, `canvas/`, `references/`, `investigation/`, `spec.md`, or
+`pipeline_design.md` as hidden startup context for `full_flow`; those files are
+outputs of the user-facing homework flow and can leak prior conclusions.
+
+`docs/development-validation-standard.md` now holds the cross-task Development
+Validation Standard, and Task 10 references it instead of carrying the standard
+inline. It requires declaring `full_flow`, `resume_flow`, or `repair_flow`,
+archiving prior evidence, cleaning no-leak startup files according to that
+mode, stopping before coordinator dispatch for human review of the startup
+inventory, passing user supplements explicitly rather than hiding them in
+workbench files, and applying the same child trajectory/process review standard
+when changing from DSAA2011 to any later validation task.
+
+## 2026-06-05 — DSAA2011 report/asset quality gap analysis
+
+Follow-up inspection of the DSAA2011 draft found that `draft/report.md` has no
+image references and `pdfimages` reports 0 embedded images in
+`report_G01_dropout.pdf`, while the notebook, slides, and zip contain 12 plot
+PNGs. Root cause: the notebook saved plots as flat `draft/*.png`, while
+`writing-helper.md` expected organized `figures/*` assets and the report quality
+review treated a text-only report as acceptable because other deliverables had
+the visuals. Tool contracts now prefer `draft/figures/`, require experimental
+reports to embed representative available figures, classify available-but-omitted
+figures as an `auto_fixable` quality issue, and add `pdfimages`/visual checks to
+report verification.
+
+The current report PDF was rendered through pandoc's native XeLaTeX path
+(`Creator: LaTeX via pandoc`, `Producer: xdvipdfmx`). No `.tex` file is present
+because `pandoc --pdf-engine=xelatex` uses temporary intermediate TeX by
+default; this was not an intentional deletion. `pdf-renderer.md` now requires
+render-engine provenance in receipts, optional `draft/render/` sidecars for
+debuggable TeX/log output, and resource-path handling for report-local figures.
+Transcript export handling was also clarified: top-level subagent threads can
+be read with Codex `read_thread`, but nested child/grandchild ids from a
+coordinator were not discoverable from the main thread, so transcript export
+must be performed by the direct parent coordinator before closing children when
+that tool surface is available.
+
+Verification after the contract changes: `python3 -m json.tool` passed for
+`docs/plans/feature-list.json`, runtime receipt examples, current
+`data/homework/DSAA2011/project/result.json`, and all JSON files under current
+`stage_results/` and `stage_reviews/`. The child dispatch ledger re-check found
+9 accepted child receipts, 9 transcript audit receipts, no `stage`/agent-id
+mismatches, and trajectory verdict `PASS_WITH_CONCERNS`; `git diff --check`
+reported no whitespace issues for the tracked files touched in this follow-up.
+
+## 2026-06-05 — DSAA2011 Task 10 iteration 3 passed receipt-level isolation
+
+Re-ran Task 10 on `data/homework/DSAA2011/project` after archiving iteration 2
+evidence to `archive/nested-isolation-2026-06-05-iter2/`. The coordinator
+regenerated a 5-stage `pipeline_design.md`, wrote 15 stage briefs, 5 stage
+result receipts, 10 review receipts, `child_dispatch_ledger.json`,
+`verification.log`, `result.json`, and a new
+`nested_isolation_coordinator_summary.md`. Three executor, three spec reviewer,
+and three quality reviewer child receipts matched the coordinator-authoritative
+dispatch ledger for `stage`, `agent_id`, and transcript handle; no inline
+fallback appeared. Stage 4/5 package repair and post-repair verification were
+represented by first-class `SKIPPED` result receipts and review `SKIP`
+receipts because package/current-file hashes already matched.
+
+The independent trajectory reviewer dispatched 9 per-child receipt-level
+auditor subagents under `stage_reviews/transcript_audits_iter3/` and returned
+`PASS_WITH_CONCERNS`: receipt-level nested isolation, identity consistency,
+review ordering, skip receipts, and package parity checks passed. The verdict
+cannot rise to `PASS` because full child transcript bodies/exports are still
+unavailable. Remaining process observations: standby-only child responses are
+still common and must remain superseded attempts in the ledger; completed child
+agents should be closed between waves to avoid thread pressure; `verification.log`
+should not use `FAIL` for the correct decision to withhold `draft_ready`; and
+transcript-audit receipt field types need to stay explicit.
+
+## 2026-06-05 — DSAA2011 Task 10 iteration 2 failed on identity drift
+
+Re-ran Task 10 on `data/homework/DSAA2011/project` after archiving the previous
+Task 10 evidence to `archive/nested-isolation-2026-06-05-iter1/`. The runtime
+coordinator regenerated `pipeline_design.md`, produced 18 stage briefs, 4 stage
+result receipts, 8 review receipts, and repaired a blocking `auto_fixable`
+Stage 2 coverage gap through `stage_02a_content_coverage_repair` before final
+handoff. Package/current-file parity was checked and already matched, so the
+package repair stage did not trigger; `result.json.status` remains
+`revision_needed` only for external/manual/skipped-submission items.
+
+The independent trajectory reviewer dispatched 12 transcript-auditor subagents
+and returned `FAIL`, not `PASS_WITH_CONCERNS`, because the Stage 2 executor
+receipt recorded `agent_id: 2896E6E0-DFB6-43C2-80D8-6CDC06EFA33D` while the
+coordinator summary recorded child agent id
+`019e9619-aa14-7023-a4be-230271a0a729` for the same transcript handle. This
+exposed a new workflow gap: child receipts cannot be trusted to self-report
+agent identity. The protocol, `task-orchestrator.md`, and Task 10 now require
+coordinator-authoritative dispatch ids, receipt normalization before acceptance,
+identity mismatch handling as `BLOCKED`, and first-class `SKIPPED` receipts for
+conditional stages whose trigger is false. Other process observations: full
+transcript exports are still unavailable, many receipts drifted from `stage` to
+`stage_id`, and the coordinator hit a child-thread limit that required cleanup.
+
+## 2026-06-05 — DSAA2011 true nested subagent isolation validation
+
+Ran Task 10 on `data/homework/DSAA2011/project` with a runtime coordinator
+subagent simulating the real AutoStudy Main Agent flow. The coordinator archived
+old inline/runtime artifacts to
+`archive/nested-isolation-2026-06-05-prep-old-inline/`, regenerated
+`pipeline_design.md` with `nested_subagents_policy:
+true_child_subagents_required_no_inline_fallback`, generated 15 stage briefs,
+and dispatched distinct child executor/spec-reviewer/quality-reviewer subagents
+for all five stages.
+
+Evidence now includes 5 executor receipts, 5 spec review receipts, 5 quality
+review receipts, `nested_isolation_coordinator_summary.md`,
+`stage_reviews/nested_isolation_trajectory_review.json`, `verification.log`,
+`verification_checklist.md`, and `result.json`. Local verification and an
+independent main-thread trajectory reviewer both returned
+`PASS_WITH_CONCERNS`: no `inline_fallback` or `main-agent` execution appeared in
+the current receipts, every normal receipt preserved `agent_id`/`transcript`,
+and quality reviews depended on matching PASS spec reviews. Keep
+`M3.5-EXECUTION-ARCHITECTURE` in-progress for now while running the second true
+nested validation on UCUG1505. The DSAA2011 concerns were folded back into
+`docs/runtime-agent-protocol.md`, `sub-skills/tasks/task-orchestrator.md`, the
+runtime examples, and Task 10: full transcript exports are now preferred when
+available, coordinator identity must be stable, and standby/empty child-agent
+responses are non-completion anomalies rather than passing evidence. Task 10
+was further tightened so the runtime coordinator uses the user-facing
+`skill.md` / task docs instead of treating `docs/runtime-agent-protocol.md` as a
+runtime manual, while the trajectory reviewer uses the protocol only as an audit
+standard and dispatches one transcript-auditor subagent per available child
+transcript before making a final verdict.
+
+The same DSAA2011 run exposed a more important workflow gap: the model detected
+an auto-fixable package parity issue (`G01_dropout.zip` contained a notebook
+that differed from the freshly executed on-disk notebook) but the Stage 5 brief
+was verification-only, had `max_retries: 0`, and allowed only receipt writes.
+The issue was therefore recorded as a concern instead of triggering a package
+rebuild and re-review. The protocol and `task-orchestrator.md` now define
+repair-before-revision: reviewers classify issues as `auto_fixable`,
+`needs_user_input`, `manual_only`, `external_blocker`, or `acceptable_risk`;
+blocking `auto_fixable` issues must trigger a fix executor or bounded repair
+stage before final handoff and must not be hidden inside `revision_needed`.
+
+## 2026-06-04 — UCUG1505 runtime validation false-pass check
+
+Archived stale UCUG1505 runtime evidence under `data/homework/UCUG1505/final-project/archive/runtime-validation-2026-06-04/`, regenerated a fresh pipeline with 15 stage briefs, 5 stage results, 8 reviews, `verification_checklist.md`, `verification.log`, and `result.json`. Localhost browser validation actually loaded the p5.js draft and captured zero dev-log entries, but microphone/audio interaction, public video upload/link, public code link, and exact documentation-template compliance remain blockers; `scripts/write_homework_result.py --status revision_needed` succeeded and no Canvas submission happened.
+
+Iteration 2 archived that runtime evidence under `data/homework/UCUG1505/final-project/archive/runtime-validation-2026-06-04-iter1/`, regenerated `pipeline_design.md`, 15 stage briefs, 5 stage results, 10 review/skip receipts, `verification_checklist.md`, `verification.log`, and `result.json`. The code package link is now detected in both `draft/documentation.md` and extracted `draft/documentation.pdf` text; final status remains `revision_needed` via `scripts/write_homework_result.py` because no public YouTube/Vimeo URL or local video exists, the official template is still unreachable, microphone interaction is manual, and Browser screenshot/pixel proof still hit tooling limits.
+
+Uncommitted changes remain because this validation updated local/gitignored UCUG1505 runtime evidence plus the ongoing protocol rollout docs already in the worktree; no commit was requested.
+`M3.5-EXECUTION-ARCHITECTURE` remains `in-progress`, not `passing`, because
+DSAA2011/UCUG1505 validated the file-based protocol and false-pass resistance
+through inline fallback, but true nested executor/reviewer subagent isolation
+still needs one preserved transcript/evidence run.
+Follow-up clarified the gap in plain terms: normal runtime docs already require
+the Main Agent to dispatch executor/spec-reviewer/quality-reviewer subagents,
+but the validation harness had used a runtime coordinator subagent while the
+protocol still said ordinary subagents must not dispatch children. Added a
+development-only validation harness exception in `docs/runtime-agent-protocol.md`
+and Task 10 in
+`docs/superpowers/plans/2026-06-04-stage-review-rollout.md`; Task 10 requires
+real child executor/reviewer subagent ids or transcripts and treats
+`inline_fallback` as non-passing isolation evidence.
+
+## 2026-06-04 — DSAA2011 runtime validation iteration 3
+
+DSAA2011 iteration-2 runtime evidence was archived under `data/homework/DSAA2011/project/archive/runtime-validation-2026-06-04-iter2/`, then iteration 3 regenerated `pipeline_design.md`, 15 stage briefs, 5 stage results, 10 stage reviews, `verification_checklist.md`, `verification.log`, and `result.json`. Fresh notebook execution passed with `.venv/bin/jupyter nbconvert --to notebook --execute --inplace .../draft/project_G01_dropout.ipynb`; markdown/PDF both document the missing official LaTeX style file, so final state is `revision_needed` via `scripts/write_homework_result.py`, with no Canvas submission.
+
+Uncommitted changes remain because this session adds gitignored/local runtime evidence plus ongoing protocol rollout edits already present in the worktree; next validation should run UCUG1505 as the open-ended false-pass check before marking execution architecture passing.
+
+## 2026-06-04 — Course archive + notes pipeline, execution architecture design
+
+Stage review rollout design and plan were added:
+`docs/superpowers/specs/2026-06-04-stage-review-rollout-design.md` and
+`docs/superpowers/plans/2026-06-04-stage-review-rollout.md`. The selected path
+is protocol + reviewer contracts, with DSAA2011 as the first draft-only real
+task validation and UCUG1505 as the second validation.
+
+Added course-level learning workflows alongside homework workflows: `sync-course` persistently archives Canvas course materials into `data/courses/<COURSE>/`, and `write-course-notes` generates Obsidian-style Markdown notes from archived lecture PDFs via a parallel Agent Team pattern. Both skills are registered in `skill.md` and `sub-skills/tools/_index.md`.
+
+DSAA2011 acceptance evidence from the latest commits: `sync-course` synced 70 files (14 lectures, 8 readings, 48 other), fixed real Canvas filename classification (`-L` / `_L` patterns and `name` vs `display_name`), and `write-course-notes` generated 14 notes. Also wrote `docs/superpowers/specs/2026-06-04-execution-architecture-design.md`, which proposes the next execution architecture: coordinator + per-stage executor agents + independent reviewer agents.
+
+Follow-up design alignment established Superpowers as a design reference, not a runtime dependency. Added `docs/runtime-agent-protocol.md` as the runtime handoff baseline: Claude Code Main Agent owns user interaction and subagent dispatch; subagents consume precise stage briefs and report back only to the Main Agent.
+
+Wrote the Superpowers-style spec and implementation plan for this direction:
+`docs/superpowers/specs/2026-06-04-runtime-agent-protocol-design.md` and
+`docs/superpowers/plans/2026-06-04-runtime-agent-protocol.md`.
+
+Static rollout implementation upgraded `do-homework.md`, `task-orchestrator.md`,
+`docs/skills-architecture-spec.md`, `docs/runtime-agent-protocol.md`, and
+`docs/examples/runtime/` around stage briefs/results/reviews. Next runtime
+validation should start with DSAA2011 Machine Learning Project and stop at
+draft/revision evidence; do not submit. After DSAA2011 has complete stage
+receipts and reviews, run UCUG1505 as the open-ended false-pass resistance
+check.
+
+Static verification passed for `docs/plans/feature-list.json`, runtime example
+JSON, stage review terminology across runtime docs, and `git diff --check`.
+The rollout is intentionally stopped before real DSAA2011 validation.
+
+Runtime validation start point was narrowed: reuse
+`data/homework/DSAA2011/project/` and its existing `spec.md`, `canvas/`,
+`investigation/`, and `references/` artifacts; do not rerun reconnaissance.
+The DSAA2011 validation subagent should regenerate `pipeline_design.md` first,
+then run the new stage brief/result/review protocol, followed by an independent
+trajectory review subagent.
+
 ## 2026-06-03 — UCUG1505 end-to-end validation + DSAA2011 trajectory deep-dive
 
 UCUG1505 Creative Coding Final Project 验证。从 canvas/ 原始数据开始，子代理完整走完侦查→设计→执行流程。**首轮 P0-P5 全部 FIXED**，无需迭代。

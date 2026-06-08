@@ -1,0 +1,25 @@
+{
+  "stage": "stage_02_report",
+  "review_type": "spec_compliance",
+  "created_at": "2026-06-04T14:30:00Z",
+  "depends_on_stage_result": "stage_results/stage_02_report_result.json",
+  "depends_on_spec_review": null,
+  "agent_id": "agent-456",
+  "transcript": "child-spec-reviewer-stage_02_report-agent-456",
+  "transcript_export_path": "transcripts/stage_02_report_spec_review.md",
+  "verdict": "PASS",
+  "evidence": [
+    "draft/report.md addresses all rubric sections listed in investigation/rubric.md",
+    "deliverable format matches spec.md requirement: report markdown for PDF rendering"
+  ],
+  "issue_classification": {
+    "auto_fixable": [],
+    "needs_user_input": [],
+    "manual_only": [],
+    "external_blocker": [],
+    "acceptable_risk": []
+  },
+  "missing_requirements": [],
+  "extra_or_unrequested_work": [],
+  "fix_suggestions": []
+}
