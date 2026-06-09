@@ -85,7 +85,11 @@ Before executing, check:
 
 - `spec.md` exists and clearly states deliverables.
 - `investigation/alignment_brief.md` exists and contains a
-  `Ready-To-Start Judgment` section confirmed by the user.
+  `Ready-To-Start Judgment` section confirmed by the user. For open-ended
+  assignments, it must also contain `Selected Approach` and `Design Skeleton`
+  sections that are specific enough to drive stage goals, reads, writes,
+  quality criteria, and final review items. For fixed-spec assignments, a short
+  skeleton confirmation is acceptable.
 - `pipeline_design.md` exists and contains `# Pipeline`, `## Output`, and
   `## Stages` sections.
 - `investigation/review_a.json` exists and has `verdict: "proceed"`, unless

@@ -491,7 +491,8 @@
     "evidence": [
       "2026-06-08 task-level alignment contract added: do-homework [B] now asks one risk-reducing question at a time, appends round notes to investigation/user_notes.md, writes investigation/alignment_brief.md only at the terminal alignment step, requires user confirmation before [C], and makes pipeline_design.md incorporate the confirmed brief",
       "2026-06-08 runtime-agent-protocol.md, task-orchestrator.md, skill.md, AGENTS.md, COLLABORATION.md, docs/canvas-pilot-reference.md, and docs/skills-architecture-spec.md now treat confirmed alignment_brief.md as the task-level user-intent input",
-      "2026-06-08 development-validation-standard.md and Task 10 now define the live simulated-user bridge for testing [B]: coordinator B pauses with WAITING_FOR_SIMULATED_USER_B_ROUND_N, Main Agent A forwards only the user's answer, and B writes alignment_brief.md only after terminal confirmation"
+      "2026-06-08 development-validation-standard.md and Task 10 now define the live simulated-user bridge for testing [B]: coordinator B pauses with WAITING_FOR_SIMULATED_USER_B_ROUND_N, Main Agent A forwards only the user's answer, and B writes alignment_brief.md only after terminal confirmation",
+      "2026-06-09 UCUG1505 alignment validation exposed premature brief convergence after provider choices; do-homework [B], runtime-agent-protocol.md, task-orchestrator.md, and Task 10 now align more closely with Superpowers brainstorming by requiring answer-driven extension, 2-3 approaches, design skeleton preview, and brief self-review before [C] for open-ended tasks"
     ],
     "status": "pending",
     "notes": "Design principle 4 (three-layer preference). Task-level alignment is now specified through alignment_brief.md, but this feature remains pending until course-level and user-level preference layers are implemented and validated."

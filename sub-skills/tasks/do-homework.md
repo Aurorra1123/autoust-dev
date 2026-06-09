@@ -229,6 +229,14 @@ and `problem.md`. Summarize in 4-6 lines:
   direction, personal experience, oral instructor notes, scope, style, video
   recording, or blocked external resources.
 
+This recon summary is not a second investigation and not a design proposal. It
+is the compact user-facing view of `[A]` outputs: `spec.md`,
+`investigation/rubric.md`, `investigation/review_a.json`,
+`investigation/unreachable.txt`, `references/`, `problem.md`, and the
+preliminary output-mode line in `pipeline_design.md`. Its job is to tell the
+user what Canvas fixed, what the sources prove, and which decisions still belong
+to the user before planning.
+
 Even when `review_a.json.verdict == "proceed"`, this checkpoint is mandatory.
 `proceed` means the Canvas materials are sufficient to understand the assignment
 surface. It does not mean the user's intended direction is aligned.
@@ -239,7 +247,24 @@ information is not enough to start without guessing the user's core intent. For
 straightforward assignments this may be one short confirmation. For open-ended
 assignments, continue the loop until the Main Agent can write a stable
 `alignment_brief.md` and defend why the next pipeline will not drift away from
-the user's intent.
+the user's intent or project skeleton.
+
+For open-ended projects, `[B]` should behave like a compact version of
+Superpowers brainstorming:
+
+1. Ask one clarifying question at a time.
+2. After each answer, infer what new design dimensions the answer introduces.
+3. Once enough raw intent is known, propose 2-3 viable approaches with
+   trade-offs and a recommendation, then ask the user to choose or correct.
+4. Present a concise design skeleton before the final brief.
+5. Self-review the skeleton and brief for gaps, contradictions, ambiguity, and
+   scope drift before asking for confirmation.
+
+Do not skip from "I know the topic" directly to `alignment_brief.md` when the
+assignment asks the user to design a project, make creative choices, choose an
+architecture, or define an experience. A low-expertise user may not volunteer
+the important design variables; the Main Agent must surface them through the
+loop.
 
 #### [B1] Ask The Most Important Alignment Question
 
@@ -258,6 +283,28 @@ Can I answer these without guessing?
 8. Could a reviewer use the eventual alignment brief to detect direction drift?
 ```
 
+For open-ended design, creative, research, implementation, or interactive
+projects, also run this design skeleton readiness audit:
+
+```text
+Can I sketch these without guessing?
+
+1. User-facing experience: who uses it, what happens first, what is the loop?
+2. Creative or intellectual stance: tone, thesis, novelty, audience impact.
+3. Core inputs and outputs: data/files/media/API inputs and final artifacts.
+4. Architecture: main components, state, dependencies, and boundaries.
+5. Model/tool contract: providers, request/response shape, mocks, probes, and
+   secret handling if models/APIs are involved.
+6. Traceability: what steps must be observable for debugging, grading, or demo.
+7. Failure and fallback behavior: what happens when APIs, files, renders,
+   tests, or external resources fail.
+8. Verification and demo: how the result will be tested, shown, and reviewed.
+```
+
+If a missing skeleton answer would change the pipeline shape, stage boundaries,
+tool choice, deliverable quality criteria, or user-facing experience, it is not
+a minor default. Ask about it before writing the terminal brief.
+
 If any missing answer can change the assignment's direction, ask one question:
 the single question that most reduces direction-drift risk. Do not ask a batch
 of questions. Do not ask low-impact style or formatting questions while a core
@@ -274,7 +321,10 @@ Question priority:
    scope, unavailable code/data/template.
 4. Delegation boundaries: what the user allows the model to decide and what
    must remain for human review.
-5. Minor defaults: ordinary formatting, wording, standard tool choices, and
+5. Project skeleton gaps: user-facing flow, architecture, model/API contract,
+   observability/trace, fallback behavior, demo mode, and verification strategy
+   when they affect pipeline design.
+6. Minor defaults: ordinary formatting, wording, standard tool choices, and
    other low-risk defaults. Ask these only if they materially affect grading or
    user identity.
 
@@ -322,6 +372,9 @@ Use this structure:
 - Coordinator interpretation:
 - Decisions captured:
 - Remaining uncertainty:
+- New dimensions introduced:
+- Approach implications:
+- Skeleton gaps still open:
 ```
 
 `user_notes.md` is a process log. It may be appended every round.
@@ -338,6 +391,12 @@ If the user chooses partial scope, write:
 If the user says "you decide" or equivalent, record the decision as delegated,
 not as a user-stated fact. The later `alignment_brief.md` must explain the
 default strategy and why it is reasonable.
+
+After each answer, extend the conversation from what the user actually said
+rather than walking a fixed questionnaire. Example: if the user says "use a
+multimodal model and image generation," the next likely uncertainty is not
+formatting; it is API contract, mock fidelity, secret handling, fallback
+behavior, and where model traces appear in the experience.
 
 If the user stops, write `result.json` with `status: "skipped"`:
 
@@ -362,7 +421,46 @@ save it to:
 Then update `spec.md`, `problem.md`, and `pipeline_design.md` so downstream
 tools read the supplemented context from files, not chat memory.
 
-#### [B3] Write And Confirm `alignment_brief.md`
+#### [B3] Explore Approaches And Preview The Design Skeleton
+
+Before writing `alignment_brief.md`, check whether the user has approved the
+project skeleton. For straightforward assignments whose skeleton is fixed by the
+spec, this may be a one-sentence confirmation. For open-ended assignments, it is
+mandatory.
+
+When enough raw information exists to compare plausible directions, present 2-3
+approaches with trade-offs and your recommendation. Keep this concise, but make
+the differences real. Example:
+
+```text
+我看到三种可行方向：
+
+1. 展示优先：最稳，适合答辩，但真实 API 深度较浅。
+2. 真实集成优先：最像产品，但需要 key、错误处理和 contract probe。
+3. 创意体验优先：作品感最强，但 pipeline 和 fallback 要更精心设计。
+
+我建议 2 + 3 的混合：...
+你选这个方向吗，还是要改？
+```
+
+After the user chooses or corrects the approach, present a design skeleton
+preview before the terminal brief. Cover only what matters for this assignment,
+but for open projects the preview should usually include:
+
+- user-facing experience and interaction loop;
+- creative direction / thesis / tone;
+- architecture components and data flow;
+- model/API or tool contracts, including mock/probe strategy;
+- traceability / observability surface;
+- failure and fallback behavior;
+- expected deliverables, demo path, and verification strategy.
+
+Ask the user whether the skeleton is right. If the user corrects it, append
+another `user_notes.md` round and update the skeleton. Do not enter `[C]` until
+the user has approved either the short fixed-spec skeleton or the richer
+open-project skeleton.
+
+#### [B4] Write And Confirm `alignment_brief.md`
 
 When the internal alignment audit no longer exposes a necessary question, write:
 
@@ -384,6 +482,19 @@ State what the user wants this work to express, argue, demonstrate, or optimize.
 ## Confirmed Decisions
 - ...
 
+## Selected Approach
+State the approach the user approved, including alternatives considered when
+that mattered.
+
+## Design Skeleton
+- User-facing experience:
+- Creative / intellectual direction:
+- Architecture and data flow:
+- Model, API, tool, or data contracts:
+- Traceability / observability:
+- Failure and fallback behavior:
+- Verification and demo strategy:
+
 ## Delegated Decisions
 - Decision:
   Default strategy:
@@ -398,8 +509,21 @@ State what the user wants this work to express, argue, demonstrate, or optimize.
 
 ## Ready-To-Start Judgment
 Explain why the Main Agent can now enter [C] without guessing the user's core
-intent.
+intent or project skeleton. Explicitly mention why the design skeleton is
+sufficient to write pipeline stages with concrete goals, reads, writes, reviews,
+quality criteria, and final review items.
 ```
+
+Before showing the brief to the user, self-review it:
+
+- Placeholder scan: no TBD/TODO/empty section unless listed as a final review
+  item.
+- Internal consistency: selected approach, skeleton, non-negotiables, and open
+  items do not contradict each other.
+- Scope check: the work can be planned as one pipeline; if not, ask the user to
+  narrow or stage it.
+- Ambiguity check: any unresolved choice that would change stage design is asked
+  before confirmation, not hidden as a delegated default.
 
 Then show the user a concise summary and ask for confirmation:
 

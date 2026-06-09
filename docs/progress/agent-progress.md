@@ -2,6 +2,23 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-09 — Alignment loop upgraded toward Superpowers brainstorming
+
+UCUG1505 full-flow alignment testing showed that coordinator B2 could ask good
+early questions but still converged to `alignment_brief.md` too soon after core
+concept and provider choices. The missing contract was not another task
+classification; it was Superpowers-style design development: each answer should
+introduce new design dimensions, open-ended tasks should compare 2-3 approaches,
+and the user should approve a design skeleton before the final brief.
+
+`do-homework [B]` now defines recon summary as the user-facing compression of
+`[A]` outputs, adds a design skeleton readiness audit, records
+answer-driven implications in `user_notes.md`, requires approach comparison and
+skeleton preview before `alignment_brief.md` for open tasks, and adds
+placeholder/consistency/scope/ambiguity self-review. Runtime protocol,
+task-orchestrator, and Task 10 validation prompts were updated to enforce the
+same contract.
+
 ## 2026-06-08 — Development validation bridge for alignment loop
 
 Clarified the two-line model for homework flow testing: real user-facing

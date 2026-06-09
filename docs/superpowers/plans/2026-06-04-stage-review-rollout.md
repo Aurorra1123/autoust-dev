@@ -1050,7 +1050,12 @@ plus `WAITING_FOR_SIMULATED_USER_B_ROUND_<N>`. The outer Main Agent A will
 forward that question to the human reviewer and send back only
 `SIMULATED_USER_ANSWER_B_ROUND_<N>: <answer>`. After each answer, append
 `investigation/user_notes.md`, then either ask the next single alignment
-question with the next waiting marker or write `investigation/alignment_brief.md`.
+question with the next waiting marker, present 2-3 approaches for user choice,
+or present a design skeleton preview for user correction. For open-ended tasks,
+do not write the terminal `investigation/alignment_brief.md` until the user has
+approved a selected approach and design skeleton covering experience,
+architecture/data flow, model/API or tool contracts, traceability, fallback
+behavior, and verification/demo strategy.
 When the terminal brief is ready, return its concise summary plus
 `WAITING_FOR_ALIGNMENT_BRIEF_CONFIRMATION`; enter `[C]` only after A sends
 `SIMULATED_USER_ALIGNMENT_CONFIRMATION: confirmed`. If A sends

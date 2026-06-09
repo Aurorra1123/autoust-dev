@@ -403,9 +403,16 @@ AutoStudy translation: after reconnaissance, the Main Agent runs the
 
 The purpose is not generic conversation and not rigid task classification. It is
 to decide whether the current Canvas facts plus user intent are sufficient to
-start the project without guessing the user's core direction. Simple assignments
-may need one confirmation. Open-ended assignments require as many focused
-rounds as needed before planning starts.
+start the project without guessing the user's core direction or project
+skeleton. Simple assignments may need one confirmation. Open-ended assignments
+require as many focused rounds as needed before planning starts.
+
+The first user-facing message is a recon summary: a compact explanation of what
+`spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
+`investigation/unreachable.txt`, `references/`, `problem.md`, and the
+preliminary output-mode line in `pipeline_design.md` prove. It is not a second
+investigation and not a design proposal; it tells the user which facts are fixed
+by Canvas and which decisions still need alignment.
 
 Before each user question, the Main Agent performs an internal alignment audit:
 
@@ -422,6 +429,23 @@ Can I answer these without guessing?
 8. Could a reviewer use the eventual alignment brief to detect direction drift?
 ```
 
+For open-ended design, creative, research, implementation, or interactive
+projects, the Main Agent also checks whether it can sketch the project skeleton
+without guessing:
+
+- user-facing experience and interaction loop;
+- creative or intellectual stance;
+- core inputs, outputs, files, media, APIs, and final artifacts;
+- architecture components, state, dependencies, and boundaries;
+- model/tool contracts, mocks, probes, and secret handling;
+- traceability/observability needed for debugging, grading, or demo;
+- failure and fallback behavior;
+- verification and demo strategy.
+
+If a missing skeleton answer would change the pipeline shape, stage boundaries,
+tool choice, deliverable quality criteria, or user-facing experience, it is not
+a minor default.
+
 If a missing answer could change the assignment direction, the Main Agent asks
 exactly one question: the question that most reduces direction-drift risk. It
 prioritizes:
@@ -434,7 +458,20 @@ prioritizes:
 - preferred scope;
 - missing external materials;
 - style or format preferences;
+- user-facing flow, architecture, model/API contract, observability/trace,
+  fallback behavior, demo mode, and verification strategy when they affect
+  pipeline design;
 - whether to stop, draft, revise, or submit.
+
+After each answer, the Main Agent records not only remaining uncertainty but
+also new dimensions introduced, approach implications, and skeleton gaps still
+open. This makes the loop extend from the user's answer rather than walking a
+fixed checklist.
+
+Before the terminal brief for an open-ended task, the Main Agent must present
+2-3 viable approaches with trade-offs and a recommendation when meaningful, then
+preview the design skeleton. The user approves or corrects that skeleton before
+the terminal `alignment_brief.md` is written.
 
 Process notes from each round go to:
 
@@ -462,10 +499,16 @@ written only at the terminal alignment step, not after every round. It records:
 - assignment understanding;
 - user intent;
 - confirmed decisions;
+- selected approach and alternatives considered when relevant;
+- design skeleton;
 - delegated decisions and default strategy;
 - non-negotiables;
 - open items for final review;
 - ready-to-start judgment.
+
+Before confirmation, the Main Agent self-reviews the brief for placeholders,
+contradictions, scope overreach, and unresolved ambiguity that would change
+stage design.
 
 The Main Agent then summarizes the brief and asks the user to confirm. If the
 user corrects it, the Main Agent appends another `user_notes.md` round, replaces
