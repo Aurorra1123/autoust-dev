@@ -150,6 +150,27 @@ except RuntimeError as e:
 - 需要 provenance 时额外写 `draft/render/<report>.tex` 和日志
 - 渲染带图 markdown 时加 resource path，确保 `figures/foo.png` 能找到
 
+### 6e. 连续大图不是只要 `pdfimages` 有图就算通过
+
+**现象**：DSAA2011 clean-start report 里，clustering 小节的第一张 t-SNE
+cluster 图从 page 2 底部开始，被页面边界裁掉；下一页只看到第二张 Ward 图。
+`pdfimages -list` 仍然显示图片已嵌入，所以单靠 image embedding 检查会误判通过。
+
+**根因**：
+- Markdown 连续写两张大图，Pandoc 转成两个独立 LaTeX `figure` float
+- 第一张图位于一个已经接近满页的位置，LaTeX 在 float 输出时产生
+  `Overfull \vbox ... while \output is active`
+- 质量审查只看了 PDF 元数据、`pdfimages` 和部分文本，没有视觉检查对应页面
+
+**正确做法**：
+- 多图 report 保留 `draft/render/*.tex` 和 `.log`，不要只保留 PDF
+- 渲染日志出现 figure 附近的 `Overfull \vbox` 时，必须打开相关页面或渲染
+  page screenshot 检查是否裁切/漂移
+- 连续大图要么缩小并分组为一个原子 LaTeX figure block，要么加清晰的
+  page/float boundary，确保图、caption 和讨论在合理位置
+- 修复后重新跑 `pdfinfo`、`pdfimages -list`、`pdftotext` caption 顺序检查，
+  并视觉检查 affected pages
+
 **HKUST(GZ) 6 门课当前学期附件分布观察**（grep `assignment.description` 里的 `/files/`）：
 - 96 个 assignments 里有 ~70% 的 description 包含至少一个 PDF / DOCX 链接
 - 群组作业 (UCUG) 通常附件是题目说明 + rubric；lab 类作业附件是数据集 + 题目

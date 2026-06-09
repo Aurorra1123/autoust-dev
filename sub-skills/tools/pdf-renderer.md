@@ -137,9 +137,14 @@ file exists.
 For report PDFs with multiple figures, preserve enough render provenance for
 reviewers to diagnose float placement: source Markdown, generated TeX when
 available, log or warning summary, page count, and image-embedding evidence.
-If figures drift into an unrelated later section in the rendered PDF, treat it
-as an auto-fixable report-quality issue when the source can be adjusted with
-float barriers, size changes, or section breaks.
+If figures drift into an unrelated later section in the rendered PDF, or if the
+TeX log reports an `Overfull \vbox` near figure placement and visual inspection
+shows a figure clipped by a page boundary, treat it as an auto-fixable
+report-quality issue. Do not accept `pdfimages` evidence alone: it can prove an
+image is embedded while missing that the visible placement is clipped. For
+consecutive large figures, prefer an explicit grouped LaTeX figure block, a
+float barrier, a size change, or a section/page break that keeps the figure(s)
+with their captions and nearby discussion.
 
 For English deliverables rendered through CTeX or other localized templates,
 check generated labels such as table of contents and figure/table prefixes. If
@@ -310,7 +315,11 @@ record this as a FAIL in verification.log and add to `human_review_items`.
 - [ ] Stage receipt records render engine and whether `.tex`/`.log`
       provenance was preserved, or why a separate log sidecar is unavailable
 - [ ] Multi-figure reports keep figures near their intended sections; important
-      figures do not float under unrelated later headings
+      figures do not float under unrelated later headings, lose their captions,
+      or get clipped at page boundaries
+- [ ] TeX logs do not contain unresolved figure-placement `Overfull \vbox`
+      warnings; if they do, visually inspect the affected pages and repair
+      clipped/drifted figures before marking quality review PASS
 - [ ] Language-specific labels match the deliverable language, or the mismatch
       is explicitly classified
 

@@ -1,13 +1,13 @@
 ---
 name: task-orchestrator
-description: Execute a per-assignment pipeline from a workbench containing spec.md, alignment_brief.md, and pipeline_design.md. Called by do-homework after reconnaissance and user alignment checkpoint. Do not invoke directly from user input.
+description: Execute a per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and an execution plan. Called by do-homework after exploration and user alignment. Do not invoke directly from user input.
 ---
 
 # task-orchestrator
 
 The core M3.5 execution coordination mechanism. This task is written for the
-Claude Code Main Agent. It reads the task-level `pipeline_design.md`, creates
-bounded stage briefs, dispatches executor and reviewer subagents when a stage is
+Claude Code Main Agent. It reads the current execution plan, creates bounded
+stage briefs, dispatches executor and reviewer subagents when a stage is
 delegated, executes simple `delegate: main-agent` stages inline, and aggregates
 evidence for final verification.
 
@@ -21,6 +21,9 @@ work_dir/
 ├── problem.md
 ├── references/
 ├── investigation/
+│   ├── explore_context.md
+│   ├── explore_manifest.json
+│   ├── scout_results/    # optional receipts from pre-alignment explore scouts
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -33,11 +36,14 @@ work_dir/
 └── stage_reviews/
 ```
 
-`spec.md` is the standardized Canvas Generic reconnaissance report.
-`alignment_brief.md` is the confirmed user-intent agreement from
-`do-homework [B]`. `pipeline_design.md` is the assignment-specific execution
-plan. Older tools may still read `problem.md`, but the orchestrator should
-always read `spec.md`, `alignment_brief.md`, and `pipeline_design.md` first.
+`spec.md` is the standardized Canvas/source exploration report.
+`investigation/explore_context.md` is the shared exploration summary.
+The terminal agreement is usually `investigation/alignment_brief.md` for an
+initial assignment and may be `repair_plan.md` for a retained-artifact change.
+The execution plan is usually `pipeline_design.md` and may be
+`repair_pipeline_design.md` for compatibility. Older tools may still read
+`problem.md`, but the orchestrator should always read `spec.md`, the explore
+context, the terminal agreement, and the execution plan first.
 
 ## When To Invoke
 
@@ -45,10 +51,13 @@ Only after `do-homework` has:
 
 1. Resolved `course_id` and `assignment_id`.
 2. Built the workbench.
-3. Completed Canvas Generic Stage 1-5 reconnaissance.
-4. Completed the `[B]` alignment loop and confirmed
-   `investigation/alignment_brief.md` with the user.
-5. Written or updated `pipeline_design.md` at `[C]` from that brief.
+3. Completed the explore stage and wrote `investigation/explore_context.md`, or
+   explicitly recorded that the task was tiny enough for inline exploration.
+4. Completed the alignment loop and confirmed a terminal agreement with the
+   user: `investigation/alignment_brief.md` for initial assignments or
+   `repair_plan.md` for retained-artifact change requests.
+5. Written or updated the current execution plan from that agreement:
+   `pipeline_design.md` or compatibility `repair_pipeline_design.md`.
 
 End users never call this directly. They say "帮我完成 hw3", which routes to
 `do-homework`.
@@ -69,6 +78,8 @@ work_dir/
 │   ├── user_notes.md
 │   └── user_scope.md
 ├── pipeline_design.md
+├── repair_plan.md                 # retained-artifact compatibility, optional
+├── repair_pipeline_design.md      # retained-artifact compatibility, optional
 ├── stage_briefs/
 ├── stage_results/
 ├── stage_reviews/
@@ -83,15 +94,24 @@ work_dir/
 
 Before executing, check:
 
+- `investigation/explore_context.md` exists for non-trivial runs, or the Main
+  Agent explicitly recorded that the task was tiny enough for inline
+  exploration. When present, read it before generating stage briefs.
+- If `investigation/explore_manifest.json` names dispatched scout children,
+  their scout receipt paths exist under `investigation/scout_results/` or the
+  manifest-listed equivalent. The orchestrator does not rerun scouts, but later
+  trajectory review depends on this evidence.
 - `spec.md` exists and clearly states deliverables.
-- `investigation/alignment_brief.md` exists and contains a
-  `Ready-To-Start Judgment` section confirmed by the user. For open-ended
-  assignments, it must also contain `Selected Approach` and `Design Skeleton`
-  sections that are specific enough to drive stage goals, reads, writes,
-  quality criteria, and final review items. For fixed-spec assignments, a short
-  skeleton confirmation is acceptable.
-- `pipeline_design.md` exists and contains `# Pipeline`, `## Output`, and
-  `## Stages` sections.
+- A terminal agreement exists and was confirmed by the user:
+  `investigation/alignment_brief.md` for initial assignments, or `repair_plan.md`
+  for retained-artifact change requests. For open-ended work, it must contain
+  `Selected Approach` and `Design Skeleton` or equivalent repair scope/design
+  sections specific enough to drive stage goals, reads, writes, quality
+  criteria, and final review items.
+- The current execution plan exists and contains `# Pipeline`, `## Output`, and
+  `## Stages` sections. Prefer `pipeline_design.md`; use
+  `repair_pipeline_design.md` only when the current run intentionally wrote that
+  compatibility filename.
 - `investigation/review_a.json` exists and has `verdict: "proceed"`, unless
   `do-homework` explicitly recorded user-supplied recovery material.
 - `references/` contains required reachable materials, or
@@ -117,11 +137,13 @@ Do not redesign the format here.
 
 **Path discovery:** Before reading any skill files, determine the skill directory:
 
-1. Read `pipeline_design.md` and look for `repo_root:` in the metadata section
-2. If found, set `SKILLS_DIR = repo_root + "/sub-skills/tools/"`
-3. If not found, infer: `REPO_ROOT = WORK_DIR/../../..` (3 levels up from data/homework/COURSE/HWID)
-4. If inference fails, run: `git -C "$WORK_DIR" rev-parse --show-toplevel`
-5. All skill file references use `SKILLS_DIR` as the base path
+1. Choose the current execution plan: prefer `pipeline_design.md`; if the
+   current run intentionally wrote `repair_pipeline_design.md`, use that.
+2. Read the chosen execution plan and look for `repo_root:` in the metadata section.
+3. If found, set `SKILLS_DIR = repo_root + "/sub-skills/tools/"`
+4. If not found, infer: `REPO_ROOT = WORK_DIR/../../..` (3 levels up from data/homework/COURSE/HWID)
+5. If inference fails, run: `git -C "$WORK_DIR" rev-parse --show-toplevel`
+6. All skill file references use `SKILLS_DIR` as the base path
 
 The `_index.md` is at `SKILLS_DIR/_index.md`.
 
@@ -129,10 +151,12 @@ Read, in order:
 
 ```text
 spec.md
-pipeline_design.md
+investigation/explore_context.md
+investigation/explore_manifest.json
+<EXECUTION_PLAN: pipeline_design.md or repair_pipeline_design.md>
 investigation/rubric.md
 investigation/review_a.json
-investigation/alignment_brief.md
+<TERMINAL_AGREEMENT: investigation/alignment_brief.md or repair_plan.md>
 investigation/user_notes.md      # if present
 investigation/user_scope.md      # if present
 problem.md                       # compatibility only
@@ -144,7 +168,7 @@ metadata only.
 
 ### Step 2 - Map Stages To Tools
 
-Use `pipeline_design.md` "Tool Mapping" plus `sub-skills/tools/_index.md`.
+Use the current execution plan's "Tool Mapping" plus `sub-skills/tools/_index.md`.
 
 Common mappings:
 
@@ -171,7 +195,7 @@ Do not fake an unsupported capability.
 
 ### Step 3 - Generate Stage Briefs
 
-For each stage in `pipeline_design.md`, write:
+For each stage in the current execution plan, write:
 
 ```text
 stage_briefs/<stage_id>_executor.md
@@ -197,7 +221,7 @@ Each executor brief must include:
 - declared writes;
 - selected tool skill paths;
 - relevant user intent, confirmed decisions, delegated decisions, and
-  non-negotiables from `investigation/alignment_brief.md`;
+  non-negotiables from the terminal agreement;
 - measurable quality criteria;
 - review criteria;
 - context from previous stages;
@@ -254,7 +278,7 @@ stage_results/<stage_id>_result.json
 
 Each stage result JSON must include:
 
-- `stage`: the exact stage id from `pipeline_design.md`;
+- `stage`: the exact stage id from the current execution plan;
 - `created_at_utc`: ISO-8601 timestamp when the child started writing the
   receipt;
 - `completed_at_utc`: ISO-8601 timestamp when the receipt was finalized;
@@ -383,7 +407,7 @@ auditable. A quality `SKIP` receipt does not unblock `draft_ready`.
 
 Each review JSON must include:
 
-- `stage`: the exact stage id from `pipeline_design.md`;
+- `stage`: the exact stage id from the current execution plan;
 - `review_type`: `spec_compliance` or `quality`;
 - `created_at_utc`: ISO-8601 timestamp when the reviewer started writing the
   receipt;
@@ -424,8 +448,8 @@ Classify every concern before final handoff:
 
 Do not put blocking `auto_fixable` issues directly into `revision_needed`. Fix
 them first, then rerun the relevant executor/reviewer loop. If the current stage
-brief forbids the needed write, add a bounded repair stage or revise
-`pipeline_design.md` before final handoff. Optional polish items must be marked
+brief forbids the needed write, add a bounded repair stage or revise the
+current execution plan before final handoff. Optional polish items must be marked
 separately, or moved to `acceptable_risk` with `blocking: false`, so later
 auditors do not confuse them with unrepaired blockers. Only `needs_user_input`,
 `manual_only`, and `external_blocker` issues may remain as `revision_needed`
@@ -446,7 +470,7 @@ blocked review state; do not infer `PASS` from a silent or malformed response.
 
 Before returning:
 
-- Check every deliverable named in `pipeline_design.md` exists or is listed as a
+- Check every deliverable named in the current execution plan exists or is listed as a
   human/manual item.
 - Check every stage has a `stage_results/<stage_id>_result.json`, including
   conditional stages skipped with `status: "SKIPPED"` and `skip_reason`.
@@ -484,8 +508,8 @@ verification.log
 ```
 
 `verification_checklist.md` contains checks grounded in `spec.md`,
-`investigation/rubric.md`, `investigation/alignment_brief.md`, and
-`pipeline_design.md`.
+`investigation/explore_context.md`, `investigation/rubric.md`, the terminal
+agreement, and the current execution plan.
 
 `verification.log` uses measured lines:
 
@@ -553,10 +577,10 @@ Real examples:
 2. **Do not invent missing source material.** If `spec.md` or `references/` is
    incomplete, return to `do-homework`.
 3. **Do not use `assignment.description` as the prompt.**
-4. **Do not silently alter deliverables.** `pipeline_design.md` controls the
-   target artifacts.
+4. **Do not silently alter deliverables.** The current execution plan controls
+   the target artifacts.
 5. **No writes outside `work_dir`** except explicit renderer outputs already
-   named in `pipeline_design.md`.
+   named in the current execution plan.
 6. **No placeholder deliverables.** Ban `[PROBLEM N]`,
    `[TODO: align with actual project spec]`, and `[此处由小组成员填入选题]`.
 7. **Surface `[CLARIFICATION NEEDED: ...]` markers** in the returned
@@ -567,9 +591,9 @@ Real examples:
 1. **Don't make this a free-form classifier again.** Classification happens in
    problem-extractor Stage 5 and is finalized by `do-homework [C]`.
 2. **Don't resurrect `task_profile.yaml`.** It was a transitional idea; the
-   workbench plus `pipeline_design.md` is the contract.
+   workbench plus current execution plan is the contract.
 3. **Don't bake course-specific logic here.** Course quirks belong in `spec.md`,
-   `pipeline_design.md`, or future course overrides.
+   the execution plan, or future course overrides.
 4. **File paths with Chinese / spaces are common.** Always quote paths in shell
    calls.
 
@@ -584,6 +608,6 @@ The old fixed chains validated AutoStudy's tool base:
 | `math` | DSAA2043 Lab-Assignment 1 | writing-helper -> pdf-renderer | `solution.pdf` |
 | `lab` | DSAA2012 Project Report | code-writer -> test-runner -> writing-helper -> pdf-renderer | `src/` + `report.pdf` |
 
-The next development step is to validate the new Canvas Generic-style
-`spec.md -> alignment_brief.md -> pipeline_design.md -> draft/` flow on DSAA2011
-Project and UCUG1505 FINAL project.
+The next development step is to validate the unified
+`startup inventory -> explore_context -> terminal agreement -> execution plan -> draft/`
+flow on DSAA2011 Project and UCUG1505 FINAL project.

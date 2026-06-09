@@ -84,41 +84,161 @@ There are only two runtime actor classes:
 Therefore, "roles" in this protocol are not persistent autonomous agents. They
 are either Main Agent phases or subagent prompt contracts.
 
-## 4. Iteration Modes
+## 4. Unified Run Model
 
-Runtime validation and user-facing homework work can run in different modes:
+Runtime validation and user-facing homework work use one composable flow:
 
-- `full_flow`: start from a clean active workbench and produce a first complete
-  draft from scratch.
-- `repair_flow`: start from an existing user-visible draft and a concrete user
-  repair request. Preserve a rollback archive, keep only declared current-draft
-  context active, and run a repair pipeline without pretending this is a fresh
-  full run. The repair may be a narrow patch or a broad rewrite; the scope is
-  decided in `repair_plan.md` and `repair_pipeline_design.md`, not by a separate
-  mode.
+```text
+archive/preflight
+-> startup_inventory
+-> explore stage
+-> alignment contract
+-> execution plan
+-> shared executor/reviewer/verification runtime
+```
 
-In `repair_flow`, old generated artifacts are legitimate task context only when
-they are the current draft being repaired and are listed in the startup
+`full_flow` and `repair_flow` remain compatibility presets and user-facing
+labels, not separate architectures:
+
+- `full_flow` means the startup inventory has no retained user-visible draft, so
+  source/spec exploration is usually the only enabled exploration capability.
+- `repair_flow` means the startup inventory includes retained user-visible
+  artifacts or prior progress, so artifact/history/verification exploration may
+  also be enabled.
+
+The runtime should branch on the startup inventory, not on hard-coded
+`if full_flow else repair_flow` logic. If a scout input does not exist, the
+coordinator records that scout as `SKIPPED` with a reason instead of inventing a
+flow-specific substitute. A first run with no draft naturally skips artifact,
+codebase, history, and current-verification scouts. A retained-draft run enables
+only the scouts whose inputs are present and planning-relevant.
+
+### Archive And Startup Inventory
+
+Before a run starts, the Main Agent creates a rollback/audit boundary for any
+existing active workbench evidence. Generated runtime evidence from prior runs
+is archived or removed from active startup context before the coordinator plans
+the next run. The startup inventory then declares:
+
+- retained user-visible artifacts, if any;
+- source/spec/reference files available to the run;
+- stale process files removed from active context;
+- allowlisted prior history files that scouts may read;
+- forbidden context such as archive contents, old transcripts, prior reviews, or
+  old diagnostics unless specifically allowlisted for exploration;
+- user request and any user-supplied constraints.
+
+Old generated artifacts are legitimate task context only when they are current
+user-visible artifacts being continued or changed and are listed in the startup
 inventory. Old stage receipts, transcripts, trajectory reviews, validation
-diagnostics, and archive contents are not hidden answer keys; they are either
-removed from active startup context or reserved for later audit. Prior
-`repair_plan.md`, prior `repair_pipeline_design.md`, old full-flow
+diagnostics, prior `repair_plan.md`, prior `repair_pipeline_design.md`, old
 `pipeline_design.md`, coordinator identity sidecars, and investigation/review
-receipts from earlier runs are also process evidence, not normal repair startup
-context. The coordinator should write a fresh repair request or repair plan
-before dispatching children so every child knows which objectives are being
-repaired, which current artifacts are allowed context, which targets may change,
-which targets are intentionally unchanged, and how success will be verified. If
-the repair creates a new version such as `draft_v2/`, that is still
-`repair_flow`; the plan must make the version/provenance boundary explicit.
+receipts are process evidence by default. They can inform planning only through
+an explicit allowlisted explore scout that distills them into current-run
+evidence.
+
+### Explore Stage
+
+The explore stage is universal. The coordinator may perform a tiny exploration
+inline for a trivial request, but for non-trivial homework work it dispatches
+focused read-only explorer/scout subagents with curated context. Available scout
+capabilities are:
+
+- source/spec scout: discover or refresh Canvas assignment facts, rubrics,
+  linked docs, references, and required deliverables;
+- artifact scout: inspect current user-visible drafts, source code, packages,
+  generated media, reports, slides, notebooks, or demos;
+- codebase scout: inspect repository structure, scripts, dependencies, tests, and
+  integration points when a runnable project exists;
+- process history scout: read only allowlisted previous planning/progress
+  evidence such as prior `pipeline_design.md`, `verification.log`,
+  `result.json`, package manifests, or stage result summaries, then extract
+  still-valid decisions, passed gates, failed gates, and known risks;
+- verification scout: run or inspect lightweight current checks needed to
+  understand the planning surface before execution.
+
+When a scout is dispatched as a child subagent, it is part of the same runtime
+child evidence chain as executor and reviewer children. The coordinator records
+the scout dispatch in `stage_reviews/child_dispatch_ledger.json` with role
+`explore_scout`, scout type, prompt/brief path, receipt path, and timestamps.
+Scout receipts are written under:
+
+```text
+investigation/scout_results/<scout_type>_result.json
+```
+
+or an equivalent path named in `investigation/explore_manifest.json`. Skipped
+scouts are also explicit evidence: the manifest records `status: "SKIPPED"` and
+the reason. Scout children must follow the same identity, transcript,
+transport-recovery, single-writer ledger, and forbidden-read rules as later
+executor/reviewer children.
+
+Explorer findings are consolidated into the stable current-run artifact:
+
+```text
+investigation/explore_context.md
+investigation/explore_manifest.json
+```
+
+Compatibility outputs may also be written:
+
+```text
+spec.md                         # source/spec exploration result
+problem.md                      # legacy source/spec compatibility
+investigation/rubric.md          # assignment rubric or extracted criteria
+references/                     # fetched source materials
+investigation/repair_recon.md    # retained-artifact/progress-focused summary
+```
+
+`explore_context.md` records current state, source requirements, available
+assets, prior decisions that still apply, stale or forbidden context, likely
+scope, verification risks, skipped scouts with reasons, and questions that
+require user alignment. Raw prior logs, archived transcripts, prior reviews, and
+old pipeline files do not become general task context just because an explorer
+inspected them. Executor and reviewer children receive raw prior process files
+only when the final execution plan explicitly justifies that narrow access.
+
+### Alignment Contract
+
+After exploration, the Main Agent aligns with the user over the gaps that affect
+planning. The mechanism is shared:
+
+- ask one drift-risk-reducing question at a time when the explore context is not
+  specific enough to plan;
+- record each round in `investigation/user_notes.md`, `repair_notes.md`, or an
+  equivalent current-run notes file;
+- present 2-3 viable approaches with trade-offs and a recommendation when the
+  request could reasonably be solved in different ways;
+- preview a scope/design skeleton before treating the terminal agreement as
+  final;
+- confirm with the user before dispatching execution stages when the choice
+  affects artifact boundaries, creative direction, architecture, data contracts,
+  or demonstration strategy.
+
+Initial assignments usually write the terminal agreement to
+`investigation/alignment_brief.md`. Retained-artifact change requests usually
+write it to `repair_plan.md`. Both are the same kind of agreement: they record
+selected approach, alternatives considered when relevant, retained/forbidden
+context, changed and unchanged targets, scope/design skeleton, verification
+gates, stop conditions, and remaining open items. An old
+`alignment_brief.md` can remain background only when the current agreement says
+which parts still apply.
+
+### Execution Plan
+
+After the terminal agreement is confirmed, the coordinator writes an execution
+plan. `pipeline_design.md` and `repair_pipeline_design.md` are compatibility
+names for the same stage schema. The plan must derive from
+`explore_context.md` plus the terminal agreement, then dispatch the shared
+executor/reviewer/verification runtime described below.
 
 Validation harness exception: a development session may explicitly dispatch a
 fresh "runtime coordinator" subagent to simulate a real user's Main Agent
 session. In that harness, the coordinator must be given a tool surface that can
-dispatch child executor/reviewer subagents, and it may dispatch those child
-subagents only for the validation run. If the coordinator cannot dispatch child
+dispatch child scout/executor/reviewer subagents, and it may dispatch those
+child subagents only for the validation run. If the coordinator cannot dispatch child
 subagents, the run may still validate file contracts through `inline_fallback`,
-but it does not validate true executor/reviewer isolation.
+but it does not validate true scout/executor/reviewer isolation.
 
 This exception creates a second, development-only line around the normal runtime
 line. In real user-facing work there is only the Main Agent and its subagents:
@@ -176,18 +296,19 @@ coordinator re-prompts, dispatches a replacement, or marks the stage `BLOCKED`.
 Transport recovery is acceptable for robustness, but clean validation should
 aim for normal `accepted` statuses.
 
-Every receipt and dispatch record needs ordering evidence. Stage result and
-review receipts use `created_at_utc` and `completed_at_utc`; dispatch ledger
-entries use `dispatched_at_utc`, `recorded_before_wait`, and when applicable
-`receipt_observed_at_utc`, `accepted_at_utc`, or `superseded_at_utc`. Review
-ordering should be provable from dependency fields and timestamps, not only
-from prose or transcript sequence.
+Every receipt and dispatch record needs ordering evidence. Scout result
+receipts and stage result/review receipts use `created_at_utc` and
+`completed_at_utc`; dispatch ledger entries use `dispatched_at_utc`,
+`recorded_before_wait`, and when applicable `receipt_observed_at_utc`,
+`accepted_at_utc`, or `superseded_at_utc`. Review ordering should be provable
+from dependency fields and timestamps, not only from prose or transcript
+sequence.
 
 Runtime children operate inside curated context. Child prompts and briefs must
 state required reads, task-relevant read scope, and forbidden reads/writes. The
 read-scope model is blacklist-first, not a brittle fixed whitelist: a child may
 inspect current-run artifacts that are directly relevant to its assigned stage
-or to the executor/reviewer output it is judging, especially generated
+or scout assignment, or to the executor/reviewer output it is judging, especially generated
 provenance files needed to verify that output. Development-plane documents,
 progress logs, validation plans, archive evidence, prior-run diagnostics, and
 external workflow/plugin skill files remain forbidden unless the brief
@@ -290,10 +411,10 @@ they are still real Codex app conversations.
 
 A child subagent response such as `Standing by`, an empty final message, or a
 message without the required receipt is not completion evidence. The coordinator
-must either re-send the stage brief to that child, dispatch a replacement child
-and record the superseded attempt, or stop the stage as `BLOCKED`. Standby or
-empty responses may be recorded as anomalies, but they must not be counted as a
-passing executor/reviewer result.
+must either re-send the scout/stage brief to that child, dispatch a replacement
+child and record the superseded attempt, or stop the unit as `BLOCKED`. Standby
+or empty responses may be recorded as anomalies, but they must not be counted as
+a passing scout/executor/reviewer result.
 
 Coordinator dispatch attempts that fail before returning a child id must still
 be auditable. Record them in a coordinator-owned `process_events` array in

@@ -69,31 +69,33 @@ the launch prompt or accepted startup inventory. Even then, B should still write
 `user_notes.md` and `alignment_brief.md`; the test simply does not exercise the
 live multi-round bridge.
 
-## Iteration Modes
+## Entry Presets And Unified Flow
 
 Before dispatching any runtime coordinator, the Main Agent must declare the
-iteration mode:
+entry preset and the startup inventory. Legacy validation names are still
+allowed, but they are presets for the same unified flow:
 
-- `full_flow`: simulate a real user asking AutoStudy to do the assignment from
-  the beginning. The coordinator must perform reconnaissance, write `spec.md`,
-  build or revise `pipeline_design.md`, generate draft artifacts, verify them,
-  and write final receipts.
-- `repair_flow`: simulate a user returning to an existing user-visible
-  workbench or draft and asking for a change. The retained current artifacts are
-  the object being repaired. The repair may be small or large: a one-file fix,
-  a regenerated deliverable, a rerun experiment, a rewritten section, or a
-  broader new version. The coordinator decides the repair scope dynamically in
-  `repair_plan.md` and `repair_pipeline_design.md`.
+- `full_flow` maps to `entry_preset: clean_start`. The startup inventory has no
+  retained user-visible draft. The coordinator normally enables source/spec
+  exploration, then runs alignment, planning, execution, review, verification,
+  and final receipts.
+- `repair_flow` maps to `entry_preset: retained_artifact_start`. The startup
+  inventory includes current user-visible artifacts or prior progress that the
+  user intentionally wants continued or changed. The coordinator enables only
+  the additional artifact, codebase, history, or verification scouts whose inputs
+  exist and affect planning.
 
 If the user says "run the task again", "repeat the flow", or "simulate the real
-user flow" without narrowing the scope, default to `full_flow`.
+user flow" without narrowing the scope, default to `entry_preset: clean_start`.
+If the user asks to continue, improve, repair, polish, or revise an existing
+user-visible output, use `entry_preset: retained_artifact_start`.
 
-For `repair_flow`, the previous draft is not a forbidden leak when it is the
-user-visible object being repaired and is explicitly retained in the startup
-inventory. Hidden prior diagnostics, archived validation transcripts, old
-trajectory reviews, old process receipts, and unstated conclusions remain
-forbidden runtime context. A broad rewrite is still `repair_flow` when it is
-based on the current user-visible draft; it is not a separate mode.
+The previous draft is not a forbidden leak when it is the user-visible object
+being continued or changed and is explicitly retained in the startup inventory.
+Hidden prior diagnostics, archived validation transcripts, old trajectory
+reviews, old process receipts, and unstated conclusions remain forbidden runtime
+context unless they are listed as allowlisted explore-history inputs and then
+distilled into current-run exploration evidence.
 
 ## Preflight Archive And No-Leak Cleanup
 
@@ -107,27 +109,28 @@ Before the coordinator is dispatched:
    `repair_plan.md`, prior `repair_pipeline_design.md`, coordinator identity
    sidecars, trajectory reviewer identity sidecars, and any coordinator or
    trajectory summary files.
-3. For `full_flow`, also remove generated workbench content from the active
-   launch directory: `canvas/`, `references/`, `investigation/`, `draft/`,
-   `spec.md`, `problem.md`, and `pipeline_design.md`. These are outputs of the
-   user-facing homework flow, not valid hidden startup context.
-4. For `repair_flow`, keep only the files that the simulated
-   user would actually have available and would intentionally ask the runtime to
-   use. Record the retained file list before launch.
-   For `repair_flow`, this normally includes the current draft artifacts,
-   `spec.md`, `problem.md`, source references, and the concrete files needed to
-   understand the current user-visible work. The exact list is task-dependent:
-   a code task may retain source/tests, a report task may retain PDFs/notes, a
-   notebook task may retain data/metrics, and a web/game task may retain local
-   app assets. It normally excludes the old full-flow `pipeline_design.md`, old
+3. Determine the retained user-visible inputs from the request and the accepted
+   startup inventory. For `clean_start`, remove generated workbench content from
+   the active launch directory: `canvas/`, `references/`, `investigation/`,
+   `draft/`, `spec.md`, `problem.md`, and `pipeline_design.md`. These are outputs
+   of the user-facing homework flow, not valid hidden startup context.
+4. For `retained_artifact_start`, keep only the files that the simulated user
+   would actually have available and would intentionally ask the runtime to use.
+   This may include current draft artifacts, `spec.md`, `problem.md`, source
+   references, source code, tests, data, metrics, rendered PDFs, slides, or local
+   app assets. It normally excludes old `pipeline_design.md`, old
    `stage_briefs/`, `stage_results/`, `stage_reviews/`, `transcripts/`,
    `verification.log`, prior `repair_plan.md`, prior
-   `repair_pipeline_design.md`, `investigation/review_a.json` and similar
-   review receipts, identity sidecars, and old trajectory verdicts from active
-   startup context; those are archived first for rollback and audit. The repair
-   coordinator must write a fresh `repair_plan.md` and
-   `repair_pipeline_design.md` rather than editing or reusing a prior run's
-   planning files in active root.
+   `repair_pipeline_design.md`, `investigation/review_a.json` and similar review
+   receipts, identity sidecars, and old trajectory verdicts from active startup
+   context; those are archived first for rollback and audit. The coordinator
+   must write fresh current-run planning artifacts rather than editing or reusing
+   a prior run's planning files in active root.
+   If the run needs progress/history awareness, list any old
+   `pipeline_design.md`, `verification.log`, `result.json`, package manifest, or
+   stage-result summaries as `allowlisted_history_files` for read-only explore
+   scouts. They remain archived or otherwise explicitly path-scoped; they are not
+   general startup context for executor/reviewer children.
 5. Do not hide user supplements in workbench files. If group id, dataset choice,
    partner names, instructor oral notes, or scope constraints are needed, pass
    them explicitly in the simulated user prompt or at the `[B]` checkpoint.
@@ -148,10 +151,10 @@ find data/homework/<COURSE>/<assignment> -maxdepth 2 -type d | sort
 find data/homework/<COURSE>/<assignment>/archive/<iteration-id> -maxdepth 2 -type f | sort
 ```
 
-Expected for `full_flow`: the active workbench contains no generated assignment
-materials or previous verdicts except `archive/` and any deliberately empty
-parent directory. The coordinator must discover or regenerate all runtime files
-through the normal public skill/task surface.
+Expected for `entry_preset: clean_start`: the active workbench contains no
+generated assignment materials or previous verdicts except `archive/` and any
+deliberately empty parent directory. The coordinator must discover or regenerate
+all runtime files through the normal public skill/task surface.
 
 The structured inventory should include:
 
@@ -159,23 +162,42 @@ The structured inventory should include:
 {
   "schema": "autostudy_prelaunch_startup_inventory_v1",
   "iteration_id": "<iteration-id>",
-  "declared_mode": "full_flow",
+  "declared_mode": "full_flow | repair_flow",
+  "entry_preset": "clean_start | retained_artifact_start",
   "workbench": "data/homework/<COURSE>/<assignment>",
   "human_review_accepted": true,
   "active_files_before_launch": [],
   "active_dirs_before_launch": [],
   "archive_evidence_path": "archive/<iteration-id>/",
   "retained_startup_files": [],
+  "removed_stale_evidence": [],
+  "forbidden_context": ["archive/", "old transcripts/", "old stage reviews/"],
+  "allowlisted_history_files": [],
+  "explore_scout_inputs": {
+    "source_spec": true,
+    "artifact": false,
+    "codebase": false,
+    "history": false,
+    "verification": false
+  },
+  "explore_contract": {
+    "artifact": "investigation/explore_context.md",
+    "manifest": "investigation/explore_manifest.json",
+    "scout_rule": "enable only scouts whose inputs exist and affect planning",
+    "history_rule": "history scouts may read only allowlisted_history_files"
+  },
   "user_supplements_source": "simulated_user_prompt_or_live_B_bridge",
   "alignment_interaction_source": "live_simulated_user_bridge | simulated_user_prompt"
 }
 ```
 
-For `repair_flow`, the structured inventory should also include:
+For retained-artifact starts, the same inventory should additionally identify
+the retained object and the change request:
 
 ```json
 {
   "declared_mode": "repair_flow",
+  "entry_preset": "retained_artifact_start",
   "rollback_archive_path": "archive/<iteration-id>/",
   "retained_startup_files": [
     "spec.md",
@@ -199,10 +221,21 @@ For `repair_flow`, the structured inventory should also include:
   ],
   "repair_request_source": "simulated_user_prompt",
   "repair_scope_summary": "what the user asked to fix",
+  "allowlisted_history_files": [
+    "archive/<iteration-id>/pipeline_design.md",
+    "archive/<iteration-id>/verification.log",
+    "archive/<iteration-id>/result.json"
+  ],
   "repair_plan_contract": {
     "user_feedback": "the concrete user-visible change request",
     "retained_context": ["current artifacts intentionally available to repair"],
     "forbidden_context": ["archive/", "old transcripts/", "old stage reviews/"],
+    "repair_recon": {
+      "required": true,
+      "artifact": "investigation/repair_recon.md",
+      "allowed_history_inputs": ["allowlisted repair history files only"],
+      "purpose": "distill current state and prior decisions before planning"
+    },
     "repair_objectives": [
       {
         "objective": "feedback point to address",
@@ -224,13 +257,13 @@ For `repair_flow`, the structured inventory should also include:
       }
     ],
     "repair_strategy": {
-      "scope_rationale": "why this repair scope is enough and why full_flow is not needed",
+      "scope_rationale": "why this change scope is enough and why clean_start is not needed",
       "regeneration_or_rerun_steps": ["task-specific rebuild/rerun/render/check steps"],
       "dependency_order": ["order in which repaired artifacts depend on each other"],
       "stop_conditions": ["evidence that the repair can stop"]
     }
   },
-  "must_not_full_rerun": true
+  "must_not_clean_start": true
 }
 ```
 
@@ -272,7 +305,7 @@ The runtime coordinator must receive only:
 - `sub-skills/tasks/task-orchestrator.md`;
 - top-level tool contracts that a real AutoStudy runtime could progressively
   load.
-- for `repair_flow`, the accepted startup inventory and the
+- for retained-artifact starts, the accepted startup inventory and the
   explicit user-visible retained files named in that inventory.
 
 The coordinator must not receive:
@@ -307,47 +340,109 @@ time. The coordinator must record it in its summary and dispatch ledger. Generic
 labels such as `main-thread-runtime-coordinator` are not sufficient as the only
 coordinator identity in development validation evidence.
 
-## Repair Coordinator Contract
+## Explore And Change-Request Contract
 
-For `repair_flow`, the coordinator must begin by writing a repair request
-artifact, for example `repair_request.md` or `repair_plan.md`, that restates the
-user feedback, the retained files it will use, the objectives it is repairing,
-the targets it intends to modify, and the targets it intends to leave
-unchanged. This contract is task-agnostic: it must not assume every assignment
-has a notebook, report, slide deck, package, game, web app, or PDF. Those are
-current-task artifacts that the coordinator names only when they actually
-exist. The repair pipeline should be scoped by the user's request: do not delete
-the current draft or perform a from-scratch reconnaissance unless the repair
-request explicitly requires it.
+The coordinator must begin every run with exploration, then write the terminal
+agreement for the current request. For clean starts this usually means source
+exploration that writes `spec.md`, `problem.md`, references, and
+`investigation/explore_context.md`. For retained-artifact starts this means
+current-state exploration that may also write `repair_request.md` and
+`investigation/repair_recon.md`.
 
-The coordinator must write a repair-specific `repair_pipeline_design.md`. The
-old full-flow `pipeline_design.md` is rollback/archive evidence, not active
-repair startup context, unless the simulated user explicitly asks to inspect the
-old pipeline plan. The repair pipeline must declare task-specific stages that
-cover:
+For non-trivial runs, B should dispatch read-only scout children with isolated
+prompts, each limited to one evidence class:
 
-- repair diagnosis: inspect the current user-visible artifact and feedback;
-- repair execution: modify only justified files, generated artifacts, behavior,
-  or deliverables;
-- repair verification: rerun the checks needed by the touched artifacts, such
-  as tests, renders, notebook execution, browser checks, PDF checks, package
-  checks, data validation, or other task-relevant gates;
-- repair review: verify that the user feedback was addressed without
-  regressing previously passing deliverable gates.
+- source/spec scout: Canvas assignment facts, linked specs, rubrics, references,
+  and required deliverables;
+- artifact scout: current user-visible artifacts and source/package state, only
+  when retained artifacts exist;
+- codebase scout: repository layout, dependencies, scripts, tests, and local app
+  wiring, only when a runnable codebase exists;
+- process history scout: only the `allowlisted_history_files` named in the
+  accepted startup inventory;
+- verification scout: lightweight current checks that reveal the planning
+  surface, only when checks can run without doing the actual task.
 
-Each delegated repair stage still uses child subagents and the normal
+Scout children are runtime children, not informal helper notes. When B
+dispatches a scout, it must record the dispatch in
+`stage_reviews/child_dispatch_ledger.json` with role `explore_scout` and a
+scout type such as `source_spec`, `artifact`, `codebase`, `process_history`, or
+`verification`. Each completed scout writes a machine-readable receipt under:
+
+```text
+investigation/scout_results/<scout_type>_result.json
+```
+
+or an equivalent path listed in `investigation/explore_manifest.json`. A skipped
+scout must be represented in the manifest with `status: "SKIPPED"` and a
+specific reason. Scout prompts follow the same identity, timestamp,
+transport-recovery, transcript-export, and scope-hygiene rules as executor and
+reviewer children. In particular, a process-history scout may read only the
+`allowlisted_history_files` named in the accepted startup inventory, and no
+scout may use `archive/`, old transcripts, old trajectory reviews, or prior
+diagnostics as hidden task evidence.
+
+The coordinator consolidates scout outputs into
+`investigation/explore_context.md` and `investigation/explore_manifest.json`
+before writing the terminal agreement. For retained-artifact starts, it may also
+write `investigation/repair_recon.md` as a compatibility summary. These files
+are the bridge between raw inputs and current planning: they may summarize
+previous decisions, passed checks, failed checks, and known risks, but they must
+also label stale or forbidden context. Runtime executor/reviewer children should
+receive the explore context and final plan, not raw old logs or archived process
+files, unless the final plan explicitly grants a narrow read for a stage.
+
+When feedback or project intent is open-ended, ambiguous, or creative, the
+coordinator must not collapse directly from exploration to final plan. It must
+run an alignment loop, bridged by A in the same spirit as `do-homework [B]`:
+ask one necessary question at a time, wait with a clear marker such as
+`WAITING_FOR_SIMULATED_USER_B_ROUND_<N>` or
+`WAITING_FOR_REPAIR_ALIGNMENT_ROUND_<N>`, record the forwarded answer in
+current-run notes, and continue only until it can plan without guessing intent.
+If enough context exists to avoid questions, the coordinator may write the
+terminal agreement immediately, but it must say why no alignment round was
+needed.
+
+For non-trivial work, the coordinator should compare 2-3 approaches when
+meaningful, then preview a scope/design skeleton before finalizing the terminal
+agreement. A must forward the simulated user's choice or confirmation instead
+of rewriting the coordinator's proposal. The final agreement, whether
+`investigation/alignment_brief.md` or `repair_plan.md`, must include selected
+approach, alternatives considered when relevant, retained and forbidden context,
+changed targets, unchanged targets, scope/design skeleton, verification gates,
+and stop conditions. Before dispatching children, the coordinator self-reviews
+the agreement for placeholders, contradictions, scope creep, and unresolved
+ambiguity that would change stage design.
+
+The coordinator must then write a current-run execution plan. `pipeline_design.md`
+and `repair_pipeline_design.md` are compatibility names for the same stage
+schema. Old pipeline files are rollback/archive evidence, not active startup
+context, unless the simulated user explicitly asks to inspect them or they are
+read by an allowlisted history scout and distilled into explore context. The
+execution plan must declare task-specific stages that cover:
+
+- diagnosis/exploration follow-up only when the explore context says more
+  inspection is needed;
+- execution: modify or create only justified files, generated artifacts,
+  behavior, or deliverables;
+- verification: rerun the checks needed by the touched artifacts, such as tests,
+  renders, notebook execution, browser checks, PDF checks, package checks, data
+  validation, or other task-relevant gates;
+- review: verify that the user request was addressed without regressing
+  previously passing deliverable gates.
+
+Each delegated stage still uses child subagents and the normal
 executor/spec-reviewer/quality-reviewer pattern. Child briefs must identify
-which current draft artifacts are allowed task context and which prior evidence
-classes remain forbidden. A repair child may read and edit current draft files
-that are in the retained startup list; it must not read the rollback archive,
-old transcripts, old stage reviews, or prior trajectory verdicts as hidden
-answers.
+which current artifacts are allowed task context and which prior evidence
+classes remain forbidden. A child may read and edit current files that are in
+the retained startup list or generated in the current run; it must not read the
+rollback archive, old transcripts, old stage reviews, or prior trajectory
+verdicts as hidden answers.
 
-If the repair is a broad rewrite or new version, it is still `repair_flow`.
-The coordinator must state whether it edits the current output in place or
-creates a versioned output such as `draft_v2/`, and must preserve enough
-provenance for reviewers to distinguish the old retained artifact from the
-repaired candidate.
+If a retained-artifact change is broad enough to create a new version, the
+coordinator must state whether it edits the current output in place or creates a
+versioned output such as `draft_v2/`, and must preserve enough provenance for
+reviewers to distinguish the old retained artifact from the new candidate.
 
 ## Nested Transcript Evidence Roles
 
@@ -357,16 +452,17 @@ the Main Agent can inspect files after the run:
 ```text
 Main Agent A
   -> runtime coordinator B
-      -> execution/review child agents C1, C2, C3...
+      -> pre-alignment explore scout children C1, C2...
+      -> execution/review child agents C3, C4...
 
 After B finishes:
 
 Main Agent A
-  -> exports B/C transcript evidence by the runtime-appropriate mechanism
+  -> exports B/C transcript evidence for every runtime child by the runtime-appropriate mechanism
   -> dispatches trajectory review coordinator D
       -> D audits B's coordinator trajectory
       -> D dispatches transcript-auditor child agents E1, E2, E3...
-          -> each E audits exactly one C transcript body
+          -> each E audits exactly one C transcript body, including scout transcripts
 ```
 
 The coordinator B is the authority for child identity because B receives the
@@ -378,8 +474,8 @@ threads. It must use the propagated ids from B's ledger.
 
 `child_dispatch_ledger.json` has a single writer: the coordinator that owns the
 dispatch return value. Runtime children C must not create, append, rewrite, or
-normalize the ledger. A child may write only its assigned stage result/review
-receipt and declared draft outputs. If a child transcript shows ledger writes,
+normalize the ledger. A child may write only its assigned scout result, stage
+result/review receipt, and declared draft outputs. If a child transcript shows ledger writes,
 the coordinator must preserve the polluted entry as evidence, mark it
 `superseded_not_counted` or `rejected_child_side_ledger_write`, dispatch a
 replacement if needed, and record a process concern. A clean Task 10 `PASS`
@@ -414,12 +510,12 @@ true`, and `original_agent_id_field`. Alias ids are schema drift and prevent a
 clean `PASS` unless superseded or replaced.
 
 All runtime receipts and ledgers used for validation must carry timestamp
-evidence. Stage result/review receipts must include `created_at_utc` and
-`completed_at_utc`. Dispatch ledger entries must include `dispatched_at_utc`,
-`recorded_before_wait: true`, and, once known, `receipt_observed_at_utc` and
-`accepted_at_utc` or `superseded_at_utc`. Review ordering must be provable from
-both dependency fields and timestamps; relying only on transcript order caps
-the verdict at `PASS_WITH_CONCERNS`.
+evidence. Scout result receipts and stage result/review receipts must include
+`created_at_utc` and `completed_at_utc`. Dispatch ledger entries must include
+`dispatched_at_utc`, `recorded_before_wait: true`, and, once known,
+`receipt_observed_at_utc` and `accepted_at_utc` or `superseded_at_utc`. Review
+ordering must be provable from both dependency fields and timestamps; relying
+only on transcript order caps the verdict at `PASS_WITH_CONCERNS`.
 
 Runtime child prompts and stage briefs must include an explicit scope-hygiene
 rule: children are subagents with curated runtime context. The validation read
@@ -446,20 +542,23 @@ broker before review: locate each raw transcript body, copy it unchanged under
 `transcripts/`, and record provenance. A must not replace D/E's semantic review
 by reading and judging every child trajectory itself. Once transcripts are
 exported, D owns the independent process review and must dispatch one auditor
-child E per available execution/review child transcript. A final trajectory
-verdict that does not include auditor-child review of available transcript
+child E per available runtime child transcript, including pre-alignment scout,
+executor, reviewer, fix, and repair children. A final trajectory verdict that
+does not include auditor-child review of available runtime child transcript
 bodies is incomplete.
 
 D and E have different audit scopes:
 
 - D, the trajectory review coordinator, audits process organization and coverage.
   D reads the coordinator summary/transcript, dispatch ledger, transcript
-  inventory, stage brief/result/review indexes, and E audit receipts. D should
-  not default to reading every child transcript body end to end; D may inspect
-  transcript bodies only for sampling, anomalies, or high-risk contradictions.
+  inventory, explore manifest, scout result index, stage brief/result/review
+  indexes, and E audit receipts. D should not default to reading every child
+  transcript body end to end; D may inspect transcript bodies only for sampling,
+  anomalies, or high-risk contradictions.
 - E, a transcript-auditor child, audits one runtime child C in depth. Each E
   receives exactly one C transcript body plus that C's initial prompt or
-  dispatch request, stage brief, required tool docs when available, and receipt.
+  dispatch request, scout/stage brief, required tool docs when available, and
+  receipt.
   E first derives that child's instruction contract, then decides whether the
   transcript supports the receipt and whether C stayed within the contract.
 
@@ -471,7 +570,14 @@ preserving transcript-body evidence.
 
 Every iteration must review the process, not just the artifact quality:
 
-- Did the coordinator follow the declared mode (`full_flow` or `repair_flow`)?
+- Did the coordinator follow the declared entry preset and startup inventory?
+- Did the coordinator enable and skip explore scouts according to the startup
+  inventory, and did it record scout results or skip reasons in
+  `investigation/explore_manifest.json` before alignment?
+- Did every dispatched pre-alignment scout appear in
+  `stage_reviews/child_dispatch_ledger.json`, have a receipt under
+  `investigation/scout_results/` or an equivalent manifest-listed path, and feed
+  only distilled findings into `investigation/explore_context.md`?
 - Did any retained startup file leak previous conclusions or receipts?
 - Did child subagent trajectories match their declared stage and role?
 - Did any child write to coordinator-owned ledgers or other forbidden files?
@@ -496,7 +602,8 @@ Every iteration must review the process, not just the artifact quality:
   Main Agent attempt a post-run transcript collector fallback using the stable
   child ids/transcript handles from the dispatch ledger?
 - Did the trajectory review coordinator dispatch auditor children for every
-  available execution/review child transcript body?
+  available runtime child transcript body, including explore scouts and
+  execution/review children?
 - Did D keep coordinator-level process review separate from E's one-child
   transcript-body audits?
 
@@ -545,7 +652,7 @@ and auditor thread.
 When fallback succeeds, write each exported transcript to:
 
 ```text
-transcripts/<stage_id>_<role>_<agent_id>.jsonl
+transcripts/<unit_id>_<role>_<agent_id>.jsonl
 ```
 
 Then update or sidecar the relevant receipt/ledger evidence with
@@ -557,7 +664,7 @@ direct-parent export and main-thread collector fallback fail may the run record
 
 Transcript-auditor children must derive a child-specific instruction contract
 before judging. The contract comes from the child's initial prompt, dispatch
-request, stage brief, required reads, required tool docs, receipt/trace schema,
+request, scout/stage brief, required reads, required tool docs, receipt/trace schema,
 role/stage boundary, task-relevant current-run read scope, forbidden
 reads/actions, allowed writes, forbidden writes, and finalization protocol. E
 then checks whether the transcript followed that contract. E should not treat a
@@ -573,6 +680,9 @@ The trajectory review coordinator must check at least:
 
 - declared iteration mode and the context/launch contract for that mode;
 - coordinator identity and child-dispatch identity consistency;
+- explore-scout coverage against startup inventory, including skipped-scout
+  reasons, scout receipt paths, and whether `explore_context.md` is grounded in
+  current scout results rather than hidden prior evidence;
 - ledger coverage for normal, superseded, standby, replacement, repair, and
   skipped attempts;
 - transcript inventory coverage for every auditable child;
@@ -601,8 +711,8 @@ JSONL exact-match export. Use
 transcript export API only when ordinary child ids cannot be propagated and
 their local sessions cannot be exported.
 
-The inspectable harness dispatches each executor/reviewer as a readable Codex
-thread, keeps it active at `READY_FOR_TRANSCRIPT_EXPORT`, exports
+The inspectable harness dispatches each scout/executor/reviewer as a readable
+Codex thread, keeps it active at `READY_FOR_TRANSCRIPT_EXPORT`, exports
 `codex_app.read_thread` output under `transcripts/`, records a child-written
 trace bundle, and only then finalizes the child. This remains a fallback harness
 for platforms or tool surfaces where ordinary nested child ids cannot be read.

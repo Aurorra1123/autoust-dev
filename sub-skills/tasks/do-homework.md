@@ -19,6 +19,9 @@ AutoStudy follows Canvas Copilot's `canvas-generic` sequence, adapted to an
 assistant-style user loop:
 
 ```text
+prelaunch_startup_inventory.json
+-> investigation/explore_context.md
+-> investigation/explore_manifest.json
 spec.md
 -> investigation/rubric.md
 -> references/
@@ -41,6 +44,13 @@ The two user checkpoints are:
 2. `[E]` after draft generation, where the user reviews and chooses whether to
    submit.
 
+AutoStudy uses one unified runtime flow. A first draft, continuation, and repair
+all start from archive/preflight, startup inventory, explore stage, alignment
+contract, execution plan, and the shared executor/reviewer runtime. Legacy
+labels such as `full_flow` and `repair_flow` are presets that decide which
+startup files exist and which explore scouts should run; they are not separate
+architectures.
+
 ## Preconditions
 
 Before running, check the same set as `sync-status.md`:
@@ -60,6 +70,23 @@ surface options, then come back here.
 No user interaction. This step follows Canvas Copilot's "inspect all sources
 first" habit. Do not treat a Canvas assignment description, title, or single
 link as the whole prompt.
+
+This is the clean-start version of the universal explore stage. Source/spec
+scouts are normally enabled. Artifact, history, codebase, and verification
+scouts are skipped unless the startup inventory says retained files exist or
+current checks are needed before planning. Record skipped scouts and reasons in
+`investigation/explore_manifest.json`.
+
+When a non-trivial run dispatches read-only scout subagents, treat those scouts
+as runtime children with the same isolation expectations as later executors and
+reviewers. The coordinator records each scout in
+`stage_reviews/child_dispatch_ledger.json`, writes each scout receipt under
+`investigation/scout_results/` or another path named in
+`investigation/explore_manifest.json`, and consolidates only distilled findings
+into `investigation/explore_context.md` before `[B]`. Scout children must not
+write the dispatch ledger, read archive/prior-run evidence, or use old
+diagnostics unless a process-history scout has a narrow allowlisted input from
+`prelaunch_startup_inventory.json`.
 
 #### [A1] Resolve Identifiers
 
@@ -113,10 +140,14 @@ Target structure:
 ```text
 data/homework/<COURSE>/<HWID>/
 ├── canvas/
+├── prelaunch_startup_inventory.json
 ├── spec.md
 ├── problem.md
 ├── references/
 ├── investigation/
+│   ├── explore_context.md
+│   ├── explore_manifest.json
+│   ├── scout_results/
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -195,6 +226,12 @@ problem.md
 
 Do not skip this read. The whole skill collapses into template content if you
 generate from the assignment title or Canvas description.
+
+For development validation, also ensure `investigation/explore_manifest.json`
+can account for every enabled or skipped scout before entering `[B]`. If scout
+subagents were dispatched, their ledger rows, receipt paths, and transcript
+handles are process evidence for later D/E review; do not overwrite them during
+alignment or planning.
 
 #### [A4] Gate On Reconnaissance Quality
 

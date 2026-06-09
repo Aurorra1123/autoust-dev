@@ -908,14 +908,15 @@ Task 10 validates this exact role chain:
 ```text
 Main Agent A
   -> runtime coordinator B
-      -> execution/review child agents C1, C2, C3...
+      -> pre-alignment explore scout child agents C1, C2...
+      -> execution/review child agents C3, C4...
 
 Main Agent A
   -> mechanically exports B/C transcript evidence by propagated ids
   -> dispatches trajectory review coordinator D
       -> D audits B
       -> D dispatches transcript-auditor child agents E1, E2, E3...
-          -> each E audits exactly one C transcript body
+          -> each E audits exactly one C transcript body, including scout transcripts
 ```
 
 This is why child id propagation is mandatory. The Main Agent does not need to
@@ -934,7 +935,8 @@ Ordinary `spawn_agent` validation action model:
 
 1. B, the runtime coordinator, dispatches ordinary child agents C* with
    `multi_agent_v1.spawn_agent` and records every returned `agent_id` in
-   `stage_reviews/child_dispatch_ledger.json`.
+   `stage_reviews/child_dispatch_ledger.json`. C* includes pre-alignment
+   explore scouts as well as executor, reviewer, fix, and repair children.
    `child_dispatch_ledger.json` is coordinator-owned; runtime children must not
    write it.
 2. A, the Main Agent, waits for B to stop, then acts as a mechanical export
@@ -947,32 +949,30 @@ Ordinary `spawn_agent` validation action model:
    then dispatches one auditor child E per runtime child transcript. D may sample
    or inspect anomalous transcript bodies, but D must not replace E's one-child
    transcript-body audits by reading everything itself.
-4. Each E audits exactly one C transcript body plus its brief and receipt, then
-   writes a transcript-audit receipt. D's final verdict must be supported by
-   the E receipts, not by D's receipt-only summary.
+4. Each E audits exactly one C transcript body plus its scout/stage brief and
+   receipt, then writes a transcript-audit receipt. D's final verdict must be
+   supported by the E receipts, not by D's receipt-only summary.
 
-The same B/C/A/D/E evidence chain applies to `full_flow` and `repair_flow`.
-What changes is the launch contract and the meaning of a
-passing result:
+The same B/C/A/D/E evidence chain applies to every entry preset. What changes
+is the startup inventory and the scouts enabled by that inventory:
 
-- `full_flow`: active generated outputs are removed before launch; B must
-  regenerate the assignment from scratch.
-- `repair_flow`: current first-draft artifacts are intentionally retained as
-  user-visible context; B must write a repair plan and avoid turning the run
-  into an undeclared full rerun. The repair may be a narrow patch or a broad
-  rewrite. If it creates a versioned output, B records that in the repair plan
-  instead of switching to a separate mode.
+- `clean_start`: active generated outputs are removed before launch; B must
+  regenerate assignment context through source/spec exploration.
+- `retained_artifact_start`: current artifacts are intentionally retained as
+  user-visible context; B must use explore findings and terminal agreement to
+  scope the change without accidentally treating stale process evidence as task
+  input. The change may be a narrow patch or a broad versioned rewrite.
 
 - [ ] **Step 1: Confirm this is an isolation validation, not another inline fallback run**
 
 Apply `docs/development-validation-standard.md` first. Unless the human
-explicitly scopes this as `repair_flow`, run Task 10 as
-`full_flow`: archive prior evidence, remove generated workbench outputs from
-the active launch directory, show the startup inventory, and stop before
-coordinator dispatch for human review. After the startup inventory is accepted,
-write `prelaunch_startup_inventory.json` or `prelaunch_startup_inventory.txt`
-into the active workbench so the later trajectory reviewer can audit the launch
-state from repo evidence.
+explicitly asks for retained-artifact validation, run Task 10 as
+`entry_preset: clean_start`: archive prior evidence, remove generated workbench
+outputs from the active launch directory, show the startup inventory, and stop
+before coordinator dispatch for human review. After the startup inventory is
+accepted, write `prelaunch_startup_inventory.json` or
+`prelaunch_startup_inventory.txt` into the active workbench so the later
+trajectory reviewer can audit the launch state from repo evidence.
 
 Read:
 
@@ -983,19 +983,21 @@ rg -n "Validation harness exception|Subagent Dispatch And Review Loop|inline_fal
 Expected:
 
 - `docs/runtime-agent-protocol.md` allows a development-only runtime
-  coordinator subagent to dispatch child executor/reviewer subagents;
+  coordinator subagent to dispatch child scout/executor/reviewer subagents;
 - `task-orchestrator.md` still records `inline_fallback`, but this task must
   not accept `inline_fallback` as passing isolation evidence.
-- the launch mode and retained startup files have been declared, and no previous
-  iteration receipts, diagnoses, draft artifacts, or generated reconnaissance
-  outputs remain in the active workbench for `full_flow`.
-- for `repair_flow`, the previous active workbench has been copied to a
-  rollback archive first, stale execution/review/transcript evidence has been
-  removed from active startup context, and the retained current-draft files are
-  explicitly listed in `prelaunch_startup_inventory.json`;
-- for `repair_flow`, the simulated user feedback is explicit and becomes the
-  repair request. The coordinator should not infer hidden feedback from old
-  validation reports or archive contents.
+- the entry preset, startup files, forbidden context, and explore scout inputs
+  have been declared;
+- the startup inventory says which explore scouts are enabled or skipped before
+  alignment, and later review can compare this against
+  `investigation/explore_manifest.json`;
+- for `clean_start`, no previous iteration receipts, diagnoses, draft
+  artifacts, or generated reconnaissance outputs remain in the active workbench;
+- for `retained_artifact_start`, the previous active workbench has been copied
+  to a rollback archive first, stale execution/review/transcript evidence has
+  been removed from active startup context, retained current files are
+  explicitly listed in `prelaunch_startup_inventory.json`, and user feedback is
+  explicit rather than inferred from old validation reports or archive contents.
 - if the iteration is expected to produce a clean transcript-body `PASS`, the
   dispatch method must be inspectable: either the coordinator exports child
   transcripts directly, or the coordinator preserves stable child ids whose
@@ -1022,8 +1024,8 @@ come from:
 - `skill.md`;
 - `sub-skills/tasks/do-homework.md`;
 - `sub-skills/tasks/task-orchestrator.md`;
-- the selected workbench files only when the declared iteration mode is
-  `repair_flow` and the files were listed in the preflight startup inventory.
+- selected retained workbench files only when the entry preset and preflight
+  startup inventory explicitly list them as legitimate user-visible context.
 
 Do not give `docs/runtime-agent-protocol.md` to the coordinator as its primary
 runtime manual. The Main Agent may use that protocol to construct the
@@ -1036,13 +1038,34 @@ Coordinator prompt must include:
 ```markdown
 You are the runtime coordinator subagent for true nested isolation validation.
 
-Declared iteration mode: <full_flow | repair_flow>.
+Declared entry preset: <clean_start | retained_artifact_start>.
+Legacy declared mode, if needed for evidence compatibility: <full_flow | repair_flow>.
 
-If the declared mode is `full_flow`, simulate a real user asking AutoStudy to do
-the assignment from the beginning. Do not read archived prior runs, previous
+Run the unified homework flow: accepted startup inventory, explore stage,
+alignment contract, execution plan, delegated execution/review, verification,
+and final receipts. Branch on the startup inventory, not on hard-coded
+full-vs-repair logic. Enable only the explore scouts whose inputs exist and
+affect planning; record skipped scouts with reasons.
+
+For non-trivial runs, dispatch focused read-only explore scout children before
+the alignment contract. Treat scouts as runtime children: record every scout
+dispatch in `stage_reviews/child_dispatch_ledger.json` with role
+`explore_scout`, scout type, input prompt/brief path, expected receipt path,
+timestamps, and transcript/export status. Scout receipts should be written under
+`investigation/scout_results/<scout_type>_result.json` or another path named in
+`investigation/explore_manifest.json`. Skipped scouts must appear in
+`explore_manifest.json` with `status: "SKIPPED"` and a reason. Scout children
+must not write the dispatch ledger and must obey the same identity,
+transport-recovery, transcript-export, scope-hygiene, and forbidden-read rules
+as executor/reviewer children.
+
+If the entry preset is `clean_start`, simulate a real user asking AutoStudy to
+do the assignment from the beginning. Do not read archived prior runs, previous
 stage receipts, previous verification logs, previous summaries, or hidden draft
-artifacts as startup context. Perform the normal `do-homework` flow from
-reconnaissance through draft generation and verification.
+artifacts as startup context. Source/spec exploration should discover or
+regenerate assignment context, normally including `spec.md`, `problem.md`,
+references, rubric notes, `investigation/explore_context.md`, and
+`investigation/explore_manifest.json`.
 
 When `do-homework [B]` needs live simulated-user input, do not invent the user's
 answer and do not continue to `[C]`. Return the exact next alignment question
@@ -1062,29 +1085,40 @@ When the terminal brief is ready, return its concise summary plus
 `SIMULATED_USER_ALIGNMENT_CORRECTION: <correction>`, update the notes and brief,
 then wait for confirmation again.
 
-If the declared mode is `repair_flow`, simulate a user returning after reviewing
-the first draft. Preserve the current draft as the object being repaired, write
-`repair_request.md` or `repair_plan.md`, and build a repair pipeline whose
-scope is justified by the user's feedback. Do not clear `draft/` or redo full
-reconnaissance unless the repair request explicitly requires it. Do not use
-archive evidence, old trajectory reviews, old transcripts, or prior diagnostics
-as task context. If the requested repair is a broad rewrite or new version,
+If the entry preset is `retained_artifact_start`, simulate a user returning
+after reviewing a current artifact or partial run. Preserve the retained files
+as the object being continued or changed, write `repair_request.md` when the
+request is a change request, run the same explore stage with artifact/history/
+verification scouts as needed, and build an execution plan whose scope is
+justified by the user's feedback and current-state findings. Do not clear
+`draft/` or redo full assignment reconnaissance unless the user request
+explicitly requires it. Do not use archive evidence, old trajectory reviews,
+old transcripts, or prior diagnostics as task context except through
+allowlisted read-only history scout prompts that distill findings into
+`investigation/explore_context.md` and, when useful for compatibility,
+`investigation/repair_recon.md`. If the requested change is a broad rewrite or
+new version,
 declare whether you are editing current outputs in place or creating a
 versioned output such as `draft_v2/`, and preserve enough provenance to
 distinguish the retained draft from the repaired candidate.
 
 You must dispatch separate child subagents for delegated stages:
+- one read-only explore scout subagent per enabled non-trivial explore scout
+  before alignment, unless the accepted startup inventory makes the scout
+  irrelevant and records it as skipped;
 - one executor subagent per delegated stage;
 - one spec compliance reviewer subagent per reviewed stage;
 - one quality reviewer subagent only after the matching spec compliance review
   passes.
 
-Do not execute delegated executor/reviewer work inline. If child subagent
-dispatch is unavailable, stop with `BLOCKED` and write no `draft_ready` result.
+Do not execute delegated scout/executor/reviewer work inline in a validation run.
+If child subagent dispatch is unavailable, stop with `BLOCKED` and write no
+`draft_ready` result.
 
 For every child subagent, record its role, agent id or transcript handle, input
-brief path, output receipt path, and final status in
-`stage_results/<stage_id>_result.json` or
+brief path, output receipt path, and final status in the appropriate current-run
+receipt: `investigation/scout_results/<scout_type>_result.json`,
+`stage_results/<stage_id>_result.json`, or
 `stage_reviews/<stage_id>_<review_type>_review.json`.
 
 Also write or update `stage_reviews/child_dispatch_ledger.json` with every
@@ -1127,9 +1161,10 @@ workflow instructions as task context.
 
 Every dispatch ledger entry must include `dispatched_at_utc`,
 `recorded_before_wait: true`, and once known `receipt_observed_at_utc` and
-`accepted_at_utc` or `superseded_at_utc`. Every stage result and review receipt
-must include `created_at_utc` and `completed_at_utc`, plus dependency fields
-that prove review order.
+`accepted_at_utc` or `superseded_at_utc`. Every scout result receipt and every
+stage result/review receipt must include `created_at_utc` and
+`completed_at_utc`; review receipts also include dependency fields that prove
+review order.
 
 If child dispatch fails before returning a stable child id, record the failed
 attempt in a coordinator-owned `process_events` array in
@@ -1175,9 +1210,8 @@ Record the coordinator's own stable agent id or transcript handle in
 the only coordinator identity.
 
 Record the accepted `prelaunch_startup_inventory.*` path in the coordinator
-summary. For `full_flow`, that inventory is part of the isolation evidence. For
-`repair_flow`, it is also the contract that defines which existing files are
-legitimate startup context.
+summary. That inventory is both isolation evidence and the contract that defines
+which existing files, if any, are legitimate startup context.
 
 Treat `Standing by`, empty final messages, and receipt-less child responses as
 non-completion. Re-send the brief, dispatch a replacement child and record the
@@ -1390,6 +1424,8 @@ Check:
 - `transcripts/transcript_inventory.json`, including per-child collector status
   or a documented invalid-id short-circuit rule;
 - transcript-audit receipts under `stage_reviews/transcript_audits/`;
+- `investigation/explore_manifest.json`, `investigation/explore_context.md`, and
+  every scout receipt path named in the manifest;
 - `stage_briefs/`;
 - `stage_results/`;
 - `stage_reviews/`;
@@ -1417,13 +1453,18 @@ transcript bodies for sampling, anomalies, contradictions, or high-risk stages,
 but the one-child transcript-body verdict belongs to E.
 
 Your coordinator-level checks include:
-- declared iteration mode and whether the coordinator followed that mode's
-  launch/context contract. For `full_flow`, check clean startup/no-leak and
-  from-scratch generation. For `repair_flow`, check retained files, explicit
-  user-visible context, repair scope, and whether the coordinator avoided
-  turning the run into an undeclared full rerun. If the repair created a new
+- declared entry preset and whether the coordinator followed the startup
+  inventory, launch/context contract, and explore-scout inputs. For
+  `clean_start`, check clean startup/no-leak and regenerated source/spec
+  exploration. For `retained_artifact_start`, check retained files, explicit
+  user-visible context, change scope, and whether stale process evidence was
+  used only through allowlisted exploration. If the change created a new
   version, check versioning/provenance and whether the coordinator avoided
   mixing old and repaired artifacts incoherently;
+- pre-alignment scout coverage: each enabled scout has a ledger row, receipt,
+  transcript/export status, and distilled contribution to
+  `explore_context.md`; each skipped scout has a manifest reason; process-history
+  scouts read only allowlisted history files;
 - coordinator identity and child identity consistency;
 - child receipt identity source quality: exact id or explicit
   null-plus-authority fields are acceptable, alias ids are not clean evidence;
@@ -1450,11 +1491,11 @@ Your coordinator-level checks include:
 - explicit `SKIPPED` receipts for false-trigger conditional stages;
 - artifact workflow concerns from this run, using the task's actual deliverable
   contract rather than DSAA2011-only assumptions;
-- for `repair_flow`, whether the user feedback was translated into a repair
-  request and repair pipeline, whether only justified artifacts were modified,
-  whether the repaired draft still passes prior artifact gates, and whether the
-  final result clearly distinguishes repaired files from archived rollback
-  evidence;
+- for retained-artifact starts, whether the user feedback was translated into a
+  terminal agreement and current execution plan, whether only justified
+  artifacts were modified, whether the changed draft still passes prior artifact
+  gates, and whether the final result clearly distinguishes changed files from
+  archived rollback evidence;
 - final verdict support from E receipts and coordinator-level evidence.
 
 Also verify the repair-before-handoff rule. Any blocking issue classified as
@@ -1463,7 +1504,7 @@ handoff. Do not accept a final `revision_needed` whose only blockers are
 auto-fixable artifacts such as stale package contents, missing generated
 headings, or derived files that can be regenerated from local inputs.
 
-Return PASS only if executor/reviewer work was performed by distinct child
+Return PASS only if required scout/executor/reviewer work was performed by distinct child
 subagents, transcript-body audits are available and passing, no important
 process concerns remain, no transport recovery was needed, no child-side ledger
 writes occurred, child identity fields are exact or explicit null-plus-authority
@@ -1493,8 +1534,10 @@ not expose child subagent dispatch.
 Add evidence to `M3.5-EXECUTION-ARCHITECTURE.evidence` with:
 
 - workbench path;
-- declared iteration mode and startup inventory;
+- declared entry preset, legacy mode if present, and startup inventory;
 - coordinator agent id/transcript;
+- explore scout child agent ids/transcripts, scout receipt paths, and skipped
+  scout reasons from `investigation/explore_manifest.json`;
 - executor child agent ids/transcripts;
 - spec reviewer child agent ids/transcripts;
 - quality reviewer child agent ids/transcripts or SKIP receipts;
@@ -1523,29 +1566,33 @@ from `in-progress` to `passing`.
 - Reference: `docs/development-validation-standard.md`
 - Reference: Task 10 above for the B/C/A/D/E transcript evidence chain
 
-Task 11 validates that AutoStudy can handle a user returning after a first
-draft and asking for repair. It is not a full rerun and should not be judged by
-the `full_flow` clean-start rule. The repair size is not pre-classified: the
-coordinator must derive the scope from user feedback and express it in
-`repair_plan.md` plus `repair_pipeline_design.md`. A repair may be a small
-patch, regenerated artifact, rerun experiment, rewritten section, or broad
-versioned change.
+Task 11 validates that AutoStudy can handle a retained-artifact start: a user
+returning after a first draft and asking for a change. It is not a clean-start
+rerun and should not be judged by the clean-start rule. The change size is not
+pre-classified: the coordinator must derive the scope from startup inventory,
+explore findings, and user feedback, then express it in the terminal agreement
+plus the current-run execution plan. The change may be a small patch,
+regenerated artifact, rerun experiment, rewritten section, or broad versioned
+change.
 
-Repair-flow role chain:
+Retained-artifact role chain:
 
 ```text
 Main Agent A
   -> archives current active workbench as rollback evidence
   -> keeps explicit current-draft files active as user-visible context
-  -> dispatches runtime repair coordinator B
-      -> B writes repair_request.md / repair_plan.md
-      -> B dispatches repair executor/reviewer child agents C*
+  -> dispatches runtime coordinator B
+      -> B writes or refreshes request/context artifacts
+      -> B dispatches read-only explore scout agents as needed
+      -> B writes investigation/explore_context.md
+      -> B writes repair_plan.md and/or alignment_brief.md as the terminal agreement
+      -> B dispatches executor/reviewer child agents C*
 
 Main Agent A
   -> mechanically exports B/C transcript evidence
   -> dispatches trajectory review coordinator D
       -> D audits repair scope and dispatches E transcript auditors
-          -> each E audits exactly one C transcript body
+          -> each E audits exactly one C transcript body, including scout transcripts
 ```
 
 Suggested first validation target: use the current DSAA2011 full-flow draft and
@@ -1563,7 +1610,7 @@ do not redo the whole assignment from scratch.
 - [ ] **Step 1: Prepare repair startup state**
 
 Apply `docs/development-validation-standard.md` with
-`declared_mode: repair_flow`.
+`entry_preset: retained_artifact_start` and legacy `declared_mode: repair_flow`.
 
 Before dispatching B:
 
@@ -1584,16 +1631,19 @@ Before dispatching B:
    old full-flow `pipeline_design.md`; it is process evidence from the first
    draft, not a required active repair input.
 4. Write `prelaunch_startup_inventory.json` with:
-   `declared_mode: repair_flow`, `rollback_archive_path`,
+   `entry_preset: retained_artifact_start`, `declared_mode: repair_flow`,
+   `rollback_archive_path`,
    `retained_startup_files`, `removed_stale_evidence`,
-   `repair_request_source`, `repair_scope_summary`, and
-   `must_not_full_rerun: true`.
+   `repair_request_source`, `repair_scope_summary`,
+   `allowlisted_history_files` when old pipeline/log/package/progress evidence
+   should be read by scout agents, explore scout inputs, and
+   `must_not_clean_start: true`.
 
 The rollback archive is for A and post-run D audit. Runtime B/C must not read it
 as task context unless the simulated user explicitly asks for archive
 comparison.
 
-- [ ] **Step 2: Dispatch repair coordinator B**
+- [ ] **Step 2: Dispatch runtime coordinator B**
 
 B must use the public runtime surface (`skill.md`, `do-homework.md`,
 `task-orchestrator.md`) plus the accepted repair startup inventory and retained
@@ -1606,16 +1656,26 @@ B must write:
   scope using task-agnostic fields: retained context, forbidden context, repair
   objectives, planned changes, unchanged/out-of-scope targets, verification
   criteria, dependency order, and stop conditions;
-- a repair-specific `repair_pipeline_design.md`; do not edit or reuse the archived
-  full-flow `pipeline_design.md` as the active repair plan;
+- `investigation/explore_context.md` and `investigation/explore_manifest.json`,
+  produced by source/spec, artifact, codebase, history, or verification scouts
+  as inputs exist and planning requires;
+- `investigation/scout_results/` receipts, or equivalent manifest-listed scout
+  receipt paths, for every dispatched read-only scout child;
+- `investigation/repair_recon.md`, produced inline for tiny repairs or by
+  read-only scout subagents for non-trivial repairs, summarizing current draft
+  state, prior decisions still valid, stale/forbidden context, current
+  verification surface, and open alignment questions;
+- a current execution plan, using compatibility `repair_pipeline_design.md` when
+  appropriate; do not edit or reuse the archived clean-start `pipeline_design.md`
+  as the active plan;
 - stage briefs for repair executor/reviewer children;
 - stage results/reviews;
 - updated draft artifacts, render provenance, zip, verification files, and
   `result.json`.
 
-Expected repair stages for this DSAA2011 validation may include the following,
-but these are examples for the current assignment, not the generic repair-flow
-contract:
+Expected retained-artifact change stages for this DSAA2011 validation may
+include the following, but these are examples for the current assignment, not
+the generic unified-flow contract:
 
 - diagnosis: inspect current notebook/metrics/report/slides and identify which
   changes directly answer the feedback;
@@ -1626,9 +1686,9 @@ contract:
 - slides/package repair: update slides and zip after report/notebook changes;
 - verification: rerun notebook/PDF/zip checks needed by touched artifacts.
 
-Do not accept a repair run that deletes the first draft and silently performs a
-full-flow rerun. Rerunning a notebook or regenerating PDFs is allowed when it is
-needed to repair touched artifacts.
+Do not accept a retained-artifact run that deletes the first draft and silently
+performs a clean-start rerun. Rerunning a notebook or regenerating PDFs is
+allowed when it is needed to change touched artifacts.
 
 - [ ] **Step 3: Verify repair child evidence**
 
@@ -1667,10 +1727,10 @@ D's repair-specific audit checks:
   D treats the replacement as a process concern that blocks clean `PASS` but can
   still support `PASS_WITH_CONCERNS` when evidence is complete.
 
-Clean `repair_flow` PASS does not require every artifact to be globally optimal.
-It requires that the user-requested repair was addressed, the repair scope was
-controlled, nested child evidence and transcript-body audits are complete, and
-previously passing critical gates did not regress.
+Clean retained-artifact PASS does not require every artifact to be globally
+optimal. It requires that the user-requested change was addressed, the change
+scope was controlled, nested child evidence and transcript-body audits are
+complete, and previously passing critical gates did not regress.
 
 ## Subagent Dispatch Plan
 
@@ -1687,9 +1747,9 @@ Use fresh subagents in this order:
 9. **Nested Isolation Coordinator Subagent**: Task 10. Must dispatch distinct child executor/spec-reviewer/quality-reviewer subagents. If child dispatch is unavailable, it returns `BLOCKED`; inline fallback is not passing evidence.
 10. **Nested Isolation Transcript Auditor Subagents**: Task 10 Step 4. One fresh auditor per available child transcript; may run in parallel. Each checks a single child conversation against its brief, receipt, role scope, forbidden actions, and evidence consistency.
 11. **Nested Isolation Trajectory Review Subagent**: Task 10 Step 4. Independently verifies child subagent ids/transcripts, dispatches transcript auditors when full transcripts are available, aggregates their receipts, and rejects inline fallback as isolation evidence.
-12. **Repair Flow Coordinator Subagent**: Task 11. Starts from retained first-draft context, writes a repair plan, and dispatches repair executor/reviewer children without performing an undeclared full rerun.
-13. **Repair Flow Transcript Auditor Subagents**: Task 11 Step 4. One fresh auditor per available repair child transcript.
-14. **Repair Flow Trajectory Review Subagent**: Task 11 Step 4. Audits retained context, repair scope, changed-file justification, nested child evidence, and no-regression gates.
+12. **Retained-Artifact Coordinator Subagent**: Task 11. Starts from retained first-draft context, writes a terminal agreement/current execution plan, and dispatches executor/reviewer children without performing an undeclared clean-start rerun.
+13. **Retained-Artifact Transcript Auditor Subagents**: Task 11 Step 4. One fresh auditor per available child transcript.
+14. **Retained-Artifact Trajectory Review Subagent**: Task 11 Step 4. Audits retained context, change scope, changed-file justification, nested child evidence, and no-regression gates.
 
 The Main Agent reviews each subagent result before dispatching the next task.
 Do not run DSAA2011 or UCUG1505 validation until Tasks 1-7 pass.
@@ -1706,8 +1766,8 @@ Spec coverage:
 - DSAA2011 starts after reconnaissance, regenerates `pipeline_design.md`, and receives independent trajectory review: Task 8.
 - True executor/reviewer subagent isolation, with distinct child agent evidence:
   Task 10.
-- Repair-flow startup, rollback archive, retained first-draft context, targeted
-  repair pipeline, and nested repair trajectory review: Task 11.
+- Retained-artifact startup, rollback archive, retained first-draft context,
+  targeted execution plan, and nested trajectory review: Task 11.
 - No submit in rollout: Tasks 8 and 9.
 
 Placeholder scan:

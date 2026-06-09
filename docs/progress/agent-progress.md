@@ -2,6 +2,116 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-09 — Unified-flow docs prepared for branch push
+
+Prepared the accumulated unified-flow documentation, DSAA2011 clean-start
+validation evidence, and PDF figure-placement lesson for commit on
+`codex/deepwisdom-updates`. Verification before staging covered
+`docs/plans/feature-list.json`, Python script compilation, and `git diff --check`;
+the original `tests/` directory is absent in the current worktree, so no unittest
+suite was available to run.
+
+## 2026-06-09 — DSAA2011 report figure float rendering traced
+
+Investigated a DSAA2011 report rendering defect where the KMeans t-SNE figure
+was clipped at a page boundary. Root cause was not the PNG or PDF viewer:
+Pandoc converted consecutive large Markdown images into independent LaTeX
+`figure` floats, and the TeX log showed `Overfull \vbox ... while \output is
+active` near those figures. The report source now groups the KMeans and Ward
+t-SNE plots into one atomic LaTeX figure block, rerendered PDF/zip artifacts
+pass integrity checks, and `pdf-renderer.md` plus `PITFALLS.md` now warn that
+`pdfimages` alone can miss clipped/drifted figures.
+
+## 2026-06-09 — DSAA2011 clean-start unified-flow validation
+
+Ran DSAA2011 Project as a fresh `clean_start` developer validation from an
+active workbench containing only `archive/` plus accepted startup inventory.
+Runtime coordinator B dispatched a pre-alignment `source_spec` explore scout,
+regenerated `spec.md`/`problem.md`/references/explore evidence, used simulated
+alignment supplements for the Student Dropout dataset, and produced local draft
+artifacts with real code execution: executable notebook, metrics, 3-round
+experiment iteration log, 13 figures, 7-page report PDF, 11-page presentation
+PDF, requirements, dataset CSV, and source zip. No Canvas submission occurred;
+`verification.log` records 28 PASS / 3 SKIP.
+
+Process validation exported 9/9 runtime JSONL transcripts by exact local-session
+agent-id match: coordinator B plus eight unique runtime children, including the
+explore scout. Trajectory reviewer D dispatched eight E transcript auditors,
+one per child transcript, and returned `PASS_WITH_CONCERNS`: accepted-path E
+audits were PASS 1 / PASS_WITH_CONCERNS 6 / FAIL 0, while the single FAIL was
+the intentionally superseded Stage 2 executor and supports B's replacement
+decision. Clean PASS remains blocked by fallback transcript export, one
+superseded forbidden-read child, ledger-authority identity normalization,
+startup/plugin scope noise, and minor receipt/timestamp issues.
+
+Follow-up structure report written to
+`docs/verification/2026-06-09/dsaa2011-clean-start-structure-report.md`.
+Post-run repo diff inspection also found runtime-era edits to
+`docs/PITFALLS.md` and `sub-skills/tools/pdf-renderer.md`; the lesson about
+PDF figure clipping is useful, but the write scope should be reviewed because
+runtime homework children should not directly edit development docs/tool
+contracts during a validation run.
+
+## 2026-06-09 — Explore scout isolation checks synced
+
+Closed a validation-doc gap introduced by the unified flow: pre-alignment
+explore scouts are now treated as runtime children, not informal helper notes.
+`development-validation-standard.md`, `runtime-agent-protocol.md`, Task 10/11,
+`do-homework.md`, and `task-orchestrator.md` now require scout dispatch ledger
+rows, scout receipts or manifest-listed equivalents, transcript export/audit
+coverage, skipped-scout reasons, and D/E review of scout transcripts alongside
+executor/reviewer children.
+
+## 2026-06-09 — Unified flow abstraction drafted
+
+Refactored the documented runtime model away from hard `full_flow` /
+`repair_flow` branching. The shared shape is now archive/preflight, startup
+inventory, explore stage, alignment contract, execution plan, and common
+executor/reviewer/verification runtime. `full_flow` and `repair_flow` remain
+legacy presets that map to `clean_start` and `retained_artifact_start`; scout
+activation now depends on available inputs in the startup inventory. Runtime and
+validation docs now name `investigation/explore_context.md` and
+`investigation/explore_manifest.json` as the shared exploration interface.
+
+## 2026-06-09 — Repair reconnaissance scout layer added
+
+Synced repair-flow with the Superpowers-style context discipline: broad or
+progress-sensitive repairs now run repair reconnaissance before `repair_plan.md`.
+`runtime-agent-protocol.md`, `development-validation-standard.md`, and the Task
+11 rollout plan now define read-only repair scouts for current draft state,
+spec/intent, allowlisted process history, and lightweight verification, with
+findings distilled into `investigation/repair_recon.md` before any repair
+pipeline is planned.
+
+## 2026-06-09 — Repair-flow alignment sync
+
+Checked whether repair-flow had absorbed the new brainstorm-style alignment
+contract from the UCUG1505 full-flow work. Full-flow was already synced, but the
+repair-flow core docs still jumped too quickly from feedback to `repair_plan.md`;
+`runtime-agent-protocol.md` and `development-validation-standard.md` now require
+a repair alignment loop for open-ended/ambiguous/creative repairs, approach
+comparison when meaningful, repair scope/design skeleton preview, and a richer
+terminal `repair_plan.md` contract before `repair_pipeline_design.md`.
+
+## 2026-06-09 — UCUG1505 full-flow local draft completed
+
+Ran UCUG1505 FINAL project as a fresh `full_flow` local draft from a clean active
+workbench without reading old Canvas submission attachments or submitting to
+Canvas. Recon confirmed the Google Doc spec and documentation template, the
+alignment loop selected `Parallel Me Booth`, and the pipeline produced a
+structured Vite/React/TypeScript + Express source project, source zip,
+342-word documentation PDF, video demo script, screenshot, verification log,
+stage receipts, and `result.json` with status `draft_ready`.
+
+Verification evidence is in `data/homework/UCUG1505/final-project/verification.log`.
+Notable gates passed: `npm run verify`, backend tests, frontend/backend builds,
+mock fallback generation, real API generation probe using the supplied local env
+(`providerMode=real`, 4 panels, remote image URL), source zip integrity, and
+secret scan with 0 source/zip hits. Remaining open items are human finalization:
+partner name plus public video/code URLs. No commit was made in this session;
+the only tracked uncommitted files are this progress note and the feature-list
+evidence update for user review.
+
 ## 2026-06-09 — Alignment loop upgraded toward Superpowers brainstorming
 
 UCUG1505 full-flow alignment testing showed that coordinator B2 could ask good
