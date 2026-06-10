@@ -32,11 +32,12 @@ If either is missing, redirect to `canvascli-setup.md`. Do NOT proceed silently.
 ### Step 1: Discover courses
 
 ```bash
-.venv/bin/canvascli courses 2>/dev/null > data/courses.json
+mkdir -p data/sync/current
+.venv/bin/canvascli courses 2>/dev/null > data/sync/current/courses.json
 ```
 
 **Single-course mode**: Ask the user to confirm the course name (match from
-`data/courses.json`). Extract `course_id`.
+`data/sync/current/courses.json`). Extract `course_id`.
 
 **Batch mode**: List all courses from the JSON. Use `AskUserQuestion` to let the
 user confirm which courses to sync (multi-select or "all").
@@ -60,7 +61,7 @@ mkdir -p "$COURSE_DIR"/{materials/{lectures,readings,other},canvas_sync,notes}
 ```bash
 .venv/bin/python -c "
 import json, datetime
-course = json.load(open('data/courses.json'))
+course = json.load(open('data/sync/current/courses.json'))
 target = [c for c in (course if isinstance(course, list) else [course]) if str(c['id']) == '$COURSE_ID'][0]
 slug = (target.get('course_code') or target['name'].split(' - ')[0]).strip().upper()
 slug = ''.join(c if c.isalnum() else '-' for c in slug).strip('-')

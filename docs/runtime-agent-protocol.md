@@ -494,7 +494,7 @@ The task skill is written for the Main Agent, not for subagents.
 Primary runtime contracts:
 
 - `sub-skills/tools/canvascli-api.md`
-- `sub-skills/tools/problem-extractor.md`
+- `sub-skills/tools/assignment-recon.md`
 - the current assignment workbench
 
 The Main Agent may perform reconnaissance directly or dispatch a focused

@@ -69,7 +69,7 @@
     "description": "do-homework.md：第一个真实端到端作业 task（MVP 历史 flow）",
     "acceptance": [
       "sub-skills/tasks/do-homework.md 完整流程",
-      "[A] problem-extractor 生成可用作业上下文",
+      "[A] assignment-recon 生成可用作业上下文",
       "[B] AskUserQuestion 询问意图（是 / 只做某几题 / 不用）",
       "[C] 调 task-orchestrator 执行",
       "[E] AskUserQuestion 询问是否提交",
@@ -275,12 +275,12 @@
       "定义 data/homework/<COURSE>/<HWID>/canvas/ 保存原子 CLI JSON 快照",
       "定义 spec.md 作为标准化侦查报告，problem.md 作为旧工具兼容层",
       "定义 references/、investigation/、draft/、pipeline_design.md、verification_checklist.md、verification.log、result.json 的职责",
-      "更新 do-homework / problem-extractor / task-orchestrator 文档中的 work_dir 约定",
+      "更新 do-homework / assignment-recon / task-orchestrator 文档中的 work_dir 约定",
       "不破坏已验证的 paper / slides / math / lab MVP 路径"
     ],
     "evidence": [
       "docs/canvas-pilot-reference.md 记录 Canvas Copilot DSAA2011 run 结构和 AutoStudy 过渡结构设计",
-      "sub-skills/tools/problem-extractor.md defines canvas/ + spec.md + references/ + investigation/ + problem.md",
+      "sub-skills/tools/assignment-recon.md defines canvas/ + spec.md + references/ + investigation/ + problem.md",
       "sub-skills/tasks/do-homework.md and task-orchestrator.md updated to use spec.md-first workbench paths",
       "2026-06-02 task-orchestrator.md now requires pipeline_design.md, verification_checklist.md, verification.log, and human_review_items in the orchestrator summary",
       "2026-06-02 docs updated so task-orchestrator reads spec.md + pipeline_design.md instead of task_profile.yaml",
@@ -295,7 +295,7 @@
     "id": "M3.5-DEEP-RECON",
     "category": "skill-tool",
     "priority": "P0",
-    "description": "将 problem-extractor 升级为 agent-led Canvas Generic Stage 1-5 深度侦查流程",
+    "description": "将 assignment-recon 升级为 agent-led Canvas Generic Stage 1-5 深度侦查流程",
     "acceptance": [
       "侦查阶段调用 canvascli assignment、rubric、front-page、syllabus、modules、module-items、page、file、assignment-files",
       "完整查看所有 likely sources 后再判断主 spec，不做直接精准匹配后提前停止",
@@ -305,26 +305,25 @@
       "Stage 5 根据 spec/rubric/references 分类 output mode，并启动 pipeline_design.md",
       "继续生成 problem.md 兼容现有 writing-helper / code-writer / slide-maker",
       "在 DSAA2011 Project 上能找到 module item PDF 主 spec，在 UCUG1505 FINAL project 上能识别 Google Doc spec 和邻近 slides 上下文",
-      "正式 do-homework 路径不运行 scripts/recon_assignment.py；该脚本只保留为历史过渡验证",
+      "正式 do-homework 路径只使用 agent-led assignment-recon，不保留脚本化 spec 生成入口",
       "侦查后 [B] 必须向用户汇报来源判断并运行 alignment loop，即使 review_a verdict 为 proceed"
     ],
     "evidence": [
       "2026-06-01 /tmp/autoust-recon-verify/dsaa2011: spec.md 45,709 B; references include DSAA2011-26sp-project_announce-L01.pdf; module-items-12955 inspected",
       "2026-06-02 final-review recheck: DSAA2011 assignment description 0 B, front page 404/not enabled, modules 4, module 12955 project PDF found, 3 references downloaded, file 688370 metadata failed non-blocking, review_a verdict proceed",
       "2026-06-01 /tmp/autoust-recon-verify/ucug1505: spec.md 19,771 B; assignment page and Week 4 module item both show Final project specification Google Doc; Week 9 slides listed as project context",
-      "Template extracted from problem-extractor.md and py_compile passed before real verification",
-      "Historical transition: scripts/recon_assignment.py added and proved atomic canvascli sources can reach DSAA2011/UCUG1505 context",
+      "Template extracted from assignment-recon.md and py_compile passed before real verification",
       "do-homework.md [B] updated to include mandatory user supplement checkpoint after recon",
       "2026-06-08 do-homework.md [B] upgraded from one-shot supplements to the alignment loop: process notes go to user_notes.md and terminal user-confirmed intent goes to alignment_brief.md",
-      "2026-06-02 /tmp/autoust-recon-script-verify/dsaa2011: scripts/recon_assignment.py produced spec.md 66,322 B, problem.md 155,415 B, 4 modules / 69 module items, assignment description 0 B, project PDF file 625115 downloaded, review_a verdict proceed",
-      "2026-06-02 /tmp/autoust-recon-script-verify/ucug1505: scripts/recon_assignment.py produced spec.md 22,527 B, problem.md 14,274 B, 14 modules / 64 module items, Final project Google Doc and Week 9 slides recorded, media GIFs inspected-not-downloaded, review_a verdict proceed",
-      "2026-06-02 docs pivot: problem-extractor.md, do-homework.md, task-orchestrator.md, tools, PITFALLS, ROADMAP, and canvas-pilot-reference now define agent-led Canvas Generic Stage 1-5 as the official path",
+      "2026-06-02 docs pivot: assignment-recon.md, do-homework.md, task-orchestrator.md, tools, PITFALLS, ROADMAP, and canvas-pilot-reference now define agent-led Canvas Generic Stage 1-5 as the official path",
+      "2026-06-10 obsolete standalone reconnaissance script removed; active docs no longer expose a script-led spec generation path",
+      "2026-06-10 renamed homework reconnaissance tool doc to assignment-recon.md and updated registry/task/runtime references",
       "2026-06-02 agent-led DSAA2011 Project recon: assignment description 0 B, Canvas rubric absent, front page not enabled, syllabus checked, all 4 modules / 69 module items inspected, module 12955 file 625115 identified as main spec, 4 project-module PDFs downloaded, review_a verdict proceed",
       "2026-06-02 agent-led UCUG1505 FINAL project recon: assignment description linked Google Doc, Canvas rubric absent, front page checked, syllabus empty, all 14 modules / 64 module items inspected, Week 4 corroborated same Google Doc, Week 9 slides marked supporting context, Google Doc spec and documentation template fetched, review_a verdict proceed",
       "2026-06-02 Stage 4 used cold self-review because no sub-agent reviewer tool is available; review_a.json records review_method cold_read_self_review_no_sub_agent_available"
     ],
     "status": "passing",
-    "notes": "Official path is now validated as agent-led Canvas Generic Stage 1-5 on DSAA2011 Project and UCUG1505 FINAL project. scripts/recon_assignment.py remains historical transition evidence only."
+    "notes": "Official path is validated as agent-led Canvas Generic Stage 1-5 on DSAA2011 Project and UCUG1505 FINAL project. Standalone script-led spec generation has been removed to avoid runtime confusion."
   },
   {
     "id": "M3.5-PIPELINE-DESIGN",
@@ -369,7 +368,7 @@
       "scripts/write_homework_result.py added as stable writer for per-assignment result.json",
       "do-homework.md now calls the writer for skipped, draft_ready, submitted, and error paths",
       "docs/canvas-pilot-reference.md explains result.json vs review_a.json vs future pending_assignments.json/plan.json",
-      "2026-06-02 py_compile passed for scripts/recon_assignment.py and scripts/write_homework_result.py",
+      "2026-06-02 py_compile passed for scripts/write_homework_result.py",
       "2026-06-02 /tmp/autoust-result-verify/dsaa2011 result.json smoke: status draft_ready, deliverable draft/project_group01_dropout.ipynb, verification_log_path set, review_a_verdict proceed",
       "2026-06-02 /tmp/autoust-result-verify/ucug1505 result.json smoke: status skipped, notes user stopped after reconnaissance, review_a_verdict proceed",
       "2026-06-02 json.tool passed for docs/plans/feature-list.json and both smoke result.json files; git diff --check passed"
@@ -384,7 +383,7 @@
     "description": "将 sync-status 升级为助手式 scan-plan：同步 Canvas 后生成 pending_assignments.json、plan.json 和 REPORT.md，但不自动执行作业",
     "acceptance": [
       "sync-status 调用 canvascli courses / assignments / announcements 后保存 raw snapshot",
-      "scripts/write_scan_plan.py 读取 data/assignments.json、data/courses.json 和 data/homework/**/result.json",
+      "scripts/write_scan_plan.py 读取 data/sync/current/assignments.json、data/sync/current/courses.json 和 data/homework/**/result.json",
       "生成 data/runs/<today>/pending_assignments.json，记录当前可行动作业、Canvas 状态、本地 result 状态和建议 work_dir",
       "生成 data/runs/<today>/plan.json，记录助手建议下一步和 user_decision:null",
       "生成 data/runs/<today>/REPORT.md，作为用户可读计划摘要",
@@ -395,10 +394,11 @@
     ],
     "evidence": [
       "scripts/write_scan_plan.py added as stable scan-plan writer; it also copies raw canvascli snapshots into data/runs/<today>/raw/",
+      "2026-06-10 sync snapshot paths moved from top-level data/*.json to data/sync/current/*.json; run-specific raw evidence remains in data/runs/<today>/raw/",
       "scripts/select_plan_item.py added as stable numbered-plan-item selector for sync-status -> do-homework handoff",
       "sub-skills/tasks/sync-status.md now describes raw snapshots plus pending_assignments.json / plan.json / REPORT.md",
       "docs/canvas-pilot-reference.md records the Canvas Copilot scan/execute boundary and AutoStudy assistant-style adaptation",
-      "2026-06-02 py_compile passed for scripts/recon_assignment.py, scripts/write_homework_result.py, scripts/write_scan_plan.py, and scripts/select_plan_item.py",
+      "2026-06-02 py_compile passed for scripts/write_homework_result.py, scripts/write_scan_plan.py, and scripts/select_plan_item.py",
       "2026-06-02 selector fixture /tmp/autoust-select-plan-fixture-2 covered recon, review_or_submit, manual_review, continue/error, and invalid index behavior",
       "2026-06-02 selector ran against cached real live-scan plans in /tmp/autoust-flow-real/runs and /tmp/autoust-flow-real/runs-after-skip, resolving UCUG1600 plan items before and after skipped-result filtering",
       "2026-06-02 DSAA2011 ML Project simulation /tmp/autoust-ml-flow: one-item plan selected 2973:21641, real recon found module PDF spec with review_a proceed, skipped result filtered rerun plan as result_skipped",
@@ -708,7 +708,9 @@
     ],
     "evidence": [
       "commit d3cd323 (harness 初版)",
-      "本次 MVP commit (2026-05-24) — feature-list 翻 passing"
+      "本次 MVP commit (2026-05-24) — feature-list 翻 passing",
+      "2026-06-10 user-facing docs sync: README.md, skill.md, ROADMAP.md, and MARKETING.md now describe scan-plan, Canvas-grounded workbenches, alignment_brief/repair_plan, dynamic pipeline_design, executor/reviewer evidence, and course material/note flows",
+      "2026-06-10 README split: default Chinese full README.md, English full README.en.md, and compact Chinese README.quick.md"
     ],
     "status": "passing"
   }

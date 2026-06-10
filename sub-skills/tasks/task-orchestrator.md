@@ -589,7 +589,7 @@ Real examples:
 ## Pitfalls
 
 1. **Don't make this a free-form classifier again.** Classification happens in
-   problem-extractor Stage 5 and is finalized by `do-homework [C]`.
+   assignment-recon Stage 5 and is finalized by `do-homework [C]`.
 2. **Don't resurrect `task_profile.yaml`.** It was a transitional idea; the
    workbench plus current execution plan is the contract.
 3. **Don't bake course-specific logic here.** Course quirks belong in `spec.md`,

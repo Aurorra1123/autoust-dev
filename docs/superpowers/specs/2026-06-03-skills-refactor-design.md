@@ -298,7 +298,7 @@ These files are adequate as-is or only need minor touches:
 - `paper-search.md` — stable, has fallback already
 - `test-runner.md` — minor: add hand-off section
 - `canvascli-api.md` / `canvascli-setup.md` — data layer, not skill architecture
-- `problem-extractor.md` — reconnaissance, not post-recon pipeline
+- `assignment-recon.md` — reconnaissance, not post-recon pipeline
 - `sync-status.md` — separate task, not affected
 
 ---

@@ -2,6 +2,35 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-10 — User-facing docs synced to unified runtime
+
+Updated README, skill entry, roadmap, and marketing/messaging docs from the old
+M3 MVP snapshot to the current M3.5+ assistant model: scan-plan first,
+Canvas-grounded homework workbenches, post-recon alignment, dynamic
+pipeline_design, executor/reviewer evidence, retained-artifact repair, and
+course-material/note flows. Verification passed for feature-list JSON,
+diff whitespace, and stale user-entry wording scans. Changes are intentionally
+left uncommitted for user review because this session requested docs sync, not a
+commit. Follow-up split README into three user-facing variants: default Chinese
+full `README.md`, English full `README.en.md`, and compact Chinese
+`README.quick.md`.
+
+Follow-up sync snapshot cleanup moved the official current Canvas snapshots out
+of top-level `data/*.json` into `data/sync/current/{courses,assignments,announcements}.json`;
+old locally ignored top-level JSON snapshots were moved under `data/sync/archive/`.
+Updated `write_scan_plan.py`, `sync-status`, `sync-course`, `do-homework`, and
+user/developer docs to use the new path while preserving run-specific raw
+evidence under `data/runs/<date>/raw/`.
+
+Removed the obsolete standalone reconnaissance script and scrubbed active docs
+of its path so runtime agents have only one homework reconnaissance contract:
+agent-led `assignment-recon.md` over atomic `canvascli` sources. Historical
+progress wording was generalized where needed to avoid search-result confusion.
+Renamed the former homework reconnaissance tool doc to
+`sub-skills/tools/assignment-recon.md` and updated tool registry, task docs,
+runtime docs, README variants, and backlog references so the name matches its
+current role: assignment reconnaissance rather than problem extraction.
+
 ## 2026-06-09 — Unified-flow docs prepared for branch push
 
 Prepared the accumulated unified-flow documentation, DSAA2011 clean-start
@@ -882,7 +911,7 @@ Documents updated: ROADMAP.md (added "设计理念" section under M3.5), COLLABO
 
 ## 2026-06-02 — Adopt agent-led Canvas Generic homework flow
 
-User approved replacing the script-led reconnaissance direction with Canvas Copilot `canvas-generic` style agent-led Stage 1-5: fetch context, find rubric, locate inputs, review investigation, and classify output mode. Docs now define `spec.md` as the standardized reconnaissance report, `problem.md` as compatibility only, and `pipeline_design.md` as the do-homework -> task-orchestrator execution contract; `scripts/recon_assignment.py` is historical transition evidence, not the production path.
+User approved replacing the script-led reconnaissance direction with Canvas Copilot `canvas-generic` style agent-led Stage 1-5: fetch context, find rubric, locate inputs, review investigation, and classify output mode. Docs now define `spec.md` as the standardized reconnaissance report, `problem.md` as compatibility only, and `pipeline_design.md` as the do-homework -> task-orchestrator execution contract; standalone script-led spec generation is not the production path.
 
 Validated the new agent-led flow on two real Canvas cases. DSAA2011 Project inspected assignment/rubric/front-page/syllabus/all 4 modules and 69 items, found the main spec in module 12955 file 625115, downloaded the project-module PDFs, wrote `spec.md`, `rubric.md`, `review_a.json`, and a mixed `pipeline_design.md`; orchestrator dry-run stopped correctly on group/dataset/style-file blockers. UCUG1505 FINAL project inspected assignment/rubric/front-page/syllabus/all 14 modules and 64 items, confirmed the assignment page and Week 4 module point to the same Google Doc, fetched the spec plus documentation template, wrote the same workbench files, and dry-run stopped correctly on partner/concept/code/video blockers.
 
@@ -900,17 +929,17 @@ Started M3.5-SCAN-PLAN after reviewing Canvas Copilot's `canvas-scan` and run-st
 
 Verification wrote plans under `/tmp/autoust-scan-plan-current3`, `/tmp/autoust-scan-plan-with-results3`, and `/tmp/autoust-scan-plan-default-terminal3`. Current real Canvas snapshot produced raw snapshot copies plus 3 actionable items after filtering 44 graded, 6 submitted, and 4 ancient-overdue assignments; DSAA2011/UCUG1505 fixture checks confirmed `draft_ready -> review_or_submit`, `skipped -> filtered`, and Canvas `graded` wins over stale local draft state in default mode. Checks passed: `py_compile` for all scripts, `json.tool` for feature-list and generated plan files, and the DSAA/UCUG fixture assertions. Next: final review with the user before committing.
 
-Post-commit real flow verification refreshed Canvas login through the working 127.0.0.1:7890 proxy after `whoami` reported an expired session. A live scan under `/tmp/autoust-flow-real` fetched 7 courses, 57 assignments, and 5 announcements, then selected plan item 1 (`UCUG1600 Final Report`, 2798:23536), ran `scripts/recon_assignment.py` to `review_a.verdict: proceed`, wrote `result.json status=skipped`, and reran scan-plan to confirm assignment 23536 disappeared from the plan (`before ['23536', '23537', '20629']`, `after ['23537', '20629']`).
+Post-commit real flow verification refreshed Canvas login through the working 127.0.0.1:7890 proxy after `whoami` reported an expired session. A live scan under `/tmp/autoust-flow-real` fetched 7 courses, 57 assignments, and 5 announcements, then selected plan item 1 (`UCUG1600 Final Report`, 2798:23536), ran the then-current transitional reconnaissance helper to `review_a.verdict: proceed`, wrote `result.json status=skipped`, and reran scan-plan to confirm assignment 23536 disappeared from the plan (`before ['23536', '23537', '20629']`, `after ['23537', '20629']`).
 
 ## 2026-06-02 — Result writer + assistant-shaped Copilot adaptation rule
 
-Recorded the collaboration rule that Canvas Copilot is a mature reference but not a blueprint to clone: AutoStudy should borrow mechanisms such as atomic data access, deep reconnaissance, workbenches, verification logs, and state files while redesigning the interaction around an assistant-style user loop. Added `scripts/write_homework_result.py` as the stable writer for single-assignment `result.json`; `do-homework.md` now calls it for `skipped`, `draft_ready`, `submitted`, and `error` paths, while `recon_assignment.py` remains reconnaissance-only.
+Recorded the collaboration rule that Canvas Copilot is a mature reference but not a blueprint to clone: AutoStudy should borrow mechanisms such as atomic data access, deep reconnaissance, workbenches, verification logs, and state files while redesigning the interaction around an assistant-style user loop. Added `scripts/write_homework_result.py` as the stable writer for single-assignment `result.json`; `do-homework.md` now calls it for `skipped`, `draft_ready`, `submitted`, and `error` paths.
 
-Verification used existing real recon workbenches copied to `/tmp/autoust-result-verify/`: DSAA2011 Project produced a `draft_ready` result with a fake notebook fixture, `verification_log_path`, two `human_review_items`, and `review_a_verdict: proceed`; UCUG1505 FINAL project produced a `skipped` result with notes and `review_a_verdict: proceed`. Checks passed: `python3 -m py_compile scripts/recon_assignment.py scripts/write_homework_result.py`, `python3 -m json.tool docs/plans/feature-list.json`, `python3 -m json.tool` on both smoke `result.json` files, and `git diff --check`. Committed as `c4ae2a4 feat: add homework result state writer`. Next: build assistant-style `pending_assignments.json` / `plan.json` support for `sync-status`.
+Verification used existing real recon workbenches copied to `/tmp/autoust-result-verify/`: DSAA2011 Project produced a `draft_ready` result with a fake notebook fixture, `verification_log_path`, two `human_review_items`, and `review_a_verdict: proceed`; UCUG1505 FINAL project produced a `skipped` result with notes and `review_a_verdict: proceed`. Checks passed for the result writer, feature-list JSON, both smoke `result.json` files, and diff whitespace. Committed as `c4ae2a4 feat: add homework result state writer`. Next: build assistant-style `pending_assignments.json` / `plan.json` support for `sync-status`.
 
-## 2026-06-02 — Stable recon runtime + post-recon user supplement gate
+## 2026-06-02 — Transitional recon helper + post-recon user supplement gate
 
-Turned the Copilot-style reconnaissance template into a stable runtime script at `scripts/recon_assignment.py`. `problem-extractor.md` now invokes that script instead of asking the agent to copy a markdown template, and `do-homework.md [B]` now explicitly performs a mandatory reconnaissance summary + user supplement checkpoint even when `review_a.json.verdict == "proceed"`; user supplements are written to `investigation/user_notes.md` and carried into `task_profile.yaml.user_overrides`.
+Turned the Copilot-style reconnaissance template into a transitional helper for early validation. This direction was later superseded by the agent-led `assignment-recon.md` workflow, and the helper has since been removed so runtime agents do not confuse it with the production path. `do-homework.md [B]` explicitly performs a mandatory reconnaissance summary + user supplement checkpoint even when `review_a.json.verdict == "proceed"`; user supplements now flow through `investigation/user_notes.md` and the confirmed alignment contract.
 
 Real Canvas verification used `/tmp/autoust-recon-script-verify/`: DSAA2011 Project produced `spec.md` 66,322 B / `problem.md` 155,415 B, inspected 4 modules and 69 module items, confirmed assignment description 0 B, downloaded `DSAA2011-26sp-project_announce-L01.pdf` plus nearby module PDFs, and `review_a` returned `proceed`. UCUG1505 FINAL project produced `spec.md` 22,527 B / `problem.md` 14,274 B, inspected 14 modules and 64 module items, recorded the Final project Google Doc plus Week 9 slides, skipped front-page GIF media as inspected-not-downloaded, and `review_a` returned `proceed`. A canvascli retry bug surfaced during `whoami` (`requests.SSLError` should be `requests.exceptions.SSLError`) and was fixed in the canvascli repo.
 
@@ -924,7 +953,7 @@ Reviewed Canvas Copilot's real DSAA2011 Project run at `/Users/deepwisdom/Deskto
 
 The data-layer direction is now explicitly Copilot-style atomic commands, not `assignment-context`: `assignment`, `rubric`, `front-page`, `syllabus`, `modules`, `module-items`, `page`, `file`, and `assignment-files`. DSAA2011 Project and UCUG1505 FINAL project are the two required real verification cases for the upcoming AutoStudy integration. Backlog now has M3.5 items for atomic context, workdir structure, deep recon, and result.json.
 
-Implemented the AutoStudy documentation side of that migration: `canvascli-api.md`, `problem-extractor.md`, `do-homework.md`, `task-orchestrator.md`, `_index.md`, `skill.md`, and `PITFALLS.md` now describe the spec-first workbench. Verification used the script template copied from `problem-extractor.md` into `/tmp/autoust-recon-verify/extract_problem.py` and ran real Canvas cases: DSAA2011 Project produced a 45,709 B `spec.md`, inspected module 12955, and downloaded the project announcement PDF; UCUG1505 FINAL project produced a 19,771 B `spec.md`, found the Google Doc spec in both assignment description and Week 4 module item, and listed Week 9 slides as project context. One design correction from verification: inspect every module item, but only download likely assignment-context files instead of every course file.
+Implemented the AutoStudy documentation side of that migration: `canvascli-api.md`, `assignment-recon.md`, `do-homework.md`, `task-orchestrator.md`, `_index.md`, `skill.md`, and `PITFALLS.md` now describe the spec-first workbench. Verification used the script template copied from `assignment-recon.md` into `/tmp/autoust-recon-verify/assignment_recon_probe.py` and ran real Canvas cases: DSAA2011 Project produced a 45,709 B `spec.md`, inspected module 12955, and downloaded the project announcement PDF; UCUG1505 FINAL project produced a 19,771 B `spec.md`, found the Google Doc spec in both assignment description and Week 4 module item, and listed Week 9 slides as project context. One design correction from verification: inspect every module item, but only download likely assignment-context files instead of every course file.
 
 ## 2026-06-01 — Clarified Canvas login/session mental model
 

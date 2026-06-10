@@ -1,0 +1,127 @@
+# AutoStudy 快速版
+
+> 默认入口：中文完整版见 [README.md](./README.md)。英文完整版见 [README.en.md](./README.en.md)。
+
+AutoStudy 是 HKUST(GZ) Canvas 本地学业助手。它跑在 Claude Code / Codex 这类
+agent 环境里，帮你同步作业、规划 ddl、侦查作业要求、生成本地草稿、整理课件和课程笔记。
+
+一句话记住：
+
+```text
+AutoStudy 先看清 Canvas，再问清你的意图，然后生成你能审核的本地产物。
+```
+
+---
+
+## 最常用命令
+
+```text
+看看这周有什么作业
+```
+
+会生成：
+
+```text
+data/sync/current/{courses,assignments,announcements}.json
+data/runs/<date>/REPORT.md
+data/runs/<date>/plan.json
+data/runs/<date>/pending_assignments.json
+```
+
+然后你选择编号，AutoStudy 才会进入某个作业。
+
+```text
+帮我完成 DSAA2011 Project，先生成本地草稿，不提交
+```
+
+会生成单作业工作台：
+
+```text
+data/homework/<COURSE>/<HWID>/
+├── spec.md
+├── references/
+├── investigation/alignment_brief.md
+├── pipeline_design.md
+├── draft/
+├── verification.log
+└── result.json
+```
+
+```text
+同步 DSAA2011 的资料
+写 DSAA2011 的课程笔记
+```
+
+会使用：
+
+```text
+data/courses/<COURSE>/
+├── materials/
+├── canvas_sync/
+└── notes/
+```
+
+---
+
+## 第一次使用
+
+让 agent 加载 skill：
+
+```text
+Use the AutoStudy skill in /Users/deepwisdom/Desktop/project/autoust
+```
+
+新机器：
+
+```text
+Clone https://github.com/Aurorra1123/autoust-dev and use its skill.md
+```
+
+Canvas 登录：
+
+```bash
+.venv/bin/canvascli init
+```
+
+检查登录态：
+
+```bash
+.venv/bin/canvascli whoami
+```
+
+登录态在本机：
+
+```text
+~/Library/Application Support/canvascli/state.json
+```
+
+这是 credential，不要打印、复制、提交。
+
+---
+
+## 重要底线
+
+- `sync-status` 只规划，不自动做作业。
+- AutoStudy 不会自动提交 Canvas。
+- 作业草稿来自 `spec.md + alignment_brief.md + pipeline_design.md`，不是来自标题脑补。
+- group 信息、partner 名字、dataset、personal experience、video URL 等必须由用户提供或标记为 human review item。
+- 产物都在本地 `data/`，你需要审核后再决定是否提交。
+
+---
+
+## 当前状态
+
+可用：
+
+- Canvas 状态同步和计划生成。
+- Canvas-grounded 作业侦查。
+- 本地草稿生成和验证日志。
+- 课程资料同步。
+- 课程笔记生成。
+
+仍在打磨：
+
+- executor/reviewer runtime 的 clean validation。
+- 继续/修复已有草稿的体验。
+- 课程级/用户级偏好记忆。
+- 安全 sandbox 作业上的真实 Canvas submission E2E。

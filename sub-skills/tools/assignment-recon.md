@@ -1,9 +1,9 @@
 ---
-name: problem-extractor
-description: Agent-led Canvas Generic reconnaissance. Inspect Canvas sources through atomic canvascli commands, write a standardized spec.md, locate rubric and inputs, and review whether the assignment is sufficiently understood before any draft generation.
+name: assignment-recon
+description: Agent-led Canvas Generic assignment reconnaissance. Inspect Canvas sources through atomic canvascli commands, write a standardized spec.md, locate rubric and inputs, and review whether the assignment is sufficiently understood before any draft generation.
 ---
 
-# problem-extractor
+# assignment-recon
 
 The data-grounding workflow for homework. It follows Canvas Copilot's
 `canvas-generic` model: **the agent reads every likely source and writes a
@@ -22,7 +22,7 @@ the main spec.
 
 ## Capability
 
-- `extract_problem` - `(course_id, assignment_id, work_dir)` -> a
+- `assignment_recon` - `(course_id, assignment_id, work_dir)` -> a
   Canvas Generic-style reconnaissance workbench with `spec.md`, `references/`,
   and `investigation/`
 
@@ -60,10 +60,10 @@ resources, and the investigation review.
 
 ## Non-goal: no script-led spec generation
 
-Do **not** run `scripts/recon_assignment.py` as the normal homework
-reconnaissance path. That script was an earlier transition experiment that
-proved the atomic `canvascli` commands could reach the right sources. The
-production flow is agent-led, following the stages below.
+Do **not** replace this workflow with a standalone script that writes the final
+assignment spec. The production flow is agent-led, following the stages below:
+the agent reads the sources, decides which source is authoritative, writes the
+standardized `spec.md`, records `review_a.json`, and classifies the output mode.
 
 If a future helper script is added, it may only reduce mechanical shell work
 such as saving JSON snapshots or downloading a specific file. It must not decide

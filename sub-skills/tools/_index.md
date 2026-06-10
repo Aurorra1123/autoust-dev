@@ -16,7 +16,7 @@ see `sub-skills/tasks/do-homework.md [C]`.
 
 | Tool | File | One-line capability | Inputs | Outputs |
 |---|---|---|---|---|
-| **problem-extractor** | [problem-extractor.md](./problem-extractor.md) | Canvas Generic Stage 1-5 reconnaissance → spec.md + rubric + references | course_id, assignment_id, work_dir | spec.md, investigation/, references/, problem.md |
+| **assignment-recon** | [assignment-recon.md](./assignment-recon.md) | Canvas Generic Stage 1-5 reconnaissance → spec.md + rubric + references | course_id, assignment_id, work_dir | spec.md, investigation/, references/, problem.md |
 | **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | Markdown → PDF (Chinese, LaTeX math, code, callouts) | markdown file, options | PDF file |
 | **writing-helper** | [writing-helper.md](./writing-helper.md) | Structured academic prose (essay/report/reflection) | spec.md, pipeline_design.md, rubric, references | draft.md |
 | **paper-search** | [paper-search.md](./paper-search.md) | Literature search via arxiv → bib + json | keywords, max_results | references.bib, references.json |
@@ -39,7 +39,7 @@ see `sub-skills/tasks/do-homework.md [C]`.
 
 | Verb | Meaning |
 |---|---|
-| `extract_problem` | Canvas reconnaissance → spec.md |
+| `assignment_recon` | Canvas reconnaissance → spec.md |
 | `render_pdf` | Markdown → PDF |
 | `render_slides` | Slides (HTML/PDF) |
 | `search_papers` | Literature search → bib |

@@ -27,9 +27,9 @@ LOCAL_TZ = dt.datetime.now(dt.timezone.utc).astimezone().tzinfo
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--assignments-json", default=Path("data/assignments.json"), type=Path)
-    parser.add_argument("--courses-json", default=Path("data/courses.json"), type=Path)
-    parser.add_argument("--announcements-json", default=Path("data/announcements.json"), type=Path)
+    parser.add_argument("--assignments-json", default=Path("data/sync/current/assignments.json"), type=Path)
+    parser.add_argument("--courses-json", default=Path("data/sync/current/courses.json"), type=Path)
+    parser.add_argument("--announcements-json", default=Path("data/sync/current/announcements.json"), type=Path)
     parser.add_argument("--homework-dir", default=Path("data/homework"), type=Path)
     parser.add_argument("--runs-dir", default=Path("data/runs"), type=Path)
     parser.add_argument("--date", help="Run date in YYYY-MM-DD; defaults to local today.")

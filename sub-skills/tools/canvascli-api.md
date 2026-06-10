@@ -292,7 +292,7 @@ Submit a file to a Canvas assignment via `online_upload`.
 Canvas's `description` field may be an attachment link, a Google Doc link, an empty string, or only a small hint. Reading it directly is the most common cause of agents producing template / placeholder content.
 
 **Don't write your own extractor inline** — use
-`sub-skills/tools/problem-extractor.md`. It follows Canvas Copilot's
+`sub-skills/tools/assignment-recon.md`. It follows Canvas Copilot's
 Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
 
 1. Calls atomic context commands above: `assignment`, `rubric`,

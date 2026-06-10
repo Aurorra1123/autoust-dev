@@ -106,7 +106,7 @@ Subagents do not talk to the user and do not dispatch other subagents.
 |---|---|---|
 | Entry routing | `skill.md` | selected task skill |
 | Task coordination | `sub-skills/tasks/<task>.md` | workbench lifecycle decisions |
-| Reconnaissance | `canvascli-api.md`, `problem-extractor.md` | `spec.md`, `rubric.md`, `references/`, `review_a.json` |
+| Reconnaissance | `canvascli-api.md`, `assignment-recon.md` | `spec.md`, `rubric.md`, `references/`, `review_a.json` |
 | Clarification | task skill + `spec.md` | `user_notes.md`, `user_scope.md` |
 | Planning | `tools/_index.md`, tool contracts, workbench facts | `pipeline_design.md` |
 | Stage coordination | `pipeline_design.md` | `stage_briefs/*.md` |

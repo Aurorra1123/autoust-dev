@@ -403,7 +403,7 @@ sub-skills/tools/
 ├── paper-search.md               # 文献搜索（已有）
 ├── figure-maker.md               # 数据可视化（已有）
 ├── test-runner.md                # 测试执行（已有）
-├── problem-extractor.md          # Canvas Generic 侦查（已有）
+├── assignment-recon.md          # Canvas Generic 侦查（已有）
 └── canvascli-api.md              # Canvas CLI 参考（已有）
 ```
 

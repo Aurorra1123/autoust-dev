@@ -121,7 +121,7 @@ Action handling:
 | `manual_review` | Stop before `[A3]`; tell the user this item likely needs manual Canvas interaction. |
 
 Direct natural-language path: if the user says "DLED3020 Paper Critique"
-without coming from a plan item, match against `data/assignments.json` by
+without coming from a plan item, match against `data/sync/current/assignments.json` by
 case-insensitive substring of `name` and course code in `context_name`. If
 ambiguous, surface the candidates at `[B]`.
 
@@ -179,9 +179,10 @@ All skill file paths resolve as `REPO_ROOT/sub-skills/tools/<name>.md`.
 
 #### [A3] Canvas Generic Reconnaissance - Mandatory
 
-Invoke `tools/problem-extractor.md` as an agent-led workflow. Do **not** run
-`scripts/recon_assignment.py` as the normal path. That script is historical
-transition evidence, not the production reconnaissance contract.
+Invoke `tools/assignment-recon.md` as an agent-led workflow. Reconnaissance is
+not delegated to a standalone spec-generation script: the Main Agent must read
+the Canvas sources, judge the main spec, write `spec.md`, and record review
+evidence in the workbench.
 
 Follow the Canvas Generic stages:
 
@@ -880,7 +881,7 @@ Human review items:
   in `references/`; `spec.md` is the standardized report.
 - **Google Docs can be the main spec.** Try to fetch text. If blocked, record it
   in `unreachable.txt` and let `review_a.json` decide whether it blocks work.
-- **Course code in `data/assignments.json` is in `context_name`, not a separate
+- **Course code in `data/sync/current/assignments.json` is in `context_name`, not a separate
   field.**
 - **The work_dir path can contain spaces and Chinese.** Always quote shell
   arguments.
@@ -891,7 +892,7 @@ Human review items:
 
 ## Cross-references
 
-- Reconnaissance: `tools/problem-extractor.md`
+- Reconnaissance: `tools/assignment-recon.md`
 - Pipeline execution: `tasks/task-orchestrator.md`
 - Tool capability matrix: `tools/_index.md`
 - Canvas commands: `tools/canvascli-api.md`

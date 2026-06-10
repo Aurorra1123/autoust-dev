@@ -32,9 +32,10 @@ If either is missing, redirect to `canvascli-setup.md`. Do NOT proceed silently.
 Call canvascli. Capture JSON to disk for the rest of the flow:
 
 ```bash
-.venv/bin/canvascli courses > data/courses.json
-.venv/bin/canvascli assignments > data/assignments.json
-.venv/bin/canvascli announcements > data/announcements.json
+mkdir -p data/sync/current
+.venv/bin/canvascli courses > data/sync/current/courses.json
+.venv/bin/canvascli assignments > data/sync/current/assignments.json
+.venv/bin/canvascli announcements > data/sync/current/announcements.json
 ```
 
 Also copy these raw snapshots into today's run directory:
@@ -61,8 +62,8 @@ Invoke the stable scan-plan writer:
 
 It reads:
 
-- `data/assignments.json`
-- `data/courses.json`
+- `data/sync/current/assignments.json`
+- `data/sync/current/courses.json`
 - `data/homework/**/result.json`
 
 It writes:
@@ -84,9 +85,9 @@ the current canvascli snapshots with local `result.json` receipts.
 ### Step 3: Read the JSON and REPORT
 
 Use the `Read` tool on:
-- `data/courses.json` — latest active-term enrollment list, or the requested term
-- `data/assignments.json` — flat list of assignments for the same term
-- `data/announcements.json` — announcements (often empty for HKUST(GZ))
+- `data/sync/current/courses.json` — latest active-term enrollment list, or the requested term
+- `data/sync/current/assignments.json` — flat list of assignments for the same term
+- `data/sync/current/announcements.json` — announcements (often empty for HKUST(GZ))
 - `data/runs/<today>/pending_assignments.json` — actionable assignments after Canvas state and local result filtering
 - `data/runs/<today>/plan.json` — suggested next steps
 - `data/runs/<today>/REPORT.md` — user-facing plan draft
@@ -191,7 +192,7 @@ Keep tone informative but not noisy. The user wants to scan in 5 seconds.
 
 | Situation | Behavior |
 |---|---|
-| `data/*.json` doesn't exist after fetch | Fetch must have failed silently — show the user the fetch command stderr |
+| `data/sync/current/*.json` doesn't exist after fetch | Fetch must have failed silently — show the user the fetch command stderr |
 | `data/runs/<today>/plan.json` missing | Re-run `scripts/write_scan_plan.py`; if it fails, show the short stderr and fall back to classic summary |
 | User selects an invalid plan index | Run `scripts/select_plan_item.py --index <N>`; show its short stderr and ask for a valid item number |
 | All sections empty | Still respond with a "you're caught up ✓" message + courses overview |

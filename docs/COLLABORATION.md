@@ -104,8 +104,9 @@ Current approved homework direction:
 - Reconnaissance follows Canvas Copilot `canvas-generic` Stage 1-5: fetch
   context, find rubric, locate inputs, review investigation, and classify output
   mode.
-- This reconnaissance is agent-led. `scripts/recon_assignment.py` is historical
-  transition evidence, not the production `do-homework` path.
+- This reconnaissance is agent-led. AutoStudy no longer keeps a standalone
+  script that writes the final assignment spec; mechanical helpers may only
+  save snapshots or download specific sources.
 - `spec.md` is a standardized report written after reading all sources; full
   source text belongs in `references/`, not in a raw context dump.
 - `problem.md` is temporary compatibility for older tools.
@@ -308,7 +309,7 @@ implementation details in upper-layer workflow docs.
   but avoid committing sensitive raw course data.
 - Local paths can be mentioned when useful, but must not be the only reference
   for collaborators. Provide portable links such as GitHub repos when available.
-- `data/*.json` verification snapshots are local artifacts and must remain
+- `data/sync/current/*.json` and `data/runs/*/raw/*.json` verification snapshots are local artifacts and must remain
   gitignored.
 
 ## Term-Scope Bug Example
@@ -333,9 +334,10 @@ Correct fix:
 - Keep AutoStudy's task flow simple:
 
 ```bash
-.venv/bin/canvascli courses > data/courses.json
-.venv/bin/canvascli assignments > data/assignments.json
-.venv/bin/canvascli announcements > data/announcements.json
+mkdir -p data/sync/current
+.venv/bin/canvascli courses > data/sync/current/courses.json
+.venv/bin/canvascli assignments > data/sync/current/assignments.json
+.venv/bin/canvascli announcements > data/sync/current/announcements.json
 ```
 
 - Update AutoStudy docs to describe the CLI contract, not the data-layer

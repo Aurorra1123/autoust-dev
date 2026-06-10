@@ -167,7 +167,7 @@ project/workbench/
 
 这不是 `do-homework.md` 定义的工作台结构（应该是 `canvas/` + `spec.md` + `investigation/` + `references/` + `draft/`）。
 
-**根因**：当前目录结构约定分散在 `do-homework.md [A2]` 和 `problem-extractor.md` 中，没有集中约束。agent 没读到这些文件，所以自创了结构。
+**根因**：当前目录结构约定分散在 `do-homework.md [A2]` 和 `assignment-recon.md` 中，没有集中约束。agent 没读到这些文件，所以自创了结构。
 
 **新 spec 的对应设计**：
 

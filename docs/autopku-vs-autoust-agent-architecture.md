@@ -130,7 +130,7 @@ AutoStudy 同样以 Markdown Skill 文件寄生在宿主 agent 上，但引入�
 |------|------|----------|
 | **任务层** | 端到端流程 | `sync-status.md`, `do-homework.md`, `task-orchestrator.md` |
 | **工具索引层** | 能力发现 | `sub-skills/tools/_index.md` |
-| **工具层** | 原子能力 | `problem-extractor.md`, `pdf-renderer.md`, `writing-helper.md` 等 |
+| **工具层** | 原子能力 | `assignment-recon.md`, `pdf-renderer.md`, `writing-helper.md` 等 |
 
 ### 2.3 核心工作流：do-homework 六步
 

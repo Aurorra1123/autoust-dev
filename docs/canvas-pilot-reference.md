@@ -40,7 +40,7 @@ Canvas Pilot 有一个叫 **canvas-generic** 的核心编排器。它的设计�
 
 #### 对 AutoStudy 的启发
 
-AutoStudy MVP 时的 `problem-extractor` 主要看 `assignment.json.description`
+AutoStudy MVP 时的 `assignment-recon` 主要看 `assignment.json.description`
 里的附件链接，然后下载附件、提取文本。对于"作业要求都写在附件里"的
 场景，这能跑通 demo，但不够稳定。
 
@@ -66,8 +66,8 @@ AutoStudy MVP 时的 `problem-extractor` 主要看 `assignment.json.description`
 
 **AutoStudy skill 侧**（当前批准方向）：
 
-- `problem-extractor.md` 正式采用 agent-led Canvas Generic Stage 1-5。
-- 不把 `scripts/recon_assignment.py` 作为生产路径；它只保留为历史过渡验证，证明原子 CLI 可以拿到正确来源。
+- `assignment-recon.md` 正式采用 agent-led Canvas Generic Stage 1-5。
+- 不保留脚本化 spec 生成路径；原子 CLI 只提供来源读取能力，主 spec 判断、`spec.md`、`review_a.json` 和 output mode 必须由 agent 逐源阅读后写入。
 - `spec.md` 是标准化侦查报告，不是 source dump。
 - `problem.md` 只是旧工具兼容层，长期会继续缩薄。
 - `do-homework [B]` 必须向用户汇报侦查结果并运行 alignment loop，即使 `review_a.json.verdict == "proceed"`。简单作业少问几轮，开放性作业持续追问，直到 Main Agent 能不靠脑补开始执行。
@@ -377,7 +377,7 @@ The stable writer is:
 .venv/bin/python scripts/write_scan_plan.py
 ```
 
-It reads `data/assignments.json`, `data/courses.json`, and
+It reads `data/sync/current/assignments.json`, `data/sync/current/courses.json`, and
 `data/homework/**/result.json`. It does not call Canvas and does not execute
 homework. Its job is to combine current Canvas facts with local workflow state:
 
