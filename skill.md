@@ -10,6 +10,24 @@ Canvas (`hkust-gz.instructure.com`). It depends on `canvascli` for Canvas data
 access and uses this repository's Markdown task/tool files as the runtime
 contract.
 
+## Loading Model
+
+AutoStudy is meant to run from a dedicated clone of this repository. The
+repository root is the working directory: `.venv/`, `data/`, `scripts/`, and
+`sub-skills/` are all resolved relative to it.
+
+For a first-time user, clone the repository into a normal local folder, then
+open the agent there or ask the agent to use that folder's `skill.md`:
+
+```bash
+git clone https://github.com/Aurorra1123/autoust-dev.git ~/workspace/autoust-dev
+cd ~/workspace/autoust-dev
+```
+
+Do not assume any machine-specific absolute path. Do not copy only `skill.md`
+without the rest of the repository; the task and tool contracts live under
+`sub-skills/`.
+
 The product posture is **assistant, not hidden automation**:
 
 - explain what Canvas says;

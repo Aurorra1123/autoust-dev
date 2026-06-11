@@ -2,6 +2,10 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-11 — README quick-start path cleanup
+
+Updated `skill.md` and all README variants for beginner users: clarified that AutoStudy runs from a dedicated clone of this repository, not from a copied standalone `skill.md` or a machine-specific absolute path. Quick starts now recommend cloning to a local folder such as `~/workspace/autoust-dev`, entering that folder, and asking the agent to read the repo-local `skill.md`. Verification: stale path/prompt scan passes and diff whitespace checks pass.
+
 ## 2026-06-10 — User-facing docs synced to unified runtime
 
 Updated README, skill entry, roadmap, and marketing/messaging docs from the old

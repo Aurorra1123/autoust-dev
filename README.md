@@ -47,19 +47,28 @@ M3.5+：更深的 Canvas 侦查、明确的用户对齐、动态 pipeline、阶�
 
 ### 1. 让 agent 加载这个 skill
 
-在 Claude Code 或兼容环境里说：
+AutoStudy 是一个完整的本地仓库，不是单独一个 `skill.md` 文件。第一次使用时，建议让 agent 把它 clone 到一个独立文件夹，比如 `~/workspace/autoust-dev`：
 
 ```text
-Use the AutoStudy skill in /Users/deepwisdom/Desktop/project/autoust
+请把 https://github.com/Aurorra1123/autoust-dev clone 到 ~/workspace/autoust-dev，
+然后进入这个文件夹，读取里面的 skill.md，并按步骤帮我完成初始化。
 ```
 
-在新机器上可以说：
+如果你想自己先 clone，也可以这样做：
+
+```bash
+mkdir -p ~/workspace
+git clone https://github.com/Aurorra1123/autoust-dev.git ~/workspace/autoust-dev
+cd ~/workspace/autoust-dev
+```
+
+然后在这个目录里告诉 agent：
 
 ```text
-Clone https://github.com/Aurorra1123/autoust-dev and use its skill.md
+请使用当前目录里的 AutoStudy skill，阅读 skill.md，然后帮我初始化。
 ```
 
-agent 应该读取 `skill.md`，检查环境，并把缺失依赖安装到本地 `.venv/`。
+`~/workspace/autoust-dev` 只是推荐位置；你也可以换成自己喜欢的文件夹。关键是 AutoStudy 要作为一个独立仓库存在，因为 `.venv/`、`data/`、`scripts/` 和 `sub-skills/` 都会在这个仓库目录下使用。agent 应该读取 `skill.md`，检查环境，并把缺失依赖安装到本地 `.venv/`。
 
 ### 2. 完成一次 Canvas 登录
 

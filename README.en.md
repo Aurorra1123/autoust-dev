@@ -52,19 +52,33 @@ stage-level review, and resumable local workbenches.
 
 ### 1. Load The Skill
 
-In Claude Code or a compatible environment:
+AutoStudy is a full local repository, not a standalone `skill.md` file. On a
+first run, ask the agent to clone it into a dedicated folder, for example
+`~/workspace/autoust-dev`:
 
 ```text
-Use the AutoStudy skill in /Users/deepwisdom/Desktop/project/autoust
+Clone https://github.com/Aurorra1123/autoust-dev into ~/workspace/autoust-dev,
+then enter that folder, read skill.md, and help me initialize it.
 ```
 
-On a fresh machine:
+If you prefer to clone it yourself:
+
+```bash
+mkdir -p ~/workspace
+git clone https://github.com/Aurorra1123/autoust-dev.git ~/workspace/autoust-dev
+cd ~/workspace/autoust-dev
+```
+
+Then tell the agent from that directory:
 
 ```text
-Clone https://github.com/Aurorra1123/autoust-dev and use its skill.md
+Use the AutoStudy skill in the current directory. Read skill.md and help me initialize it.
 ```
 
-The agent should read `skill.md`, check the environment, and install missing
+`~/workspace/autoust-dev` is only a suggested location; any local folder is fine.
+The important part is that AutoStudy stays as its own repository folder because
+`.venv/`, `data/`, `scripts/`, and `sub-skills/` are all used relative to it. The
+agent should read `skill.md`, check the environment, and install missing
 dependencies into the local `.venv/`.
 
 ### 2. Complete Canvas Login Once

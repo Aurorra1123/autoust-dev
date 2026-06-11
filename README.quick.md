@@ -65,16 +65,25 @@ data/courses/<COURSE>/
 
 ## 第一次使用
 
-让 agent 加载 skill：
+AutoStudy 要作为一个独立仓库运行，不是只复制一个 `skill.md`。推荐让 agent clone 到一个固定文件夹：
 
 ```text
-Use the AutoStudy skill in /Users/deepwisdom/Desktop/project/autoust
+请把 https://github.com/Aurorra1123/autoust-dev clone 到 ~/workspace/autoust-dev，
+然后进入这个文件夹，读取里面的 skill.md，并按步骤帮我完成初始化。
 ```
 
-新机器：
+也可以自己先 clone：
+
+```bash
+mkdir -p ~/workspace
+git clone https://github.com/Aurorra1123/autoust-dev.git ~/workspace/autoust-dev
+cd ~/workspace/autoust-dev
+```
+
+然后在这个目录里说：
 
 ```text
-Clone https://github.com/Aurorra1123/autoust-dev and use its skill.md
+请使用当前目录里的 AutoStudy skill，阅读 skill.md，然后帮我初始化。
 ```
 
 Canvas 登录：
