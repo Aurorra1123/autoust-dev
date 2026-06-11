@@ -6,6 +6,31 @@
 
 Updated `skill.md` and all README variants for beginner users: clarified that AutoStudy runs from a dedicated clone of this repository, not from a copied standalone `skill.md` or a machine-specific absolute path. Quick starts now recommend cloning to a local folder such as `~/workspace/autoust-dev`, entering that folder, and asking the agent to read the repo-local `skill.md`. Verification: stale path/prompt scan passes and diff whitespace checks pass.
 
+## 2026-06-10 — Fresh-user sync-status to DSAA2011 validation
+
+Ran a full development-validation simulation from the public user entry:
+runtime coordinator B started at `skill.md`, ran `sync-status`, wrote the
+2026-06-10 scan-plan artifacts, then handled the simulated user directly asking
+for DSAA2011 Project even though Canvas marked it graded and omitted it from the
+plan. The DSAA2011 active workbench was archived to
+`archive/fresh-user-syncstatus-dsaa2011-cleanstart-2026-06-10/`, relaunched as a
+clean_start with only `prelaunch_startup_inventory.json`, and regenerated
+Canvas/source reconnaissance, `spec.md`, alignment, pipeline, real Student
+Dropout experiments, 7 measured tuning rounds, report PDF, presentation PDF,
+notebook, requirements, data evidence, and `draft/G01_StudentDropout.zip`.
+`result.json` is `draft_ready`, `verification.log` records 35 PASS / 2 SKIP / 0
+FAIL, and no Canvas submission was attempted.
+
+Post-run A exported B plus all 10 runtime child transcripts by exact local
+session match, then trajectory reviewer D dispatched 10 E transcript auditors.
+Final process verdict was `PASS_WITH_CONCERNS`: artifact gates, child
+dispatching, review ordering, transcript preservation, and no-submission checks
+passed, but clean PASS is still blocked by B using a role-label coordinator
+identity, transcript export requiring A fallback, one thread-limit spawn
+recovery, startup/plugin reads in child transcripts, minor timestamp/schema
+issues, and broader-than-ideal Canvas file metadata reconnaissance. Tracked docs
+and runtime evidence were captured for follow-up review.
+
 ## 2026-06-10 — User-facing docs synced to unified runtime
 
 Updated README, skill entry, roadmap, and marketing/messaging docs from the old
