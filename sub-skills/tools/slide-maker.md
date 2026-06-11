@@ -41,9 +41,10 @@ Output (beamer):
 supplements, and finally `problem.md`, completely.** The workbench files contain
 the presentation brief — the assigned topic, required content, length, audience,
 and supporting context. The assignment title alone (e.g. "Group presentation")
-tells you nothing. If `spec.md` says the main spec is a Google Doc and Week 9
-slides are nearby context, ground the deck in that source trail. Do not fall
-back to a generic "topic overview / methods / findings" template.
+tells you nothing. If `spec.md` says the main spec is an external document and
+another module item is nearby supporting context, ground the deck in that source
+trail. Do not fall back to a generic "topic overview / methods / findings"
+template.
 
 For group presentations specifically: if `spec.md` requires the group to choose
 a sub-topic and the user has not specified which sub-topic, write one

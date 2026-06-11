@@ -5,51 +5,68 @@ description: End-to-end homework completion. Use when the user asks "complete X 
 
 # Do Homework
 
-The flagship M3 task. The user asks something like:
+Use this task when the user asks AutoStudy to work on one Canvas assignment and
+produce local draft artifacts. Typical user requests:
 
 - "帮我做 DLED3020 的 Paper Critique"
 - "complete DSAA2043 Lab Assignment 1"
 - "做一下 UCUG1077 的 group presentation slides"
 - "写 DSAA2012 的 project report"
 
-You go from "user names an assignment" to "draft / code / slides exists and
-(optionally) is submitted to Canvas".
+The runtime contract is:
 
-AutoStudy follows Canvas Copilot's `canvas-generic` sequence, adapted to an
-assistant-style user loop:
+1. resolve one Canvas assignment;
+2. build a workbench with current evidence;
+3. investigate Canvas sources before drafting;
+4. align with the user on choices Canvas cannot decide;
+5. design and execute a stage plan;
+6. return local artifacts and ask before any Canvas submission.
+
+Required artifact chain:
 
 ```text
 prelaunch_startup_inventory.json
--> investigation/explore_context.md
 -> investigation/explore_manifest.json
-spec.md
+-> investigation/scout_results/ (if scouts dispatched)
+-> investigation/explore_context.md
+-> spec.md
 -> investigation/rubric.md
 -> references/
 -> investigation/review_a.json
+-> investigation/alignment_brief.md
 -> pipeline_design.md
+-> stage_briefs/
+-> stage_results/
+-> stage_reviews/
 -> draft/
 -> verification_checklist.md
 -> verification.log
 -> result.json
 ```
 
-`do-homework.md` is written for the Claude Code Main Agent. The Main Agent is
-the only runtime actor that talks to the user. Subagents, when used, are
-temporary workers dispatched by the Main Agent and receive precise stage briefs.
+Actor rules:
 
-The two user checkpoints are:
+- The Main Agent owns the task lifecycle and is the only actor that talks to the
+  user.
+- Subagents are temporary workers with curated prompts, bounded reads/writes,
+  and receipt requirements.
+- Subagents can scout, execute, or review, but they do not own user alignment,
+  final `spec.md` judgment, or Canvas submission decisions.
+
+The two user-interaction phases are:
 
 1. `[B]` after reconnaissance, where the user can add group info, oral
    instructions, dataset choice, scope, or stop.
 2. `[E]` after draft generation, where the user reviews and chooses whether to
    submit.
 
-AutoStudy uses one unified runtime flow. A first draft, continuation, and repair
-all start from archive/preflight, startup inventory, explore stage, alignment
-contract, execution plan, and the shared executor/reviewer runtime. Legacy
-labels such as `full_flow` and `repair_flow` are presets that decide which
-startup files exist and which explore scouts should run; they are not separate
-architectures.
+Run mode:
+
+- Clean start: no retained user-visible draft; enable source/spec exploration
+  unless the task qualifies for recorded inline fallback.
+- Retained-artifact start: current user-visible draft or prior output exists;
+  enable only the artifact/history/codebase/verification scouts whose inputs
+  exist and affect planning.
 
 ## Preconditions
 
@@ -67,26 +84,110 @@ surface options, then come back here.
 
 ### [A] Build The Assignment Workbench
 
-No user interaction. This step follows Canvas Copilot's "inspect all sources
-first" habit. Do not treat a Canvas assignment description, title, or single
-link as the whole prompt.
+No user interaction in `[A]`.
 
-This is the clean-start version of the universal explore stage. Source/spec
-scouts are normally enabled. Artifact, history, codebase, and verification
-scouts are skipped unless the startup inventory says retained files exist or
-current checks are needed before planning. Record skipped scouts and reasons in
-`investigation/explore_manifest.json`.
+Runtime goal: create a current workbench that can answer three questions before
+planning starts:
 
-When a non-trivial run dispatches read-only scout subagents, treat those scouts
-as runtime children with the same isolation expectations as later executors and
-reviewers. The coordinator records each scout in
-`stage_reviews/child_dispatch_ledger.json`, writes each scout receipt under
-`investigation/scout_results/` or another path named in
-`investigation/explore_manifest.json`, and consolidates only distilled findings
-into `investigation/explore_context.md` before `[B]`. Scout children must not
-write the dispatch ledger, read archive/prior-run evidence, or use old
-diagnostics unless a process-history scout has a narrow allowlisted input from
-`prelaunch_startup_inventory.json`.
+1. What exact Canvas assignment is this?
+2. Which sources prove the requirements and deliverables?
+3. Which choices still need user alignment?
+
+Do not treat an assignment title, Canvas description, or single link as the full
+problem statement unless the fetched source evidence proves it is complete.
+
+#### [A0] Startup Inventory Rule
+
+Before reading old workbench files as task context, write or refresh:
+
+```text
+prelaunch_startup_inventory.json
+```
+
+For a direct request with no workbench yet, first resolve the assignment and
+create the workbench in `[A1]`/`[A2]`, then write this file before reading any
+old active workbench evidence.
+
+It must state:
+
+- current user request;
+- resolved course/assignment if already known;
+- retained user-visible artifacts, if any;
+- current source/spec/reference files allowed for this run;
+- prior history files explicitly allowlisted for a process-history scout;
+- forbidden context, including old stage receipts, transcripts, prior reviews,
+  stale pipeline files, old diagnostics, and archive contents unless explicitly
+  allowlisted;
+- stale process files archived or excluded from active context.
+
+Old process evidence is not task context by default. A scout may inspect it only
+when `prelaunch_startup_inventory.json` allowlists the exact file or directory
+and explains why it affects current planning.
+
+#### Explore Mode Rules
+
+Apply these rules after `[A2]` creates the workbench and before `[A3]`
+finishes reconnaissance.
+
+Write the explore decision to `investigation/explore_manifest.json` before
+entering `[B]`.
+
+Use these rules:
+
+| Situation | Required action |
+|---|---|
+| Canvas modules, linked files, PDFs, external specs, rubric search, or multiple possible sources must be inspected | Dispatch a read-only `source_spec` scout by default. |
+| Retained user-visible draft, source code, package files, previous result, or current checks exist and affect planning | Enable only the matching artifact/codebase/process-history/verification scouts. |
+| A scout input does not exist or does not affect planning | Mark that scout `SKIPPED` with a reason in `explore_manifest.json`. |
+| The task is tiny and mechanically obvious, or child dispatch is unavailable/blocked | Main Agent may do inline exploration, but must record `delegation_mode: "inline_fallback"` or `executed_by: "main-agent"` with the concrete reason. |
+
+A read-only scout is a subagent that independently discovers or verifies
+current task facts. It writes a receipt under
+`investigation/scout_results/<scout_type>_result.json`. It does not talk to the
+user, write the dispatch ledger, own `spec.md`, or read archive/prior-run
+evidence unless the Main Agent explicitly allowlists a process-history input.
+
+The Main Agent still owns final reconnaissance judgment: read sources and scout
+receipts, decide the main spec, write or revise `spec.md`, consolidate
+`investigation/explore_context.md`, and run `[B]`.
+
+If any scout is dispatched, the Main Agent records it in
+`stage_reviews/child_dispatch_ledger.json` with role `explore_scout`, scout
+type, prompt/brief path, receipt path, dispatch id, and timestamps.
+
+Scout evidence must satisfy the same child-evidence contract used later for
+executor/reviewer children:
+
+- ledger row is written before waiting on the child;
+- dispatch return id is the identity authority;
+- receipt includes `created_at_utc`, `completed_at_utc`, status, reads, writes,
+  findings, concerns, and dependency notes;
+- coordinator records when the receipt was observed and accepted;
+- transport failures, child-side ledger writes, identity normalization, or
+  inline fallback are process concerns, not silent success.
+
+If inline fallback is used for a non-tiny task, state in
+`explore_manifest.json` that child isolation was not exercised for that scout.
+
+#### Explore Context Minimum
+
+Before `[B]`, write `investigation/explore_context.md` for every non-trivial
+run. It must summarize:
+
+- resolved course and assignment;
+- current Canvas/source requirements;
+- main spec candidates and final main-source judgment;
+- fetched references and blocked/unreachable materials;
+- available user-visible artifacts, if any;
+- skipped scouts and reasons;
+- stale or forbidden context that must not be passed to later children;
+- planning risks and verification risks;
+- user decisions needed at `[B]`.
+
+Do not pass raw old logs, archive files, prior reviews, or prior pipeline files
+to executor/reviewer children just because a scout inspected them. Only distilled
+current-run findings in `explore_context.md`, `spec.md`, or the confirmed
+terminal agreement become normal downstream context.
 
 #### [A1] Resolve Identifiers
 
@@ -158,6 +259,8 @@ data/homework/<COURSE>/<HWID>/
 ├── stage_briefs/
 ├── stage_results/
 ├── stage_reviews/
+│   ├── child_dispatch_ledger.json
+│   └── process_concerns.jsonl
 ├── transcripts/
 ├── draft/
 │   ├── figures/
@@ -179,24 +282,30 @@ All skill file paths resolve as `REPO_ROOT/sub-skills/tools/<name>.md`.
 
 #### [A3] Canvas Generic Reconnaissance - Mandatory
 
-Invoke `tools/assignment-recon.md` as an agent-led workflow. Reconnaissance is
-not delegated to a standalone spec-generation script: the Main Agent must read
-the Canvas sources, judge the main spec, write `spec.md`, and record review
-evidence in the workbench.
+Invoke `tools/assignment-recon.md` as the source/spec workflow. This can be
+supported by a `source_spec` scout, but it must not be replaced by a
+standalone spec-generation script. The Main Agent must read the current
+evidence, judge the main spec, write `spec.md`, and keep review evidence in the
+workbench.
 
 Follow the Canvas Generic stages:
 
 1. **Stage 1 fetch-context**
    Read assignment, rubric, front page, syllabus, modules, every module's items,
    relevant pages, attached files, and external URLs through atomic
-   `canvascli` commands. Save raw JSON under `canvas/`. Then write a
-   standardized `spec.md` report with metadata, source trail, main spec
-   judgment, deliverables, requirements, rubric placeholder, inputs, gaps, and
-   evidence pointers.
+   `canvascli` commands. Syllabus is a first-class source, not an optional
+   afterthought: read it and record whether it adds grading criteria,
+   assessment-family context, submission/late policy, academic-integrity rules,
+   AI/tool policy, collaboration rules, or no relevant constraints. Save raw
+   JSON under `canvas/`. Then write a standardized `spec.md` report with
+   metadata, source trail, syllabus relevance, main spec judgment, deliverables,
+   requirements, rubric placeholder, inputs, gaps, and evidence pointers.
 
 2. **Stage 2 find-rubric**
    Search Canvas rubric, `spec.md`, downloaded/fetched references, modules,
-   syllabus, and external spec text. Write `investigation/rubric.md`.
+   syllabus, and external spec text. Write `investigation/rubric.md`. Do not
+   mark rubric search complete until syllabus has either contributed criteria or
+   been explicitly judged irrelevant/unavailable.
 
 3. **Stage 3 locate-inputs**
    Download or fetch necessary PDFs, Google Doc text, starter code, datasets, or
@@ -217,6 +326,9 @@ Follow the Canvas Generic stages:
 After `[A3]`, immediately read:
 
 ```text
+investigation/explore_manifest.json
+investigation/explore_context.md  # required for non-trivial runs unless inline fallback is recorded
+canvas/syllabus.json
 spec.md
 investigation/rubric.md
 investigation/unreachable.txt
@@ -225,39 +337,53 @@ pipeline_design.md
 problem.md
 ```
 
-Do not skip this read. The whole skill collapses into template content if you
-generate from the assignment title or Canvas description.
+Do not proceed to `[B]` until:
 
-For development validation, also ensure `investigation/explore_manifest.json`
-can account for every enabled or skipped scout before entering `[B]`. If scout
-subagents were dispatched, their ledger rows, receipt paths, and transcript
-handles are process evidence for later D/E review; do not overwrite them during
-alignment or planning.
+- `explore_manifest.json` accounts for every enabled, skipped, or inline scout.
+- Non-trivial runs have `explore_context.md`, or a recorded inline-fallback
+  reason.
+- Every dispatched scout has a ledger row and a receipt path.
+- `spec.md` is grounded in Canvas snapshots and fetched references, not in the
+  assignment title alone.
+- `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json`
+  explicitly records syllabus relevance, including assignment requirements,
+  grading criteria, submission policy, late policy, AI/tool policy,
+  academic-integrity constraints, or a reasoned `not relevant` judgment.
 
 #### [A4] Gate On Reconnaissance Quality
 
 If `review_a.json.verdict` is not `proceed`, or `spec.md` does not clearly
-state deliverables and main source judgment, surface this at `[B]` as a recovery
-option:
+state deliverables and main source judgment, `[B]` is limited to recovery,
+supplement, or stop. Surface this recovery prompt:
 
 > "I checked the assignment page, rubric, course front page, syllabus, modules,
 > pages, linked files, and external URLs, but I still could not identify a
 > complete spec. Options: paste the spec text or URL, point me to the correct
 > module/page/file, or stop for now."
 
-Do not proceed silently to `[C]` when `spec.md` is thin.
+Do not proceed to `[C]` until the supplied recovery material has been saved to
+the workbench and `spec.md`, `investigation/review_a.json`, and
+`investigation/explore_context.md` have been updated.
+
+If syllabus could not be fetched, record the failure in `investigation/unreachable.txt`
+or `stage_reviews/process_concerns.jsonl` before `[B]`. If syllabus was fetched
+but not reviewed for relevance, treat the reconnaissance as incomplete and do
+not proceed to `[B]`.
 
 ### [B] Recon Summary + Alignment Loop
 
-AskUserQuestion checkpoint #1.
+User-interaction phase #1.
 
-Read `spec.md` first, then `investigation/review_a.json`,
-`investigation/rubric.md`, `investigation/unreachable.txt`, `pipeline_design.md`,
-and `problem.md`. Summarize in 4-6 lines:
+Read `spec.md` first, then `investigation/explore_context.md`,
+`investigation/review_a.json`, `investigation/rubric.md`,
+`investigation/unreachable.txt`, `pipeline_design.md`, and `problem.md`.
+Summarize in 4-6 lines:
 
 - Course + assignment name + due date + points.
 - Source trail and main spec judgment. Example: "assignment page was empty;
-  module Project guidelines contained `DSAA2011-26sp-project_announce-L01.pdf`."
+  a module item contained the project guidelines PDF."
+- Syllabus relevance: constraints found there, or why it did not add
+  assignment-specific requirements.
 - Concrete deliverables and tasks.
 - Rubric or grading criteria if found; say "Canvas rubric not found" if only
   spec-based criteria exist.
@@ -269,7 +395,7 @@ and `problem.md`. Summarize in 4-6 lines:
 
 This recon summary is not a second investigation and not a design proposal. It
 is the compact user-facing view of `[A]` outputs: `spec.md`,
-`investigation/rubric.md`, `investigation/review_a.json`,
+`investigation/explore_context.md`, `investigation/rubric.md`, `investigation/review_a.json`,
 `investigation/unreachable.txt`, `references/`, `problem.md`, and the
 preliminary output-mode line in `pipeline_design.md`. Its job is to tell the
 user what Canvas fixed, what the sources prove, and which decisions still belong
@@ -287,8 +413,7 @@ assignments, continue the loop until the Main Agent can write a stable
 `alignment_brief.md` and defend why the next pipeline will not drift away from
 the user's intent or project skeleton.
 
-For open-ended projects, `[B]` should behave like a compact version of
-Superpowers brainstorming:
+For open-ended projects, `[B]` has a required alignment loop:
 
 1. Ask one clarifying question at a time.
 2. After each answer, infer what new design dimensions the answer introduces.
@@ -298,11 +423,11 @@ Superpowers brainstorming:
 5. Self-review the skeleton and brief for gaps, contradictions, ambiguity, and
    scope drift before asking for confirmation.
 
-Do not skip from "I know the topic" directly to `alignment_brief.md` when the
-assignment asks the user to design a project, make creative choices, choose an
-architecture, or define an experience. A low-expertise user may not volunteer
-the important design variables; the Main Agent must surface them through the
-loop.
+If the assignment asks the user to choose a project direction, dataset,
+architecture, creative concept, user experience, research question, or other
+open design variable, do not write `alignment_brief.md` until the missing
+variable is either confirmed by the user or explicitly delegated to the Main
+Agent and recorded as delegated.
 
 #### [B1] Ask The Most Important Alignment Question
 
@@ -343,6 +468,10 @@ If a missing skeleton answer would change the pipeline shape, stage boundaries,
 tool choice, deliverable quality criteria, or user-facing experience, it is not
 a minor default. Ask about it before writing the terminal brief.
 
+Record the skeleton readiness result in `investigation/user_notes.md` under the
+current round. Include which dimensions are fixed, delegated, not applicable, or
+still blocking.
+
 If any missing answer can change the assignment's direction, ask one question:
 the single question that most reduces direction-drift risk. Do not ask a batch
 of questions. Do not ask low-impact style or formatting questions while a core
@@ -369,7 +498,7 @@ Question priority:
 Prefer open-ended questions for user-owned thinking. Prefer 2-3 options when
 the user may not have a ready idea or when the choice is operational.
 
-Example for a clear DSAA2011-style project:
+Example for a clear fixed-spec project:
 
 Ask:
 
@@ -482,8 +611,9 @@ the differences real. Example:
 ```
 
 After the user chooses or corrects the approach, present a design skeleton
-preview before the terminal brief. Cover only what matters for this assignment,
-but for open projects the preview should usually include:
+preview before the terminal brief. Cover only what matters for this assignment.
+For open projects, include each applicable item below, or record why it is not
+applicable:
 
 - user-facing experience and interaction loop;
 - creative direction / thesis / tone;
@@ -493,10 +623,11 @@ but for open projects the preview should usually include:
 - failure and fallback behavior;
 - expected deliverables, demo path, and verification strategy.
 
-Ask the user whether the skeleton is right. If the user corrects it, append
-another `user_notes.md` round and update the skeleton. Do not enter `[C]` until
-the user has approved either the short fixed-spec skeleton or the richer
-open-project skeleton.
+Ask the user whether the skeleton is right. Record the user's confirmation or
+correction in `investigation/user_notes.md` with timestamp or turn summary. If
+the user corrects it, append another `user_notes.md` round and update the
+skeleton. Do not enter `[C]` until the user has approved either the short
+fixed-spec skeleton or the richer open-project skeleton.
 
 #### [B4] Write And Confirm `alignment_brief.md`
 
@@ -550,9 +681,21 @@ Explain why the Main Agent can now enter [C] without guessing the user's core
 intent or project skeleton. Explicitly mention why the design skeleton is
 sufficient to write pipeline stages with concrete goals, reads, writes, reviews,
 quality criteria, and final review items.
+
+## Self-Review
+- Placeholder scan:
+- Internal consistency:
+- Scope check:
+- Ambiguity check:
+
+## User Confirmation
+- Confirmation source:
+- Confirmed by:
+- Confirmation summary:
 ```
 
-Before showing the brief to the user, self-review it:
+Before showing the brief to the user, self-review it and record the result in
+`alignment_brief.md > Self-Review`:
 
 - Placeholder scan: no TBD/TODO/empty section unless listed as a final review
   item.
@@ -563,7 +706,8 @@ Before showing the brief to the user, self-review it:
 - Ambiguity check: any unresolved choice that would change stage design is asked
   before confirmation, not hidden as a delegated default.
 
-Then show the user a concise summary and ask for confirmation:
+Then show the user a concise summary and ask for confirmation. After the user
+confirms, update `alignment_brief.md > User Confirmation` before entering `[C]`:
 
 ```text
 我已经没有必须继续问你的问题了。下面是我写入 alignment_brief.md 的最终理解：
@@ -578,8 +722,9 @@ If the user requests changes, append another round to `user_notes.md`, replace
 `alignment_brief.md` with the corrected final brief, and ask for confirmation
 again. Do not enter `[C]` until the user confirms the brief.
 
-Hard gate: without a confirmed `investigation/alignment_brief.md`, do not write
-the final `pipeline_design.md` and do not invoke `task-orchestrator.md`.
+Hard gate: without `investigation/alignment_brief.md` containing populated
+`Self-Review` and `User Confirmation` sections, do not write the final
+`pipeline_design.md` and do not invoke `task-orchestrator.md`.
 
 ### [C] Design Pipeline
 
@@ -589,8 +734,11 @@ Read:
 
 ```text
 spec.md
+investigation/explore_context.md
+investigation/explore_manifest.json
 investigation/rubric.md
 investigation/review_a.json
+canvas/syllabus.json               # verify relevance already distilled; do not pass raw syllabus to children by default
 investigation/alignment_brief.md  # required and confirmed at [B]
 investigation/user_notes.md       # if present
 investigation/user_scope.md       # if present
@@ -612,8 +760,40 @@ composes freely based on the actual assignment, not a fixed chain.
 
 For mixed assignments, write multiple sub-pipelines in pipeline_design.md.
 
-Complete `pipeline_design.md`. It is the single-assignment execution plan,
-modeled after Canvas Copilot:
+`pipeline_design.md` must contain these sections and fields:
+
+- `# Pipeline: <COURSE> <assignment>`
+- `## Metadata`
+  - `repo_root`
+  - `work_dir`
+  - `course_id`
+  - `assignment_id`
+- `## Output`
+  - `mode`
+  - final deliverable filenames/paths
+- `## Constraints`
+  - assignment constraints from `spec.md`
+  - syllabus-derived constraints only after `spec.md`, `explore_context.md`,
+    `rubric.md`, or `review_a.json` confirms their relevance
+  - user constraints and non-negotiables from `alignment_brief.md`
+  - forbidden context rules when relevant
+- `## Stages`
+  - stable stage id
+  - concrete stage goal
+  - tool path
+  - `delegate`: `subagent` or `main-agent`
+  - allowed reads
+  - writes
+  - review settings: spec compliance and quality
+  - retry limit
+  - quality criteria
+  - human blockers
+- `## Human Review Items`
+
+For mixed assignments, keep one ordered stage plan. Use stage ids and headings
+to group sub-pipelines instead of creating independent uncoordinated plans.
+
+Complete `pipeline_design.md`. It is the single-assignment execution plan:
 
 ```markdown
 # Pipeline: <COURSE> <assignment>
@@ -627,6 +807,7 @@ repo_root: <absolute path from [A2]>
 
 ## Constraints
 - [quantifiable constraints from spec]
+- [relevant syllabus constraints distilled into spec/rubric/review evidence]
 - [user intent / non-negotiables from alignment_brief.md]
 
 ## Stages
@@ -681,13 +862,17 @@ repo_root: <absolute path from [A2]>
 ```
 
 Do not write or require `task_profile.yaml`. The orchestrator reads
-`spec.md + alignment_brief.md + pipeline_design.md` directly.
+`spec.md + explore_context.md + alignment_brief.md + pipeline_design.md`
+directly.
 
 `pipeline_design.md` must explicitly incorporate `alignment_brief.md`. At
 minimum, its constraints, stage goals, human blockers, delegated decisions, and
 final review items must reflect the confirmed alignment brief. If a planned
-stage cannot be justified from `spec.md`, `investigation/rubric.md`, or
-`investigation/alignment_brief.md`, do not include that stage.
+stage cannot be justified from `spec.md`, `investigation/explore_context.md`,
+`investigation/rubric.md`, `investigation/review_a.json`, or
+`investigation/alignment_brief.md`, do not include that stage. Raw syllabus
+content should flow into pipeline constraints only through those distilled
+current-run artifacts, not as unstated background.
 
 `pipeline_design.md` is the task-level plan for the Main Agent and
 task-orchestrator. It is not handed directly to executor subagents. The
@@ -697,10 +882,28 @@ enabled.
 
 ### [D] Orchestrator Runs
 
+Before invoking the orchestrator, verify:
+
+- `[B]` produced a user-confirmed `investigation/alignment_brief.md`.
+- `pipeline_design.md` was derived from `spec.md`,
+  `investigation/explore_context.md`, `investigation/rubric.md`, and the
+  confirmed `alignment_brief.md`.
+- `investigation/review_a.json` records that syllabus was checked and either
+  contributed constraints or was explicitly judged irrelevant/unavailable.
+- Every planned stage has a concrete goal, allowed reads, writes, quality
+  criteria, review settings, retry limit, and human blockers.
+- Any delegated stage can be executed from its generated stage brief plus
+  allowed files. `pipeline_design.md` is not passed directly as the child
+  subagent's only brief.
+- No stage depends on forbidden context from archive files, old transcripts,
+  stale reviews, or prior pipeline files unless a current scout distilled that
+  context into active workbench evidence.
+
 Invoke `tasks/task-orchestrator.md` with the workbench path. The orchestrator:
 
-1. Reads `spec.md`, `pipeline_design.md`, `investigation/rubric.md`, and
-   `problem.md`.
+1. Reads `spec.md`, `investigation/explore_context.md`,
+   `investigation/explore_manifest.json`, `investigation/alignment_brief.md`,
+   `pipeline_design.md`, `investigation/rubric.md`, and `problem.md`.
 2. Maps stages to tools in `tools/_index.md`.
 3. Converts delegated stages into `stage_briefs/` executor and reviewer briefs.
 4. Runs the tools, each writing inside `work_dir`.
@@ -718,14 +921,17 @@ files. Stage result/review receipts must include UTC timestamps, dependency
 fields, and either an exact runtime `agent_id` or explicit `agent_id: null` plus
 `identity_authority: "stage_reviews/child_dispatch_ledger.json"` when the child
 does not know its id. Any transport recovery, identity normalization, or
-child-side ledger write must be recorded as a process concern rather than
-silently folded into `draft_ready`.
+child-side ledger write must be recorded as a process concern in
+`stage_reviews/process_concerns.jsonl` rather than silently folded into
+`draft_ready`. Each line should include `type`, `stage`, `evidence`,
+`recovery`, and `blocking`.
 
 Do not mark the draft as ready if reviewed stages lack a passing spec
 compliance review. Quality review happens only after spec compliance passes.
 
 The orchestrator must not prompt the user. If it cannot execute the planned
-pipeline, stop and write `result.json` with `status: "error"`:
+pipeline, it returns a failed summary to `do-homework`; the Main Agent writes
+`result.json` with `status: "error"`:
 
 ```bash
 .venv/bin/python scripts/write_homework_result.py \
@@ -740,7 +946,7 @@ pipeline, stop and write `result.json` with `status: "error"`:
 
 ### [E] Draft Review + Submission Confirmation
 
-AskUserQuestion checkpoint #2.
+User-interaction phase #2.
 
 Once the orchestrator returns, show the user:
 
@@ -760,9 +966,16 @@ Ask:
   - 重做 / 改某部分 (告诉我具体改什么)
 ```
 
-If user picks "重做", capture the change request, update
-`investigation/user_notes.md` or `pipeline_design.md`, and rerun from `[C]`.
-Do not re-fetch `[A]` unless the user says Canvas changed.
+If user picks "重做", classify the change request:
+
+- If it changes intent, selected approach, design skeleton, non-negotiables, or
+  human-owned facts, return to `[B4]`, update and reconfirm
+  `alignment_brief.md`, then rerun `[C]`.
+- If it changes only execution details within the confirmed brief, append the
+  request to `investigation/user_notes.md`, update `pipeline_design.md`, and
+  rerun from `[C]`.
+- Do not re-fetch `[A]` unless the user says Canvas changed or a required source
+  is missing.
 
 If user picks "不", write `result.json` with `status: "draft_ready"` only when
 the orchestrator summary is `status: success`, every blocking spec compliance
@@ -818,6 +1031,12 @@ Capture stdout. Show the user:
 - `submitted_at`.
 - Canvas URL to verify.
 
+Save the submission response under:
+
+```text
+canvas/submission_<attempt_number>.json
+```
+
 If submit succeeds, write `result.json` with `status: "submitted"`:
 
 ```bash
@@ -833,6 +1052,7 @@ If submit succeeds, write `result.json` with `status: "submitted"`:
   --verification-log "data/homework/<COURSE>/<HWID>/verification.log" \
   --submitted-at "<submitted_at_from_canvas>" \
   --submission-attempt "<attempt_number>" \
+  --note "submission receipt: data/homework/<COURSE>/<HWID>/canvas/submission_<attempt_number>.json" \
   --canvas-url "https://hkust-gz.instructure.com/courses/<course_id>/assignments/<assignment_id>"
 ```
 
@@ -856,7 +1076,9 @@ Human review items:
 
 ## Safety
 
-1. **Two AskUserQuestion checkpoints only**: `[B]` and `[E]`.
+1. **Two user-interaction phases only**: `[B]` alignment may be multi-round;
+   `[E]` asks for review, revision, or submission. Do not prompt the user from
+   `[A]`, `[C]`, `[D]`, or `[F]`.
 2. **Never auto-submit.** Even if the user said "complete and submit" upfront,
    confirm at `[E]`.
 3. **Never modify raw Canvas JSON** under `canvas/*.json`.
@@ -874,9 +1096,9 @@ Human review items:
 
 - **Don't read `assignment.description` as the problem statement.** It may be
   empty, a file link, a Google Doc link, or one hint among many.
-- **Don't stop at the first match.** Canvas Copilot checks assignment page,
-  rubric, front page, syllabus, modules, pages, files, and external URLs before
-  deciding which source is the spec.
+- **Don't stop at the first match.** Check assignment page, rubric, front page,
+  syllabus, modules, pages, files, and external URLs before deciding which
+  source is the spec.
 - **Don't turn `spec.md` into a raw dump.** Full PDF or Google Doc text belongs
   in `references/`; `spec.md` is the standardized report.
 - **Google Docs can be the main spec.** Try to fetch text. If blocked, record it

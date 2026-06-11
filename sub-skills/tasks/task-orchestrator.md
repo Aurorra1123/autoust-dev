@@ -564,11 +564,11 @@ Use Canvas Generic output vocabulary:
 | `slides` | presentation deck |
 | `mixed` | multiple output shapes |
 
-Real examples:
+Generic examples:
 
-- **DSAA2011 Project**: `mixed` - notebook/code + report PDF + slides PDF +
+- **Machine-learning course project**: `mixed` - notebook/code + report PDF + slides PDF +
   requirements + zip package.
-- **UCUG1505 FINAL project**: `mixed` - creative code + documentation + manual
+- **Creative coding final project**: `mixed` - creative code + documentation + manual
   video demo.
 
 ## Safety Rules
@@ -610,4 +610,5 @@ The old fixed chains validated AutoStudy's tool base:
 
 The next development step is to validate the unified
 `startup inventory -> explore_context -> terminal agreement -> execution plan -> draft/`
-flow on DSAA2011 Project and UCUG1505 FINAL project.
+flow on representative mixed-output assignments without baking those validation
+targets into runtime behavior.

@@ -164,12 +164,12 @@ only after the user picks one item.
 ## Canvas status — <today's date>
 
 ### ✅ Suggested plan
-1. **DSAA2011 · Project** — no due date · graded on Canvas · local draft_ready → review_or_submit
-2. **UCUG1600 · Final Report** — overdue · unsubmitted → recon
+1. **COURSE1234 · Project** — no due date · graded on Canvas · local draft_ready → review_or_submit
+2. **CORE1000 · Final Report** — overdue · unsubmitted → recon
 
 ### 📅 Upcoming (next 14 days)
-- **Mon 11-17 15:59** · DSAA2043 · Homework 3 · unsubmitted
-- **Wed 11-19 23:59** · DSAA2012 · Project Milestone 2 · in_progress
+- **Mon 11-17 15:59** · COURSE2000 · Homework 3 · unsubmitted
+- **Wed 11-19 23:59** · COURSE3000 · Project Milestone 2 · in_progress
 - ...
 
 ### ⚠️ Overdue / unsubmitted

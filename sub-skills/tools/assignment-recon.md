@@ -5,20 +5,24 @@ description: Agent-led Canvas Generic assignment reconnaissance. Inspect Canvas 
 
 # assignment-recon
 
-The data-grounding workflow for homework. It follows Canvas Copilot's
-`canvas-generic` model: **the agent reads every likely source and writes a
-standardized reconnaissance report**. It is not a one-shot parser and it is not
-a script-generated context dump.
+Use this tool workflow inside `do-homework [A]` to turn Canvas evidence into a
+standardized assignment workbench. Its job is to answer:
 
-Real failure modes this prevents:
+1. Which Canvas/source materials define the assignment?
+2. What must the student produce?
+3. What references are available or blocked?
+4. Is the assignment understood well enough to enter user alignment?
 
-- DSAA2011 Project: the assignment page is empty, Canvas rubric is absent, and
-  front page is disabled, but the project PDF lives in a module item.
-- UCUG1505 FINAL project: the assignment page and a Week 4 module item both
-  point to the same Google Doc spec; Week 9 slides are nearby context.
+Runtime invariants:
 
-The correct behavior is to inspect all angles first, then decide which source is
-the main spec.
+- Inspect all likely Canvas sources before deciding the main spec.
+- Treat `canvas/syllabus.json` as a first-class Canvas source: fetch it, read it,
+  and record whether it contains assignment requirements, grading criteria,
+  submission policy, late policy, academic-integrity rules, AI/tool policy, or
+  other course-level constraints.
+- Write `spec.md` as a concise evidence-grounded report, not as a raw dump.
+- Keep `problem.md` as compatibility only; downstream planning reads `spec.md`.
+- Do not let a helper script or scout decide the final main-spec judgment.
 
 ## Capability
 
@@ -107,6 +111,13 @@ module item `content_id`, or `assignment-files.json`, fetch file metadata:
 Note: `canvascli file` takes only `<file_id>` — no `-c` flag needed because file
 IDs are globally unique across courses.
 
+Read `canvas/syllabus.json` even when another source already looks like the main
+spec. The syllabus often contains grading language, assignment families,
+submission policies, collaboration rules, AI/tool policies, or academic
+integrity constraints that are not repeated on the assignment page. If the
+syllabus is irrelevant to the specific assignment, say so explicitly in
+`spec.md` and `investigation/review_a.json`; do not leave it implicit.
+
 Now write the first standardized `spec.md`. This is not raw JSON and not copied
 PDF text. It is a report, in the agent's words, grounded by the sources:
 
@@ -133,6 +144,12 @@ PDF text. It is a report, in the agent's words, grounded by the sources:
 - Files:
 - External URLs:
 
+## Syllabus Relevance
+State whether `canvas/syllabus.json` adds assignment-specific requirements,
+grading/rubric criteria, assessment-family context, submission or late policy,
+collaboration rules, academic-integrity constraints, AI/tool policy, or no
+relevant constraints for this assignment. Include evidence pointers either way.
+
 ## Main Spec Judgment
 State which source appears to be the main spec and why.
 
@@ -157,24 +174,23 @@ List missing sources, unreachable materials, or decisions only the user can make
 Point to canvas/*.json and references/* paths that justify the summary.
 ```
 
-Good DSAA2011-style result: `spec.md` says the assignment page was empty and
-the main spec is the module PDF, then lists the zip deliverables. It does not
-paste the entire PDF.
-
-Good UCUG1505-style result: `spec.md` says the assignment page and Week 4 module
-both point to the same Google Doc, records whether the Google Doc content was
-fetched, and distinguishes Week 9 slides as supporting context.
+Good generic result: `spec.md` explains which source is authoritative, why
+nearby Canvas sources are supporting or irrelevant, what the syllabus adds or
+does not add, and which concrete deliverables are required. It does not paste an
+entire PDF, page, or external document.
 
 ## Stage 2 - find-rubric
 
 Locate grading criteria in this order:
 
 1. Canvas rubric from `canvas/rubric.json`.
-2. `spec.md` and fetched reference text, searching for words such as `rubric`,
+2. `canvas/syllabus.json`, especially assessment tables, grading rubrics,
+   academic integrity, collaboration, AI/tool policy, late/submission policy,
+   and assignment-family descriptions.
+3. `spec.md` and fetched reference text, searching for words such as `rubric`,
    `criteria`, `graded on`, `points breakdown`, `you will be evaluated on`, and
    `assessment`.
-3. Module pages and syllabus text.
-4. External URLs fetched in Stage 3.
+4. Module pages and external URLs fetched in Stage 3.
 
 Write `<work_dir>/investigation/rubric.md`.
 
@@ -184,8 +200,9 @@ If no rubric is found, write:
 RUBRIC NOT FOUND - use assignment/spec criteria if present
 ```
 
-Do not stop only because Canvas rubric is absent. DSAA2011 and UCUG1505 both
-have useful spec-based grading criteria outside Canvas rubric.
+Do not stop only because Canvas rubric is absent. Many courses put useful
+grading criteria in PDFs, pages, external specs, or the syllabus instead of the
+Canvas rubric field.
 
 ## Stage 3 - locate-inputs
 
@@ -231,6 +248,13 @@ Reviewer must read:
 <work_dir>/investigation/rubric.md
 <work_dir>/references/
 <work_dir>/investigation/unreachable.txt
+<work_dir>/canvas/assignment.json
+<work_dir>/canvas/rubric.json
+<work_dir>/canvas/syllabus.json
+<work_dir>/canvas/modules.json
+<work_dir>/canvas/module-items-*.json
+<work_dir>/canvas/page-*.json      # if present
+<work_dir>/canvas/file-*.json      # if present
 ```
 
 Write strict JSON to `<work_dir>/investigation/review_a.json`:
@@ -240,6 +264,20 @@ Write strict JSON to `<work_dir>/investigation/review_a.json`:
   "deliverable_clear": true,
   "deliverable_summary": "One sentence describing what the student must produce.",
   "rubric_found": true,
+  "rubric_sources_checked": [
+    "canvas/rubric.json",
+    "canvas/syllabus.json",
+    "spec.md",
+    "references/",
+    "canvas/module-items-*.json",
+    "canvas/page-*.json"
+  ],
+  "syllabus_checked": true,
+  "syllabus_relevance": {
+    "status": "relevant | not_relevant | unavailable",
+    "evidence": "Brief evidence-backed relevance judgment.",
+    "constraints_added": []
+  },
   "inputs_complete": true,
   "missing_sources": [],
   "blocking_unreachables": [],
@@ -307,13 +345,16 @@ Before returning to `do-homework [B]`:
    trail.
 2. `canvas/` contains snapshots for assignment, rubric, front page, syllabus,
    modules, every inspected module's items, and relevant pages/files.
-3. `references/` contains every reachable material needed to understand the
+3. `spec.md` contains an explicit `Syllabus Relevance` judgment backed by
+   `canvas/syllabus.json`, or `investigation/unreachable.txt` explains why
+   syllabus could not be fetched.
+4. `references/` contains every reachable material needed to understand the
    assignment.
-4. `investigation/rubric.md` records Canvas or spec-based grading criteria, or
+5. `investigation/rubric.md` records Canvas, syllabus, or spec-based grading criteria, or
    clearly says rubric was not found.
-5. `investigation/unreachable.txt` lists blocked resources.
-6. `investigation/review_a.json` has a verdict.
-7. `pipeline_design.md` starts with the preliminary output mode.
+6. `investigation/unreachable.txt` lists blocked resources.
+7. `investigation/review_a.json` has a verdict and records syllabus relevance.
+8. `pipeline_design.md` starts with the preliminary output mode.
 
 ## Source Selection Philosophy
 
@@ -335,10 +376,10 @@ Before returning to `do-homework [B]`:
 
 ## Pitfalls
 
-1. **Assignment description can be empty.** DSAA2011 Project is the real
-   example; the spec was in a module file.
-2. **A valid source can appear twice.** UCUG1505 FINAL project links the same
-   Google Doc from assignment description and Week 4 module item.
+1. **Assignment description can be empty.** The real spec may live in a module
+   file, page, external document, or syllabus.
+2. **A valid source can appear twice.** Treat duplicate links across assignment
+   descriptions, modules, pages, or syllabus as corroboration, not confusion.
 3. **Front page 404 is normal.** Record it and keep going.
 4. **Rubric can be absent from Canvas.** Search spec, references, modules, and
    syllabus before declaring it missing.

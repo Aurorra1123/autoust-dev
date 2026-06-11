@@ -41,10 +41,10 @@ The product posture is **assistant, not hidden automation**:
 | User says... | Route |
 |---|---|
 | "看看这周作业" / "what's due" / "同步课程状态" | `sub-skills/tasks/sync-status.md` |
-| "帮我完成 DSAA2011 Project" / "做一下 lab" / "写这个 report" | `sub-skills/tasks/do-homework.md` |
+| "帮我完成 <COURSE> Project" / "做一下 lab" / "写这个 report" | `sub-skills/tasks/do-homework.md` |
 | "继续改上次那个草稿" / "根据反馈修一下 report" | `sub-skills/tasks/do-homework.md` retained-artifact / repair path |
-| "同步 DSAA2011 的资料" / "下载课件" / "sync course materials" | `sub-skills/tasks/sync-course.md` |
-| "写 DSAA2011 的笔记" / "generate course notes" | `sub-skills/tasks/write-course-notes.md` |
+| "同步 <COURSE> 的资料" / "下载课件" / "sync course materials" | `sub-skills/tasks/sync-course.md` |
+| "写 <COURSE> 的笔记" / "generate course notes" | `sub-skills/tasks/write-course-notes.md` |
 | "登录失败了" / "重新登录" | Check `whoami`; if expired, use `sub-skills/tools/canvascli-setup.md` Step 3 |
 | First time using AutoStudy | `sub-skills/tools/canvascli-setup.md` |
 
@@ -215,7 +215,7 @@ Fetched 7 courses, 57 assignments, and 5 announcements. The recommended plan is 
 ```
 
 ```text
-Draft artifacts are ready under data/homework/DSAA2011/project/draft/. No Canvas submission was attempted.
+Draft artifacts are ready under data/homework/<COURSE>/<ASSIGNMENT>/draft/. No Canvas submission was attempted.
 ```
 
 ## When In Doubt

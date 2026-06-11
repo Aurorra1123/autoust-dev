@@ -2,6 +2,16 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-11 — Homework reconnaissance docs hardened
+
+Cleaned runtime skill docs so homework reconnaissance no longer uses real
+course validation cases as examples, avoiding task-specific prior-case leakage
+into future runs. Strengthened syllabus handling across assignment recon and
+do-homework: syllabus is now a first-class Canvas source, `spec.md` must record
+syllabus relevance, `review_a.json` must report syllabus checks, and pipeline
+planning may inherit syllabus constraints only through distilled current-run
+evidence.
+
 ## 2026-06-11 — AIAA2711 course sync and notes generated
 
 Synced AIAA2711 (L02) / Mathematics for AI from Canvas course `2799` into

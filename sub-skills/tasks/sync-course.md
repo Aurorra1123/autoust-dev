@@ -54,7 +54,7 @@ mkdir -p "$COURSE_DIR"/{materials/{lectures,readings,other},canvas_sync,notes}
 ```
 
 `<COURSE_SLUG>` is `course_code` uppercased and non-alphanumeric replaced with
-`-` (e.g. `DSAA2011`). If `course_code` is empty, derive from the course name.
+`-` (e.g. `COURSE1234`). If `course_code` is empty, derive from the course name.
 
 #### 2b. Write meta.json
 

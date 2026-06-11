@@ -196,10 +196,12 @@ Expected output shapes:
 }
 ```
 
-Real verification anchors:
+Generic reconnaissance patterns:
 
-- DSAA2011 Project: assignment description is empty; module items reveal the project PDF.
-- UCUG1505 FINAL project: assignment description and Week 4 module item both point to the same Google Doc spec; Week 9 slides are nearby context.
+- Assignment descriptions may be empty while module items reveal the real spec
+  file.
+- The same valid spec link may appear from multiple Canvas surfaces. Treat
+  duplicates as corroboration and still distinguish nearby supporting context.
 
 ### `announcements`
 List announcements across all courses in the latest active Canvas term.

@@ -320,7 +320,8 @@
       "2026-06-10 renamed homework reconnaissance tool doc to assignment-recon.md and updated registry/task/runtime references",
       "2026-06-02 agent-led DSAA2011 Project recon: assignment description 0 B, Canvas rubric absent, front page not enabled, syllabus checked, all 4 modules / 69 module items inspected, module 12955 file 625115 identified as main spec, 4 project-module PDFs downloaded, review_a verdict proceed",
       "2026-06-02 agent-led UCUG1505 FINAL project recon: assignment description linked Google Doc, Canvas rubric absent, front page checked, syllabus empty, all 14 modules / 64 module items inspected, Week 4 corroborated same Google Doc, Week 9 slides marked supporting context, Google Doc spec and documentation template fetched, review_a verdict proceed",
-      "2026-06-02 Stage 4 used cold self-review because no sub-agent reviewer tool is available; review_a.json records review_method cold_read_self_review_no_sub_agent_available"
+      "2026-06-02 Stage 4 used cold self-review because no sub-agent reviewer tool is available; review_a.json records review_method cold_read_self_review_no_sub_agent_available",
+      "2026-06-11 runtime docs cleanup: skill/task/tool docs no longer use real course validation anchors as runtime examples; assignment-recon and do-homework now require explicit syllabus relevance in spec/review evidence before proceeding"
     ],
     "status": "passing",
     "notes": "Official path is validated as agent-led Canvas Generic Stage 1-5 on DSAA2011 Project and UCUG1505 FINAL project. Standalone script-led spec generation has been removed to avoid runtime confusion."
