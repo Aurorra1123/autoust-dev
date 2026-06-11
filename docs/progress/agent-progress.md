@@ -2,6 +2,17 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-11 — AIAA2711 course sync and notes generated
+
+Synced AIAA2711 (L02) / Mathematics for AI from Canvas course `2799` into
+`data/courses/AIAA2711/`: 39 files downloaded successfully, including 11 lecture
+PDFs, 1 reading, and 27 other course files; Canvas returned 0 announcements and
+the installed `canvascli` lacks the documented `modules` command. Generated 11
+Obsidian-style Markdown lecture notes plus `notes/README.md`; verification
+passed with 11/11 lecture PDFs covered by same-stem note files. Changes are
+left uncommitted because the user requested local course materials and notes,
+not a development commit.
+
 ## 2026-06-11 — README quick-start path cleanup
 
 Updated `skill.md` and all README variants for beginner users: clarified that AutoStudy runs from a dedicated clone of this repository, not from a copied standalone `skill.md` or a machine-specific absolute path. Quick starts now recommend cloning to a local folder such as `~/workspace/autoust-dev`, entering that folder, and asking the agent to read the repo-local `skill.md`. Verification: stale path/prompt scan passes and diff whitespace checks pass.

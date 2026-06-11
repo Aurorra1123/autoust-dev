@@ -629,7 +629,8 @@
       "2026-06-04 commit 9e735b8 adds sync-course task skill",
       "2026-06-04 commit b8493af registers sync-course in skill.md and _index.md",
       "2026-06-04 commit 34119c2 fixes DSAA2011 real Canvas classification issues (-L/_L patterns, name vs display_name)",
-      "2026-06-04 DSAA2011 acceptance: 70 files synced (14 lectures, 8 readings, 48 other)"
+      "2026-06-04 DSAA2011 acceptance: 70 files synced (14 lectures, 8 readings, 48 other)",
+      "2026-06-11 AIAA2711 acceptance: Canvas course 2799 synced with 39 files downloaded (11 lectures, 1 reading, 27 other), 0 failed downloads; installed canvascli lacks modules command and this drift is recorded in modules.json"
     ],
     "status": "passing",
     "notes": "This is course-level archive infrastructure, separate from sync-status homework planning."
@@ -650,7 +651,8 @@
     "evidence": [
       "2026-06-04 commit 2b65145 adds write-course-notes task skill",
       "2026-06-04 commit b8493af registers write-course-notes in skill.md and _index.md",
-      "2026-06-04 DSAA2011 acceptance: 14 notes generated from synced lecture PDFs"
+      "2026-06-04 DSAA2011 acceptance: 14 notes generated from synced lecture PDFs",
+      "2026-06-11 AIAA2711 acceptance: 11 notes generated from 11 synced lecture PDFs; verification_report.json PASS confirms same-stem coverage and required callout/LaTeX/mermaid/definition/proposition/symbol sections"
     ],
     "status": "passing",
     "notes": "This is a fixed learning pipeline modeled after AutoPku write-notes. It should feed future M4 Tutor/mastery work."
