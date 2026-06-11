@@ -16,8 +16,23 @@ AutoStudy is meant to run from a dedicated clone of this repository. The
 repository root is the working directory: `.venv/`, `data/`, `scripts/`, and
 `sub-skills/` are all resolved relative to it.
 
-For a first-time user, clone the repository into a normal local folder, then
-open the agent there or ask the agent to use that folder's `skill.md`:
+For first-time setup, choose the clone location from the user's current agent
+workspace before using any sample path:
+
+- If the current agent workspace is an empty folder chosen by the user for this
+  setup, clone AutoStudy into that folder with `git clone <repo> .`, then run
+  setup there.
+- If the current directory is already an AutoStudy clone, run setup in that
+  directory.
+- If the current directory is non-empty and not an AutoStudy clone, or if the
+  current workspace is unclear, ask the user where to put the repository before
+  cloning.
+- Do not silently default to `~/workspace`, Desktop, Downloads, or any other
+  machine-specific location. Example paths are examples only.
+
+If the user wants to choose a folder manually, clone the repository into a
+normal local folder, then open the agent there or ask the agent to use that
+folder's `skill.md`:
 
 ```bash
 git clone https://github.com/Aurorra1123/autoust-dev.git ~/workspace/autoust-dev

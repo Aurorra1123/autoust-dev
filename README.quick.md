@@ -65,7 +65,22 @@ data/courses/<COURSE>/
 
 ## 第一次使用
 
-AutoStudy 要作为一个独立仓库运行，不是只复制一个 `skill.md`。推荐让 agent clone 到一个固定文件夹：
+AutoStudy 要作为一个独立仓库运行，不是只复制一个 `skill.md`。推荐先在 Claude Code / Codex 里打开一个准备用来放 AutoStudy 的空白项目文件夹，然后说：
+
+```text
+请把 https://github.com/Aurorra1123/autoust-dev clone 到当前空白文件夹，
+读取里面的 skill.md，并按步骤帮我完成初始化。
+```
+
+agent 应该先确认当前目录是空目录，再执行：
+
+```bash
+git clone https://github.com/Aurorra1123/autoust-dev.git .
+```
+
+如果当前目录不是空的，或当前工作区不明确，agent 应该先问你要放到哪里。不要让它默默默认到 `~/workspace`、桌面或下载目录。
+
+你也可以明确指定一个固定文件夹：
 
 ```text
 请把 https://github.com/Aurorra1123/autoust-dev clone 到 ~/workspace/autoust-dev，

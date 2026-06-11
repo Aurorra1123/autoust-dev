@@ -47,7 +47,22 @@ M3.5+：更深的 Canvas 侦查、明确的用户对齐、动态 pipeline、阶�
 
 ### 1. 让 agent 加载这个 skill
 
-AutoStudy 是一个完整的本地仓库，不是单独一个 `skill.md` 文件。第一次使用时，建议让 agent 把它 clone 到一个独立文件夹，比如 `~/workspace/autoust-dev`：
+AutoStudy 是一个完整的本地仓库，不是单独一个 `skill.md` 文件。第一次使用时，最稳的方式是在 Claude Code / Codex 里先打开一个你准备用来放 AutoStudy 的空白项目文件夹，然后让 agent 直接 clone 到当前目录：
+
+```text
+请把 https://github.com/Aurorra1123/autoust-dev clone 到当前空白文件夹，
+读取里面的 skill.md，并按步骤帮我完成初始化。
+```
+
+agent 应该先确认当前目录是空目录，再执行等价于下面的命令：
+
+```bash
+git clone https://github.com/Aurorra1123/autoust-dev.git .
+```
+
+如果当前目录不是空的，或者你还没有打开一个明确的项目文件夹，agent 应该先问你要放到哪里，而不是默认放进 `~/workspace`、桌面、下载目录或其他隐式位置。
+
+你也可以明确指定一个路径：
 
 ```text
 请把 https://github.com/Aurorra1123/autoust-dev clone 到 ~/workspace/autoust-dev，
@@ -68,7 +83,7 @@ cd ~/workspace/autoust-dev
 请使用当前目录里的 AutoStudy skill，阅读 skill.md，然后帮我初始化。
 ```
 
-`~/workspace/autoust-dev` 只是推荐位置；你也可以换成自己喜欢的文件夹。关键是 AutoStudy 要作为一个独立仓库存在，因为 `.venv/`、`data/`、`scripts/` 和 `sub-skills/` 都会在这个仓库目录下使用。agent 应该读取 `skill.md`，检查环境，并把缺失依赖安装到本地 `.venv/`。
+`~/workspace/autoust-dev` 只是一个示例位置，不是默认位置。关键是 AutoStudy 要作为一个独立仓库存在，因为 `.venv/`、`data/`、`scripts/` 和 `sub-skills/` 都会在这个仓库目录下使用。agent 应该读取 `skill.md`，检查环境，并把缺失依赖安装到本地 `.venv/`。
 
 ### 2. 完成一次 Canvas 登录
 

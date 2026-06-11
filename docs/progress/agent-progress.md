@@ -13,6 +13,19 @@ scan-plan tooling and moved developer-only guidance out of root `AGENTS.md`
 into `docs/DEVELOPMENT.md`, leaving root `AGENTS.md` ignored for local overrides
 so user-mode runtime agents do not load developer instructions.
 
+## 2026-06-11 — Fresh-user clone target protocol
+
+Fixed a fresh-user onboarding gap exposed by testing from an empty Codex project
+folder: the prior quick start treated `~/workspace/autoust-dev` as the visible
+example, which let an agent ignore the already-open empty workspace. `skill.md`,
+README variants, and `PITFALLS.md` now require current-empty-folder clone first,
+ask-before-clone when the target is unclear or non-empty, and treat
+`~/workspace/autoust-dev` as an explicit example only. Next: rerun the public
+fresh-start prompt from a new empty folder to confirm the agent chooses `git
+clone ... .` or asks before choosing a different path. Changes are left
+uncommitted for user review because this session requested bug analysis and a
+targeted docs fix, not a commit.
+
 ## 2026-06-11 — Homework reconnaissance docs hardened
 
 Cleaned runtime skill docs so homework reconnaissance no longer uses real
@@ -36,7 +49,7 @@ not a development commit.
 
 ## 2026-06-11 — README quick-start path cleanup
 
-Updated `skill.md` and all README variants for beginner users: clarified that AutoStudy runs from a dedicated clone of this repository, not from a copied standalone `skill.md` or a machine-specific absolute path. Quick starts now recommend cloning to a local folder such as `~/workspace/autoust-dev`, entering that folder, and asking the agent to read the repo-local `skill.md`. Verification: stale path/prompt scan passes and diff whitespace checks pass.
+Updated `skill.md` and all README variants for beginner users: clarified that AutoStudy runs from a dedicated clone of this repository, not from a copied standalone `skill.md` or a machine-specific absolute path. At that point, quick starts still used `~/workspace/autoust-dev` as the visible example; the follow-up entry above supersedes that with the current-empty-folder-first protocol. Verification: stale path/prompt scan passes and diff whitespace checks pass.
 
 ## 2026-06-10 — Fresh-user sync-status to DSAA2011 validation
 

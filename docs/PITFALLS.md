@@ -7,6 +7,18 @@
 
 ## 环境 & Claude Code 通道
 
+### 0. 新用户初始化不要把示例路径当默认路径
+
+**现象**：用户为了模拟首次体验，先在 Claude Code / Codex 里打开了一个空白项目文件夹，然后要求下载并初始化 AutoStudy。agent 没有把这个空白文件夹理解为用户选定的落点，而是按 README 示例把仓库 clone 到 `~/workspace/autoust-dev`。
+
+**根因**：入口文档只强调"dedicated clone"，并给了 `~/workspace/autoust-dev` 示例，但没有明确 clone 落点选择协议。agent 容易把示例路径升级成默认路径。
+
+**规则**：
+- 当前 agent workspace 是用户为初始化打开的空白文件夹时，优先 `git clone https://github.com/Aurorra1123/autoust-dev.git .`。
+- 当前目录已经是 AutoStudy 仓库时，直接在该目录初始化。
+- 当前目录非空且不是 AutoStudy 仓库，或当前工作区不明确时，先问用户目标目录。
+- `~/workspace/autoust-dev`、桌面、下载目录等只能在用户明确指定时使用，不能作为静默默认值。
+
 ### 1. `! ` 前缀 Bash 没有 TTY，`input()` 立刻 EOF
 
 **现象**：脚本里有 `input("Press Enter...")`，在 Claude Code 提示框里用 `! .venv/bin/python xxx.py` 跑，立刻报 `EOFError: EOF when reading a line`。

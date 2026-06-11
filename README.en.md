@@ -53,8 +53,26 @@ stage-level review, and resumable local workbenches.
 ### 1. Load The Skill
 
 AutoStudy is a full local repository, not a standalone `skill.md` file. On a
-first run, ask the agent to clone it into a dedicated folder, for example
-`~/workspace/autoust-dev`:
+first run, the safest flow is to open an empty project folder in Claude Code /
+Codex, then ask the agent to clone AutoStudy into the current directory:
+
+```text
+Clone https://github.com/Aurorra1123/autoust-dev into the current empty folder,
+then read skill.md and help me initialize it.
+```
+
+The agent should confirm the current directory is empty, then run the equivalent
+of:
+
+```bash
+git clone https://github.com/Aurorra1123/autoust-dev.git .
+```
+
+If the current directory is not empty, or if no clear project folder is open,
+the agent should ask where to place the repository instead of silently choosing
+`~/workspace`, Desktop, Downloads, or another implicit location.
+
+You can also provide an explicit folder:
 
 ```text
 Clone https://github.com/Aurorra1123/autoust-dev into ~/workspace/autoust-dev,
@@ -75,7 +93,7 @@ Then tell the agent from that directory:
 Use the AutoStudy skill in the current directory. Read skill.md and help me initialize it.
 ```
 
-`~/workspace/autoust-dev` is only a suggested location; any local folder is fine.
+`~/workspace/autoust-dev` is only an example location, not a default. Any local folder is fine.
 The important part is that AutoStudy stays as its own repository folder because
 `.venv/`, `data/`, `scripts/`, and `sub-skills/` are all used relative to it. The
 agent should read `skill.md`, check the environment, and install missing
