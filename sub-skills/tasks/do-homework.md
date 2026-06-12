@@ -314,8 +314,11 @@ Follow the Canvas Generic stages:
    Download or fetch necessary PDFs, Google Doc text, starter code, datasets, or
    external spec pages into `references/`. Record blocked resources in
    `investigation/unreachable.txt`. When syllabus was fetched, ensure the
-   readable syllabus artifact is also present in `references/`. Revise
-   `spec.md` if fetched inputs change the main spec judgment.
+   readable syllabus artifact is also present in `references/`. For every
+   fetched PDF that may affect the spec, save PDF link annotation manifests as
+   `references/*.pdf.links.json`; do not treat PDF text extraction as complete
+   until the visible text and embedded link annotations have both been checked.
+   Revise `spec.md` if fetched inputs change the main spec judgment.
 
 4. **Stage 4 review investigation**
    Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`, and
@@ -357,6 +360,9 @@ Do not proceed to `[B]` until:
 - If syllabus was fetched, `references/` contains a readable syllabus
   extract/text export and `spec.md` points to it as evidence alongside
   `canvas/syllabus.json`.
+- Any fetched PDF that was used as spec, rubric, input, or source-context
+  evidence has a sibling PDF link annotation manifest under
+  `references/*.pdf.links.json`, even when the manifest is empty.
 
 #### [A4] Gate On Reconnaissance Quality
 

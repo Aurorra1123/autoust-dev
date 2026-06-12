@@ -222,6 +222,48 @@ files directly and return their text content. Alternatively, use PyMuPDF
 programmatically. For Google Docs, attempt anonymous text export and save it
 as `references/<name>.txt` or `references/<name>.md`.
 
+### PDF Link Annotation Extraction
+
+PDF text extraction is not complete source extraction. Human readers can see and
+click blue linked text because PDF viewers combine the visible text layer with
+link annotations; tools such as `pdftotext` or `page.get_text()` usually return
+only the visible text and omit the target URL.
+
+For every fetched PDF that may affect the assignment spec, also extract link
+annotations and save them beside the PDF:
+
+```text
+references/<name>.pdf
+references/<name>.pdf.txt
+references/<name>.pdf.links.json
+```
+
+Use PyMuPDF `page.get_links()` or an equivalent PDF annotation reader. The link
+manifest should be a JSON array with generic fields:
+
+```json
+[
+  {
+    "source_pdf": "references/example.pdf",
+    "page": 1,
+    "anchor_text": "visible linked words near the link rectangle",
+    "uri": "https://example.invalid/resource",
+    "rect": [0, 0, 0, 0]
+  }
+]
+```
+
+If a PDF has no external links, write an empty `[]` manifest. If link extraction
+fails, record the failure in `investigation/unreachable.txt` or process concerns
+with the PDF path and tool error. Do not specialize this rule by URL domain,
+resource type, or course. The generic contract is: preserve every URI embedded
+in PDF link annotations so later spec, rubric, input, and blocker decisions can
+decide whether each URL matters.
+
+When useful, also write an aggregate `references/pdf_links.json` that concatenates
+all per-PDF link records for quick review; the sibling `*.pdf.links.json`
+manifests remain the source-adjacent evidence.
+
 Record resources that cannot be fetched in
 `<work_dir>/investigation/unreachable.txt`, with a short reason:
 

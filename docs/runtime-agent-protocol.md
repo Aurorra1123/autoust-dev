@@ -509,6 +509,7 @@ work_dir/
 ├── problem.md                  # compatibility only
 ├── references/
 │   └── *syllabus*              # readable syllabus extract/text export when fetched
+│   └── *.pdf.links.json        # PDF link annotations beside fetched PDFs
 └── investigation/
     ├── rubric.md
     ├── unreachable.txt
@@ -521,6 +522,13 @@ Canvas syllabus JSON belongs under `canvas/`, but if syllabus is fetched the
 reconnaissance must also write a readable syllabus extract or text export under
 `references/` so later executor/reviewer children and humans can audit
 syllabus-derived constraints without parsing raw Canvas JSON.
+
+Fetched PDFs are rich source objects, not just text files. The visible text layer
+does not necessarily contain URLs behind linked words. Reconnaissance must
+preserve PDF link annotations by writing `references/*.pdf.links.json` beside
+spec/rubric/input PDFs, using generic fields such as source PDF path, page,
+anchor text, URI, and rectangle. Later stages may decide which URLs matter, but
+the reconnaissance layer must not drop them while converting PDFs into text.
 
 ### Phase 3: User Alignment
 
