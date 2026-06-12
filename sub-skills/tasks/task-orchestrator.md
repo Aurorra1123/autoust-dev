@@ -1,15 +1,17 @@
 ---
 name: task-orchestrator
-description: Execute a per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and an execution plan. Called by do-homework after exploration and user alignment. Do not invoke directly from user input.
+description: Execute an approved per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and a user-approved execution plan. Use after do-homework has produced and the user has approved pipeline_design.md.
 ---
 
 # task-orchestrator
 
 The core M3.5 execution coordination mechanism. This task is written for the
-Claude Code Main Agent. It reads the current execution plan, creates bounded
-stage briefs, dispatches executor and reviewer subagents when a stage is
-delegated, executes simple `delegate: main-agent` stages inline, and aggregates
-evidence for final verification.
+Claude Code Main Agent. It runs only after `do-homework.md` has produced a
+pipeline and the user has approved it. It reads the current execution plan,
+creates bounded stage briefs, dispatches executor and reviewer subagents when a
+stage is delegated, executes simple `delegate: main-agent` stages inline only
+when the approved plan explicitly permits that mode, and aggregates evidence for
+final verification.
 
 This task does **not** infer the assignment from raw Canvas fields and does
 **not** consume `task_profile.yaml`. The source of truth is:
@@ -20,6 +22,7 @@ work_dir/
 ├── spec.md
 ├── problem.md
 ├── references/
+│   └── *syllabus*        # readable syllabus evidence when fetched
 ├── investigation/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
@@ -38,6 +41,10 @@ work_dir/
 
 `spec.md` is the standardized Canvas/source exploration report.
 `investigation/explore_context.md` is the shared exploration summary.
+`references/` contains readable source materials; raw Canvas snapshots stay
+under `canvas/`. If syllabus was fetched and used or judged for relevance,
+`references/` should include a readable syllabus extract/text export so stage
+briefs do not need to pass raw `canvas/syllabus.json` as hidden background.
 The terminal agreement is usually `investigation/alignment_brief.md` for an
 initial assignment and may be `repair_plan.md` for a retained-artifact change.
 The execution plan is usually `pipeline_design.md` and may be
@@ -58,9 +65,12 @@ Only after `do-homework` has:
    `repair_plan.md` for retained-artifact change requests.
 5. Written or updated the current execution plan from that agreement:
    `pipeline_design.md` or compatibility `repair_pipeline_design.md`.
+6. Presented the execution plan to the user and recorded
+   `Pipeline Review Status.status: approved_for_orchestration` inside the
+   current execution plan.
 
-End users never call this directly. They say "帮我完成 hw3", which routes to
-`do-homework`.
+End users do not call this as the first step. They start with `do-homework`;
+this task is the second step after pipeline review approval.
 
 ## Required Workbench
 
@@ -70,6 +80,7 @@ work_dir/
 ├── spec.md
 ├── problem.md
 ├── references/
+│   └── *syllabus*                  # readable syllabus evidence when fetched
 ├── investigation/
 │   ├── rubric.md
 │   ├── unreachable.txt
@@ -112,10 +123,22 @@ Before executing, check:
   `## Stages` sections. Prefer `pipeline_design.md`; use
   `repair_pipeline_design.md` only when the current run intentionally wrote that
   compatibility filename.
+- The current execution plan contains `## Pipeline Review Status` with
+  `status: approved_for_orchestration`, non-empty `approved_at`, and non-empty
+  `approved_by`. If status is `awaiting_user_review`, stop and ask the caller to
+  return to the pipeline review gate instead of executing.
+- Every stage's `delegate` value is treated as binding. The coordinator may not
+  silently convert a `delegate: subagent` stage to inline main-agent execution.
+  If subagent dispatch is unavailable, return a failed summary or require the
+  pipeline to be revised and re-approved.
 - `investigation/review_a.json` exists and has `verdict: "proceed"`, unless
   `do-homework` explicitly recorded user-supplied recovery material.
 - `references/` contains required reachable materials, or
   `investigation/unreachable.txt` explains missing resources.
+- If `investigation/review_a.json` says syllabus was available and checked,
+  `references/` contains a readable syllabus extract/text export, or
+  `investigation/unreachable.txt` / process concerns explains why it could not
+  be written.
 
 If these checks fail, return to `do-homework` with `status: failed`. Do not run
 tools against an ungrounded assignment.
@@ -123,10 +146,12 @@ tools against an ungrounded assignment.
 ## Pipeline Design Format
 
 `pipeline_design.md` follows the stage-based format defined in
-`docs/skills-architecture-spec.md §5`. Each stage declares `id`, `tool`,
-`delegate`, `reads`, `writes`, `review.spec_compliance`, `review.quality`,
-`max_retries`, `quality_criteria`, and `human_blockers`. Stages may also declare
-`lang`, `type`, `post-process`, `fallback`, and `min_quality`.
+`docs/skills-architecture-spec.md §5`. It must include
+`## Pipeline Review Status` with `approved_for_orchestration` before this task
+runs. Each stage declares `id`, `tool`, `delegate`, `reads`, `writes`,
+`review.spec_compliance`, `review.quality`, `max_retries`, `quality_criteria`,
+and `human_blockers`. Stages may also declare `lang`, `type`, `post-process`,
+`fallback`, `min_quality`, and `required_spec_constraints`.
 
 The format is written by `do-homework [C]` — the orchestrator reads and executes it.
 Do not redesign the format here.
@@ -160,6 +185,7 @@ investigation/review_a.json
 investigation/user_notes.md      # if present
 investigation/user_scope.md      # if present
 problem.md                       # compatibility only
+references/*syllabus*            # if syllabus was fetched and relevant or judged
 SKILLS_DIR/_index.md          # path discovered above
 ```
 
@@ -195,6 +221,18 @@ Do not fake an unsupported capability.
 
 ### Step 3 - Generate Stage Briefs
 
+Before generating any stage brief, build a `hard_requirement_inventory` from
+`spec.md` and authoritative references. Include explicit `must`, `required`,
+`only`, `do not`, exact file/data/source/package/format/page/time/name
+constraints, and rubric-critical conditions. Then diff it against
+`required_spec_constraints` in the execution plan.
+Use this exact gate: diff it against `required_spec_constraints`.
+
+If a hard requirement appears in `hard_requirement_inventory` but is absent or
+weakened in `required_spec_constraints`, stop and record `FAIL | spec
+requirement drift`. Do not generate executor briefs from a pipeline that has
+already downgraded the spec.
+
 For each stage in the current execution plan, write:
 
 ```text
@@ -222,6 +260,14 @@ Each executor brief must include:
 - selected tool skill paths;
 - relevant user intent, confirmed decisions, delegated decisions, and
   non-negotiables from the terminal agreement;
+- applicable `required_spec_constraints`, including source, requirement,
+  applies_to, required_evidence, status, blocker type when blocked, and
+  `fallback_allowed_for_final`;
+  Required fields: source, requirement, applies_to, required_evidence, status.
+- applicable tool contracts copied from the selected tool skill, not merely the
+  tool filename. Include `allowed_renderer_paths`, the selected `renderer_path`
+  when known, required source artifacts, required verification evidence, and
+  fallback limits.
 - measurable quality criteria;
 - review criteria;
 - context from previous stages;
@@ -256,6 +302,27 @@ Each executor brief must include:
   `review_type`, `depends_on_stage_result`, `depends_on_spec_review`, verdict,
   and a structured `issue_classification` object. Do not rely on prose such as
   "write appropriate metadata"; missing dependency fields are schema drift.
+
+Tool Contract Preservation Gate:
+
+- A stage brief that names a tool skill must preserve that tool's non-negotiable
+  output contract. The orchestrator may specialize the contract for the current
+  assignment, but it must not drop required source artifacts, renderer choices,
+  validation commands, or fallback limits.
+- For slides, copy the slide-maker renderer contract into the brief:
+  `allowed_renderer_paths: [guizang, beamer]`, the selected `renderer_path` if
+  chosen by the plan, required `render_command_or_script`, source artifact
+  expectations (`guizang/index.html` or `slides.tex`), and font/glyph
+  verification evidence. do not invent a new final renderer after dispatch. A
+  PyMuPDF repair or preview fallback must be explicitly labeled and cannot be
+  accepted as the final slides deliverable unless it satisfies the chosen tool
+  contract and records the render script, font strategy, `pdffonts`, and
+  `pdftotext` replacement-glyph evidence.
+- Executor receipts for rendered artifacts must report the selected
+  `renderer_path`, the exact `render_command_or_script`, any fallback reason, and
+  whether the fallback is final, preview, debug, or superseded. A vague receipt
+  such as "professional local fallback" is insufficient evidence for
+  `draft_ready`.
 
 Do not dispatch a subagent until its stage brief exists.
 
@@ -455,6 +522,23 @@ auditors do not confuse them with unrepaired blockers. Only `needs_user_input`,
 `manual_only`, and `external_blocker` issues may remain as `revision_needed`
 items after automatic repairs are exhausted.
 
+Spec hard requirement no-downgrade gate:
+
+- If the current execution plan declares `required_spec_constraints`, or if
+  `spec.md` contains explicit `must`, `required`, `only`, `do not`, exact file,
+  data, format, source, package, page/time, or rubric-critical requirements, the
+  coordinator must treat those as blocking spec-compliance requirements.
+- Verify the same requirement is preserved across
+  `spec -> pipeline -> stage brief -> artifact -> verification`. Stage briefs
+  may add implementation detail, but they must not weaken, omit, or reclassify a
+  hard requirement as a fallback, acceptable risk, or optional human review item.
+- If a hard requirement cannot be met with current evidence, classify the issue
+  as `needs_user_input`, `manual_only`, or `external_blocker`; the coordinator
+  must not mark `draft_ready`.
+- A fallback output is only preview/debug when it does not satisfy the exact
+  hard requirement. It may be generated for review, but it must not be named,
+  packaged, or verified as the final deliverable governed by that requirement.
+
 For conditional repair or verification stages whose trigger is false, write a
 `stage_results/<stage_id>_result.json` receipt with `status: "SKIPPED"`,
 `skip_reason`, and the evidence that made the trigger false. A skipped reviewed
@@ -481,6 +565,16 @@ Before returning:
   remain.
 - Check `result.json` is not marked `revision_needed` because of unresolved
   `auto_fixable` issues that the current agent could repair.
+- Check hard spec requirements:
+  - For each `required_spec_constraints` item, verify the artifact and
+    verification evidence satisfy the exact source requirement.
+  - If a hard requirement is missing from a stage brief, record
+    `FAIL | spec requirement drift` and withhold `draft_ready`.
+  - If a fallback artifact exists for a hard requirement, verify it is labeled as
+    preview/debug only and excluded from final deliverable/package checks unless
+    the authoritative spec explicitly permits that fallback.
+  - Do not accept generic checks, such as file exists, magic bytes, page count,
+    or image count, when the spec requires more specific evidence.
 - Sanity checks by type:
   - `pdf`: file is >1 KB and magic bytes are `%PDF`.
   - report PDF with available generated figures: `pdfimages -list` or visual
@@ -493,6 +587,12 @@ Before returning:
   - English report PDF labels: if the report is otherwise English, localized
     table-of-contents or figure labels should be fixed or classified as
     nonblocking professionalism risk with evidence.
+  - slides PDF rendering: record `pdffonts` and `pdftotext` evidence, verify font embedding
+    or an explicit font strategy, and scan extracted text for
+    replacement-glyph symptoms such as Unicode replacement characters, tofu
+    boxes, or unexpected line-leading question marks. If the source deck does not
+    contain those literal characters but the PDF extraction does, classify it as
+    an `auto_fixable` rendering issue and rerender before packaging.
   - `pptx`: file is a valid zip with `[Content_Types].xml`.
   - `html`: file is non-empty and has expected slide/page structure if a deck.
   - `ipynb`: valid JSON with notebook cells.
@@ -528,7 +628,22 @@ an `INFO` line if the local verifier supports it. Do not write a misleading
 
 ### Step 7 - Return Summary
 
-Return a structured summary to `do-homework`:
+Before returning, write `result.json` for the execution outcome:
+
+- `draft_ready` only when every blocking spec compliance review passed, quality
+  reviews passed or were explicitly skipped with nonblocking reasons, hard spec
+  requirement no-downgrade gates passed, all required deliverables exist, and
+  `verification.log` has no blocking `FAIL`.
+- `revision_needed` when deliverables exist but remaining blockers are
+  `needs_user_input`, `manual_only`, `external_blocker`, or explicitly accepted
+  nonblocking risks.
+- `error` when execution cannot produce a coherent draft or when required stage
+  evidence is missing/malformed after retries.
+
+Never submit to Canvas from this task. The caller may ask the user about
+submission after reading the summary and `result.json`.
+
+Return a structured summary to the caller:
 
 ```yaml
 status: success | partial | failed
@@ -548,7 +663,8 @@ human_review_items:
 failures: []
 ```
 
-`do-homework` uses this summary at `[E]` and writes `result.json`.
+The caller shows this summary to the user and handles any later submission
+confirmation outside `task-orchestrator.md`.
 
 ## Output Modes
 
@@ -573,17 +689,22 @@ Generic examples:
 
 ## Safety Rules
 
-1. **No tool runs without `do-homework [B]` approval.**
+1. **No tool runs without pipeline approval.** `pipeline_design.md` must contain
+   `Pipeline Review Status.status: approved_for_orchestration` before any stage
+   brief, executor, reviewer, or verification tool runs.
 2. **Do not invent missing source material.** If `spec.md` or `references/` is
    incomplete, return to `do-homework`.
-3. **Do not use `assignment.description` as the prompt.**
-4. **Do not silently alter deliverables.** The current execution plan controls
+3. **Do not pass raw syllabus as hidden background.** Use distilled constraints
+   from `spec.md` / `rubric.md` / `review_a.json` and readable
+   `references/*syllabus*` evidence when syllabus matters.
+4. **Do not use `assignment.description` as the prompt.**
+5. **Do not silently alter deliverables.** The approved execution plan controls
    the target artifacts.
-5. **No writes outside `work_dir`** except explicit renderer outputs already
+6. **No writes outside `work_dir`** except explicit renderer outputs already
    named in the current execution plan.
-6. **No placeholder deliverables.** Ban `[PROBLEM N]`,
+7. **No placeholder deliverables.** Ban `[PROBLEM N]`,
    `[TODO: align with actual project spec]`, and `[此处由小组成员填入选题]`.
-7. **Surface `[CLARIFICATION NEEDED: ...]` markers** in the returned
+8. **Surface `[CLARIFICATION NEEDED: ...]` markers** in the returned
    `human_review_items`.
 
 ## Pitfalls

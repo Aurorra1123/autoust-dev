@@ -104,6 +104,23 @@ monofont: Menlo
 ---
 ```
 
+If `pipeline_design.md` declares `required_spec_constraints`, or if `spec.md`
+contains explicit hard requirements for this prose deliverable or stage
+artifact, the draft must not weaken those requirements. Examples include exact
+section order, page limits, citation style, required datasets/sources, required
+template/style files, file names, and credit/disclosure wording.
+Use this scope phrase: prose deliverable or stage artifact.
+
+- Preserve each hard requirement in the draft or stage receipt with enough
+  evidence for the renderer/reviewer to verify it later.
+- If a hard requirement needs a specific source format, produce that source
+  format, or produce content clearly labeled as preview only.
+- If the requirement cannot be satisfied with available context, classify the
+  affected final deliverable as blocked by `needs_user_input`,
+  `manual_only`, or `external_blocker`.
+- Do not claim that generic Markdown, generic Pandoc output, or any fallback
+  satisfies a final deliverable when `fallback_allowed_for_final: false`.
+
 Quality bar:
 
 - Every assertion grounded in spec/references/pipeline_design

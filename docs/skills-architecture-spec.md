@@ -221,6 +221,16 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 - 代码必须包含 dropout 相关实验
 - 报告不少于 2000 字
 - notebook 必须能从头运行
+- required_spec_constraints:
+  - id: report_format_style
+    source: references/project_announce.pdf.txt:178
+    requirement: "must use the official LaTeX style file; do not use preprint"
+    applies_to: [draft/report.pdf]
+    required_evidence:
+      - "render source/log proves the required style file was used"
+    status: blocked
+    blocker_type: external_blocker
+    fallback_allowed_for_final: false
 
 ## Stages
 
@@ -276,7 +286,7 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 - tool: sub-skills/tools/pdf-renderer.md
 - delegate: subagent
 - review:
-  - spec_compliance: false
+  - spec_compliance: true
   - quality: true
 - max_retries: 1
 - reads:
@@ -287,6 +297,9 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 - quality_criteria:
   - PDF exists and magic bytes are %PDF
   - file size and page count meet min_quality
+  - if required_spec_constraints applies, final verification proves each hard
+    requirement exactly; fallback output does not satisfy the final deliverable
+    unless the authoritative spec allows it
 - fallback: sequential renderer fallback declared by pdf-renderer.md
 - min_quality: PDF > 10KB, pages >= 5
 
@@ -304,8 +317,17 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
   - investigation/alignment_brief.md
 - writes:
   - draft/slides.pdf
+- renderer_contract:
+  - allowed_renderer_paths: [guizang, beamer]
+  - renderer_path: guizang
+  - render_command_or_script: required in stage brief and stage result
+  - fallback: PyMuPDF may be preview/debug or a bounded repair only when it
+    preserves the selected renderer contract; it must record the render script,
+    font strategy, pdffonts evidence, and pdftotext replacement-glyph check
 - quality_criteria:
   - slide count and format match assignment deliverable requirements
+  - final PDF has no unexpected line-leading question marks, tofu boxes, or
+    Unicode replacement characters caused by font/glyph substitution
 
 ### Final Review
 - 全量交付物审查（spec vs deliverable）
@@ -327,6 +349,11 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 - `post-process`：可选后处理步骤（如 humanize）
 - `fallback`：首选工具不可用时的回退方案（防止反复试错）
 - `min_quality`：最低质量门槛（如 `PDF > 10KB`、`pages >= 5`）
+- `required_spec_constraints`：当 spec 有明确的 must/required/only/do not、
+  精确文件名、数据源、打包内容、格式、页数/时长、模板/style/class、引用
+  规则或 rubric-critical 条件时声明。后续 pipeline、stage brief、artifact、
+  verification 都不能降级或改写它；`fallback_allowed_for_final: false` 时，
+  fallback 只能是 preview/debug，不能伪装最终交付。
 
 ---
 

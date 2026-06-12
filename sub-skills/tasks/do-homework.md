@@ -1,12 +1,14 @@
 ---
 name: do-homework
-description: End-to-end homework completion. Use when the user asks "complete X assignment", "do my paper for DLED3020", "帮我做 lab 5". Runs Canvas Generic-style reconnaissance, designs a per-assignment pipeline, produces a draft, asks confirmation, and optionally submits via canvascli.
+description: Homework planning workflow. Use when the user asks "complete X assignment", "do my paper for DLED3020", "帮我做 lab 5". Runs Canvas Generic-style reconnaissance, aligns with the user, writes a reviewable per-assignment pipeline, and stops before execution.
 ---
 
 # Do Homework
 
 Use this task when the user asks AutoStudy to work on one Canvas assignment and
-produce local draft artifacts. Typical user requests:
+produce a reviewed execution plan. It is the planning half of the homework
+workflow; draft production is handled later by `tasks/task-orchestrator.md`
+only after the user approves the pipeline. Typical user requests:
 
 - "帮我做 DLED3020 的 Paper Critique"
 - "complete DSAA2043 Lab Assignment 1"
@@ -19,8 +21,8 @@ The runtime contract is:
 2. build a workbench with current evidence;
 3. investigate Canvas sources before drafting;
 4. align with the user on choices Canvas cannot decide;
-5. design and execute a stage plan;
-6. return local artifacts and ask before any Canvas submission.
+5. design a concrete stage pipeline;
+6. stop for human pipeline review before any executor/reviewer subagents run.
 
 Required artifact chain:
 
@@ -32,15 +34,11 @@ prelaunch_startup_inventory.json
 -> spec.md
 -> investigation/rubric.md
 -> references/
+   -> readable syllabus extract/text export when syllabus is fetched
 -> investigation/review_a.json
 -> investigation/alignment_brief.md
 -> pipeline_design.md
--> stage_briefs/
--> stage_results/
--> stage_reviews/
--> draft/
--> verification_checklist.md
--> verification.log
+   -> Pipeline Review Status: awaiting_user_review
 -> result.json
 ```
 
@@ -50,15 +48,17 @@ Actor rules:
   user.
 - Subagents are temporary workers with curated prompts, bounded reads/writes,
   and receipt requirements.
-- Subagents can scout, execute, or review, but they do not own user alignment,
-  final `spec.md` judgment, or Canvas submission decisions.
+- Subagents can scout during this planning workflow, but executor/reviewer
+  subagents belong to `task-orchestrator.md`, not `do-homework.md`.
+- Subagents do not own user alignment, final `spec.md` judgment, pipeline
+  approval, or Canvas submission decisions.
 
-The two user-interaction phases are:
+The two user-interaction phases in this planning workflow are:
 
 1. `[B]` after reconnaissance, where the user can add group info, oral
    instructions, dataset choice, scope, or stop.
-2. `[E]` after draft generation, where the user reviews and chooses whether to
-   submit.
+2. `[C5]` after `pipeline_design.md` is written, where the user reviews the
+   planned execution pipeline and decides whether to approve, revise, or stop.
 
 Run mode:
 
@@ -217,6 +217,7 @@ Action handling:
 | `recommended_action` | Behavior |
 |---|---|
 | `recon` | Continue to `[A2]`. |
+| `review_or_execute` | Read `existing_result_path`, `suggested_work_dir`, and `pipeline_design.md`; help the user review or approve the existing pipeline. Do not rerun reconnaissance and do not execute stages inside `do-homework`. If the user approves, hand off to `task-orchestrator.md`. |
 | `review_or_submit` | Read `existing_result_path` and `suggested_work_dir`; help the user review, revise, or submit the existing draft instead of re-running reconnaissance by default. |
 | `continue` | Inspect the previous error `result.json`; ask whether to retry before doing new work. |
 | `manual_review` | Stop before `[A3]`; tell the user this item likely needs manual Canvas interaction. |
@@ -297,7 +298,9 @@ Follow the Canvas Generic stages:
    afterthought: read it and record whether it adds grading criteria,
    assessment-family context, submission/late policy, academic-integrity rules,
    AI/tool policy, collaboration rules, or no relevant constraints. Save raw
-   JSON under `canvas/`. Then write a standardized `spec.md` report with
+   JSON under `canvas/`, and also write a readable syllabus extract/text export
+   under `references/` so later agents can review syllabus evidence without
+   parsing raw Canvas JSON. Then write a standardized `spec.md` report with
    metadata, source trail, syllabus relevance, main spec judgment, deliverables,
    requirements, rubric placeholder, inputs, gaps, and evidence pointers.
 
@@ -310,8 +313,9 @@ Follow the Canvas Generic stages:
 3. **Stage 3 locate-inputs**
    Download or fetch necessary PDFs, Google Doc text, starter code, datasets, or
    external spec pages into `references/`. Record blocked resources in
-   `investigation/unreachable.txt`. Revise `spec.md` if fetched inputs change
-   the main spec judgment.
+   `investigation/unreachable.txt`. When syllabus was fetched, ensure the
+   readable syllabus artifact is also present in `references/`. Revise
+   `spec.md` if fetched inputs change the main spec judgment.
 
 4. **Stage 4 review investigation**
    Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`, and
@@ -329,6 +333,7 @@ After `[A3]`, immediately read:
 investigation/explore_manifest.json
 investigation/explore_context.md  # required for non-trivial runs unless inline fallback is recorded
 canvas/syllabus.json
+references/*syllabus*
 spec.md
 investigation/rubric.md
 investigation/unreachable.txt
@@ -349,6 +354,9 @@ Do not proceed to `[B]` until:
   explicitly records syllabus relevance, including assignment requirements,
   grading criteria, submission policy, late policy, AI/tool policy,
   academic-integrity constraints, or a reasoned `not relevant` judgment.
+- If syllabus was fetched, `references/` contains a readable syllabus
+  extract/text export and `spec.md` points to it as evidence alongside
+  `canvas/syllabus.json`.
 
 #### [A4] Gate On Reconnaissance Quality
 
@@ -368,7 +376,10 @@ the workbench and `spec.md`, `investigation/review_a.json`, and
 If syllabus could not be fetched, record the failure in `investigation/unreachable.txt`
 or `stage_reviews/process_concerns.jsonl` before `[B]`. If syllabus was fetched
 but not reviewed for relevance, treat the reconnaissance as incomplete and do
-not proceed to `[B]`.
+not proceed to `[B]`. If syllabus was fetched and reviewed but no readable
+syllabus artifact exists in `references/`, treat the reconnaissance as
+incomplete until the artifact is written or the omission is recorded as a
+process concern with a concrete reason.
 
 ### [B] Recon Summary + Alignment Loop
 
@@ -674,7 +685,8 @@ that mattered.
 - Constraints or user boundaries that must not be crossed.
 
 ## Open Items For Final Review
-- Items that do not block execution but must be surfaced at [E].
+- Items that do not block pipeline approval but must be surfaced at `[C5]` or
+  later by `task-orchestrator.md` as human review items.
 
 ## Ready-To-Start Judgment
 Explain why the Main Agent can now enter [C] without guessing the user's core
@@ -728,7 +740,10 @@ Hard gate: without `investigation/alignment_brief.md` containing populated
 
 ### [C] Design Pipeline
 
-No user interaction.
+No executor/reviewer subagents and no draft-generation tool runs in `[C]`.
+`[C]` writes the task-level execution plan only. The only user interaction after
+planning is `[C5]`, where the user reviews the pipeline before any
+`task-orchestrator.md` run.
 
 Read:
 
@@ -739,6 +754,7 @@ investigation/explore_manifest.json
 investigation/rubric.md
 investigation/review_a.json
 canvas/syllabus.json               # verify relevance already distilled; do not pass raw syllabus to children by default
+references/*syllabus*              # readable syllabus evidence when fetched
 investigation/alignment_brief.md  # required and confirmed at [B]
 investigation/user_notes.md       # if present
 investigation/user_scope.md       # if present
@@ -771,12 +787,19 @@ For mixed assignments, write multiple sub-pipelines in pipeline_design.md.
 - `## Output`
   - `mode`
   - final deliverable filenames/paths
+- `## Pipeline Review Status`
+  - `status: awaiting_user_review`
+  - `review_requested_at`
+  - `approved_at: null`
+  - `approved_by: null`
+  - `approval_summary: null`
 - `## Constraints`
   - assignment constraints from `spec.md`
   - syllabus-derived constraints only after `spec.md`, `explore_context.md`,
     `rubric.md`, or `review_a.json` confirms their relevance
   - user constraints and non-negotiables from `alignment_brief.md`
   - forbidden context rules when relevant
+  - non-downgradable hard requirements from `spec.md`
 - `## Stages`
   - stable stage id
   - concrete stage goal
@@ -789,6 +812,54 @@ For mixed assignments, write multiple sub-pipelines in pipeline_design.md.
   - quality criteria
   - human blockers
 - `## Human Review Items`
+
+### Spec Hard Requirements / No-Downgrade Policy
+
+When `spec.md` or the authoritative reference states a hard requirement, the
+pipeline must preserve it exactly. Hard requirements include any explicit
+`must`, `required`, `only`, `do not`, exact filename/package/layout constraints,
+mandated data/source/tool/template/class/style/citation rules, submission
+contents, page/time limits, or grading-critical rubric conditions.
+
+Do not rewrite a hard requirement into a softer fallback, preference, human
+review item, or acceptable risk. If the current evidence is insufficient to meet
+the requirement, the pipeline must represent that as a blocker.
+
+In `pipeline_design.md`, record hard requirements in a dedicated constraint
+block:
+
+```yaml
+required_spec_constraints:
+  - id: report_format_style
+    source: references/project_announce.pdf.txt:178
+    requirement: "must use the official LaTeX style file; do not use preprint"
+    applies_to:
+      - draft/report.pdf
+    required_evidence:
+      - "render source/log proves the required style file was used"
+    status: blocked
+    blocker_type: external_blocker
+    fallback_allowed_for_final: false
+```
+
+Planning rules:
+
+- For every hard requirement, preserve source evidence and required verification
+  evidence. A later stage brief must be able to trace back to the exact
+  constraint.
+- If the requirement can be satisfied with available materials, include the
+  materials in allowed reads and make the required evidence part of stage
+  quality criteria.
+- If the requirement cannot currently be satisfied, mark the affected final
+  deliverable blocked by `needs_user_input`, `manual_only`, or
+  `external_blocker`. Do not mark it as a final deliverable that can pass via
+  fallback.
+- Fallbacks are allowed only for optional implementation mechanics or for
+  clearly named preview/debug artifacts. A fallback output must not satisfy or
+  replace a final deliverable governed by `fallback_allowed_for_final: false`.
+- The only way to relax a hard requirement is new authoritative evidence: an
+  updated spec, instructor/user-supplied file/instruction that explicitly
+  changes the requirement, or a user decision to produce a non-final preview.
 
 For mixed assignments, keep one ordered stage plan. Use stage ids and headings
 to group sub-pipelines instead of creating independent uncoordinated plans.
@@ -809,6 +880,7 @@ repo_root: <absolute path from [A2]>
 - [quantifiable constraints from spec]
 - [relevant syllabus constraints distilled into spec/rubric/review evidence]
 - [user intent / non-negotiables from alignment_brief.md]
+- [hard spec constraints, if any, with required_spec_constraints]
 
 ## Stages
 
@@ -859,6 +931,13 @@ repo_root: <absolute path from [A2]>
 
 ## Human Review Items
 - ...
+
+## Pipeline Review Status
+- status: awaiting_user_review
+- review_requested_at: <UTC timestamp>
+- approved_at: null
+- approved_by: null
+- approval_summary: null
 ```
 
 Do not write or require `task_profile.yaml`. The orchestrator reads
@@ -880,217 +959,191 @@ orchestrator converts each delegated stage into
 `stage_briefs/<stage_id>_executor.md` plus reviewer briefs when review is
 enabled.
 
-### [D] Orchestrator Runs
-
-Before invoking the orchestrator, verify:
-
-- `[B]` produced a user-confirmed `investigation/alignment_brief.md`.
-- `pipeline_design.md` was derived from `spec.md`,
-  `investigation/explore_context.md`, `investigation/rubric.md`, and the
-  confirmed `alignment_brief.md`.
-- `investigation/review_a.json` records that syllabus was checked and either
-  contributed constraints or was explicitly judged irrelevant/unavailable.
-- Every planned stage has a concrete goal, allowed reads, writes, quality
-  criteria, review settings, retry limit, and human blockers.
-- Any delegated stage can be executed from its generated stage brief plus
-  allowed files. `pipeline_design.md` is not passed directly as the child
-  subagent's only brief.
-- No stage depends on forbidden context from archive files, old transcripts,
-  stale reviews, or prior pipeline files unless a current scout distilled that
-  context into active workbench evidence.
-
-Invoke `tasks/task-orchestrator.md` with the workbench path. The orchestrator:
-
-1. Reads `spec.md`, `investigation/explore_context.md`,
-   `investigation/explore_manifest.json`, `investigation/alignment_brief.md`,
-   `pipeline_design.md`, `investigation/rubric.md`, and `problem.md`.
-2. Maps stages to tools in `tools/_index.md`.
-3. Converts delegated stages into `stage_briefs/` executor and reviewer briefs.
-4. Runs the tools, each writing inside `work_dir`.
-5. Requires `stage_results/` receipts for every stage.
-6. Requires `stage_reviews/` receipts for reviewed stages.
-7. Writes `verification_checklist.md` and `verification.log`.
-8. Returns a structured summary with deliverables and `human_review_items`.
-
-For delegated subagent stages, `task-orchestrator.md` also owns the child
-dispatch ledger and receipt evidence contract. Stage briefs must include
-allowed reads, forbidden reads, forbidden writes, scope hygiene, and child
-identity instructions. Child subagents must not write
-`stage_reviews/child_dispatch_ledger.json` or other coordinator-owned audit
-files. Stage result/review receipts must include UTC timestamps, dependency
-fields, and either an exact runtime `agent_id` or explicit `agent_id: null` plus
-`identity_authority: "stage_reviews/child_dispatch_ledger.json"` when the child
-does not know its id. Any transport recovery, identity normalization, or
-child-side ledger write must be recorded as a process concern in
-`stage_reviews/process_concerns.jsonl` rather than silently folded into
-`draft_ready`. Each line should include `type`, `stage`, `evidence`,
-`recovery`, and `blocking`.
-
-Do not mark the draft as ready if reviewed stages lack a passing spec
-compliance review. Quality review happens only after spec compliance passes.
-
-The orchestrator must not prompt the user. If it cannot execute the planned
-pipeline, it returns a failed summary to `do-homework`; the Main Agent writes
-`result.json` with `status: "error"`:
-
-```bash
-.venv/bin/python scripts/write_homework_result.py \
-  --work-dir "data/homework/<COURSE>/<HWID>" \
-  --status error \
-  --course "<COURSE>" \
-  --course-id "<course_id>" \
-  --assignment-id "<assignment_id>" \
-  --assignment-name "<assignment_name>" \
-  --note "<short failure summary>"
-```
-
-### [E] Draft Review + Submission Confirmation
+### [C5] Pipeline Review Gate
 
 User-interaction phase #2.
 
-Once the orchestrator returns, show the user:
+After writing `pipeline_design.md`, do **not** invoke
+`tasks/task-orchestrator.md`, do not dispatch executor/reviewer children, and do
+not run stage tools. Instead, present a user-facing approval brief that is
+readable on its own. Do not merely point the user at `pipeline_design.md`; the
+Main Agent must explain the plan in chat well enough that the user can approve
+or reject it without opening the Markdown file.
 
-- Deliverable path(s).
-- A one-line preview: for PDFs, file size + page count via `pdfinfo` if
-  available; for code, file count + test pass rate.
-- Human review items from the orchestrator.
-- Canvas submission URL:
-  `https://hkust-gz.instructure.com/courses/<course_id>/assignments/<assignment_id>`
+The approval brief must include the complete substance of the pipeline, in a
+clean review format:
 
-Ask:
+1. **Context and goal**
+   - Course + assignment.
+   - Workbench path.
+   - `alignment_brief.md` and `pipeline_design.md` paths as references only.
+   - User-confirmed goal and non-negotiables.
+2. **Planned outputs**
+   - Output mode.
+   - Every final deliverable path/name.
+   - Intermediate evidence or logs that matter for grading/verification.
+3. **Constraints**
+   - Assignment constraints from `spec.md`.
+   - Relevant rubric/syllabus constraints.
+   - User constraints from `alignment_brief.md`.
+   - Forbidden actions, especially Canvas submission behavior.
+4. **Full stage plan**
+   - For every stage, show: stage id, goal, tool, delegate mode, allowed reads,
+     writes, review settings, retry limit, quality criteria, and human blockers.
+   - If a stage is `delegate: main-agent`, explain why it is simple enough for
+     inline execution. If there is no clear reason, revise the pipeline before
+     asking for approval.
+5. **How task-orchestrator will execute it**
+   - Ground this section in `tasks/task-orchestrator.md`; do not summarize from
+     memory or use generic "subagents will run" wording.
+   - State that `task-orchestrator.md` will first verify
+     `Pipeline Review Status.status: approved_for_orchestration`.
+   - It will generate `stage_briefs/<stage_id>_executor.md` and reviewer briefs.
+   - It will dispatch executor subagents for `delegate: subagent` stages.
+   - It will record child dispatches in
+     `stage_reviews/child_dispatch_ledger.json`.
+   - For reviewed stages, it will run spec-compliance review first, then quality
+     / code review only after spec compliance passes.
+   - If review finds blocking auto-fixable issues, it will send a bounded fix
+     brief back through the executor loop while retries remain.
+   - It will write `stage_results/`, `stage_reviews/`,
+     `verification_checklist.md`, `verification.log`, and final `result.json`.
+   - It will not submit to Canvas.
+6. **Approval risks and review items**
+   - Anything the user must check before execution.
+   - Any missing external resource, manual-only item, or accepted fallback.
+   - Any part of the plan that may be expensive, slow, or likely to require
+     iteration.
 
-```text
-草稿已经在 <path>。要现在用 canvascli 提交到 Canvas 吗?
-  - 是，提交
-  - 不，我自己看完再说 (推荐)
-  - 重做 / 改某部分 (告诉我具体改什么)
+Keep the approval brief concise enough to read, but do not omit a stage or hide
+execution mechanics behind "see markdown." If the pipeline is long, use a
+numbered stage table plus short per-stage details. The approval brief is the
+review surface; `pipeline_design.md` is the audit artifact.
+
+Use this response shape:
+
+```markdown
+**Pipeline Approval Brief**
+
+**Goal**
+- ...
+
+**Deliverables**
+- ...
+
+**Non-Negotiables**
+- ...
+
+**Execution Stages**
+| # | Stage | Tool | Delegate | Writes | Reviews | Retry | Human blockers |
+|---|---|---|---|---|---|---|---|
+| 1 | ... | ... | subagent | ... | spec + quality | 1 | ... |
+
+**Stage Details**
+1. `<stage_id>` — <goal>
+   - Reads: ...
+   - Writes: ...
+   - Quality criteria: ...
+   - Why this delegate mode: ...
+
+**How Orchestration Will Work If Approved**
+- Validate `Pipeline Review Status.status == approved_for_orchestration`.
+- Generate executor/reviewer briefs from this pipeline.
+- Dispatch executor subagents for delegated stages.
+- Run spec review before quality/code review.
+- Iterate executor fixes while retries remain.
+- Verify deliverables and write `result.json`.
+- Canvas submission will not happen here.
+
+**Approval Risks / Manual Review Items**
+- ...
+
+你要怎么处理?
+- 通过，进入 task-orchestrator 执行
+- 先修改 pipeline（告诉我改哪里）
+- 暂停，不执行
 ```
 
-If user picks "重做", classify the change request:
+If the user asks to modify the pipeline:
 
-- If it changes intent, selected approach, design skeleton, non-negotiables, or
-  human-owned facts, return to `[B4]`, update and reconfirm
+- If the change alters intent, selected approach, design skeleton,
+  non-negotiables, or human-owned facts, return to `[B4]`, update and reconfirm
   `alignment_brief.md`, then rerun `[C]`.
 - If it changes only execution details within the confirmed brief, append the
-  request to `investigation/user_notes.md`, update `pipeline_design.md`, and
-  rerun from `[C]`.
-- Do not re-fetch `[A]` unless the user says Canvas changed or a required source
-  is missing.
+  request to `investigation/user_notes.md`, update `pipeline_design.md`, keep
+  `Pipeline Review Status.status: awaiting_user_review`, and ask for review
+  again.
 
-If user picks "不", write `result.json` with `status: "draft_ready"` only when
-the orchestrator summary is `status: success`, every blocking spec compliance
-review passed, and `verification.log` has no blocking `FAIL` lines. If the
-summary is `partial` or a reviewed stage has unresolved failures, write
-`result.json` with `status: "revision_needed"` or `status: "error"` and surface
-the blocking review items instead of claiming the draft is ready.
-
-Passing draft-ready path:
+If the user pauses, write `result.json` with `status: "pipeline_ready"` and
+`--deferred-to-next-run`:
 
 ```bash
 .venv/bin/python scripts/write_homework_result.py \
   --work-dir "data/homework/<COURSE>/<HWID>" \
-  --status draft_ready \
+  --status pipeline_ready \
   --course "<COURSE>" \
   --course-id "<course_id>" \
   --assignment-id "<assignment_id>" \
   --assignment-name "<assignment_name>" \
-  --draft-path "<primary_deliverable_path>" \
-  --deliverable "<primary_deliverable_path>" \
-  --verification-log "data/homework/<COURSE>/<HWID>/verification.log" \
-  --human-review-item "<anything the user must still check before submitting>" \
-  --note "draft generated; user chose to review manually before submission"
+  --deliverable "data/homework/<COURSE>/<HWID>/pipeline_design.md" \
+  --human-review-item "Pipeline awaits user approval before task-orchestrator execution" \
+  --note "pipeline generated; task-orchestrator not run" \
+  --deferred-to-next-run \
+  --allow-missing-deliverables
 ```
 
-Revision-needed path:
-
-```bash
-.venv/bin/python scripts/write_homework_result.py \
-  --work-dir "data/homework/<COURSE>/<HWID>" \
-  --status revision_needed \
-  --course "<COURSE>" \
-  --course-id "<course_id>" \
-  --assignment-id "<assignment_id>" \
-  --assignment-name "<assignment_name>" \
-  --draft-path "<primary_deliverable_path_if_any>" \
-  --verification-log "data/homework/<COURSE>/<HWID>/verification.log" \
-  --human-review-item "<blocking spec review failure or human blocker>" \
-  --note "draft generated but stage reviews or verification require revision"
-```
-
-### [F] Submit
-
-Only if the user confirmed at `[E]`.
-
-```bash
-.venv/bin/canvascli submit <assignment_id> "<deliverable_path>" -c <course_id> --pretty
-```
-
-Capture stdout. Show the user:
-
-- Submitted attempt number.
-- `submitted_at`.
-- Canvas URL to verify.
-
-Save the submission response under:
+If the user approves execution, update `pipeline_design.md`:
 
 ```text
-canvas/submission_<attempt_number>.json
+## Pipeline Review Status
+- status: approved_for_orchestration
+- review_requested_at: <existing timestamp>
+- approved_at: <UTC timestamp>
+- approved_by: user
+- approval_summary: <one-line confirmation>
 ```
 
-If submit succeeds, write `result.json` with `status: "submitted"`:
-
-```bash
-.venv/bin/python scripts/write_homework_result.py \
-  --work-dir "data/homework/<COURSE>/<HWID>" \
-  --status submitted \
-  --course "<COURSE>" \
-  --course-id "<course_id>" \
-  --assignment-id "<assignment_id>" \
-  --assignment-name "<assignment_name>" \
-  --draft-path "<submitted_deliverable_path>" \
-  --deliverable "<submitted_deliverable_path>" \
-  --verification-log "data/homework/<COURSE>/<HWID>/verification.log" \
-  --submitted-at "<submitted_at_from_canvas>" \
-  --submission-attempt "<attempt_number>" \
-  --note "submission receipt: data/homework/<COURSE>/<HWID>/canvas/submission_<attempt_number>.json" \
-  --canvas-url "https://hkust-gz.instructure.com/courses/<course_id>/assignments/<assignment_id>"
-```
-
-If submit fails, write `result.json` with `status: "error"` and the Canvas
-error message in `notes`. Do not loop automatically.
+Then hand off to `tasks/task-orchestrator.md` with the workbench path. This is
+a new workflow phase owned by `task-orchestrator.md`; it is not part of
+`do-homework.md` execution.
 
 ## Output Format
 
-After `[F]`, or `[E]` if not submitting:
+After `[C5]`:
 
 ```markdown
 ## <COURSE> <assignment name>
 
-**Deliverable:** `data/homework/<COURSE>/<HWID>/draft/...`
-**Status:** draft_ready / revision_needed / submitted / skipped / error
+**Pipeline:** `data/homework/<COURSE>/<HWID>/pipeline_design.md`
+**Status:** pipeline_ready / skipped / error
 **Canvas URL:** https://hkust-gz.instructure.com/courses/.../assignments/...
 
 Human review items:
+- Review pipeline_design.md before orchestration.
 - ...
+
+Next step:
+- If approved, run `tasks/task-orchestrator.md` with this workbench.
 ```
 
 ## Safety
 
 1. **Two user-interaction phases only**: `[B]` alignment may be multi-round;
-   `[E]` asks for review, revision, or submission. Do not prompt the user from
-   `[A]`, `[C]`, `[D]`, or `[F]`.
-2. **Never auto-submit.** Even if the user said "complete and submit" upfront,
-   confirm at `[E]`.
-3. **Never modify raw Canvas JSON** under `canvas/*.json`.
-4. **Do not run script-led reconnaissance** as the normal path.
-5. **Stop on first orchestrator failure.**
-6. **Submit failures are not retries.**
-7. **Honor partial scope.**
-8. **Ground every deliverable in `spec.md`, `references/`, and
-   `pipeline_design.md`.** Do not produce `[PROBLEM N]`, `[TODO: align with
-   actual project spec]`, or `[此处由小组成员填入选题]` placeholders. The only
-   acceptable markers are `[CITATION NEEDED: ...]` and
-   `[CLARIFICATION NEEDED: ...]`, both surfaced at `[E]`.
+   `[C5]` asks for pipeline approval, revision, or pause. Do not prompt the user
+   from `[A]` or `[C]`.
+2. **Never auto-execute.** Even if the user said "complete it" upfront, stop
+   after `pipeline_design.md` until the user approves orchestration.
+3. **Never auto-submit.** Canvas submission is outside this planning task and
+   still requires an explicit later confirmation after draft verification.
+4. **Never modify raw Canvas JSON** under `canvas/*.json`.
+5. **Do not run script-led reconnaissance** as the normal path.
+6. **Honor partial scope.**
+7. **Ground every planned stage in `spec.md`, `references/`,
+   `alignment_brief.md`, and `pipeline_design.md`.** Do not write
+   `[PROBLEM N]`, `[TODO: align with actual project spec]`, or
+   `[此处由小组成员填入选题]` placeholders into the pipeline. The only acceptable
+   markers are `[CITATION NEEDED: ...]` and `[CLARIFICATION NEEDED: ...]`, both
+   surfaced as human review items.
 
 ## Pitfalls
 
@@ -1107,9 +1160,9 @@ Human review items:
   field.**
 - **The work_dir path can contain spaces and Chinese.** Always quote shell
   arguments.
-- **`submission_types` matters for `[F]`.** `online_upload` is what
-  `canvascli submit` handles.
-- **`[CLARIFICATION NEEDED: ...]` markers** are batched at `[E]`, not asked one
+- **`submission_types` matters later.** `online_upload` is what
+  `canvascli submit` handles, but submission is not part of `do-homework.md`.
+- **`[CLARIFICATION NEEDED: ...]` markers** are batched at `[C5]`, not asked one
   by one.
 
 ## Cross-references

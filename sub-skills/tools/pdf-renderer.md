@@ -27,6 +27,13 @@ Output: path/to/document.pdf
         + render provenance under path/to/render/ when practical
 ```
 
+If the assignment or `pipeline_design.md` declares `required_spec_constraints`,
+the input must include the evidence needed to satisfy those exact constraints,
+or an explicit blocker receipt explaining why they are unavailable. A fallback
+renderer can produce a preview/debug artifact, but it does not satisfy the final
+deliverable when the spec requires different evidence and
+`fallback_allowed_for_final: false`.
+
 ## Setup
 
 There are two supported LaTeX engines. Pick whichever is installed:
@@ -133,6 +140,12 @@ to copy it. If the engine does not expose a log under the allowed write set, or
 the stage intentionally records only a warning summary, record that reason in
 render provenance. Do not leave a reviewer guessing why no `.tex` or `.log`
 file exists.
+
+For deliverables governed by hard spec requirements, preserve specific evidence
+as part of render provenance: generated source, build log, command line, input
+files, page/layout checks, or other proof named by `required_spec_constraints`.
+If the required evidence is missing, render only a clearly named preview/debug
+PDF when useful and return the appropriate blocker for the final deliverable.
 
 For report PDFs with multiple figures, preserve enough render provenance for
 reviewers to diagnose float placement: source Markdown, generated TeX when

@@ -187,6 +187,8 @@ spec.md                         # source/spec exploration result
 problem.md                      # legacy source/spec compatibility
 investigation/rubric.md          # assignment rubric or extracted criteria
 references/                     # fetched source materials
+                                # includes readable syllabus extract/text export
+                                # when syllabus is fetched
 investigation/repair_recon.md    # retained-artifact/progress-focused summary
 ```
 
@@ -506,6 +508,7 @@ work_dir/
 ├── spec.md
 ├── problem.md                  # compatibility only
 ├── references/
+│   └── *syllabus*              # readable syllabus extract/text export when fetched
 └── investigation/
     ├── rubric.md
     ├── unreachable.txt
@@ -513,7 +516,11 @@ work_dir/
 ```
 
 `spec.md` is the factual source of truth for the assignment. It must be grounded
-in Canvas sources and fetched references, not in the assignment title.
+in Canvas sources and fetched references, not in the assignment title. Raw
+Canvas syllabus JSON belongs under `canvas/`, but if syllabus is fetched the
+reconnaissance must also write a readable syllabus extract or text export under
+`references/` so later executor/reviewer children and humans can audit
+syllabus-derived constraints without parsing raw Canvas JSON.
 
 ### Phase 3: User Alignment
 
@@ -654,7 +661,9 @@ the Main Agent after reading:
 - relevant top-level tool contracts
 
 No confirmed `investigation/alignment_brief.md` means no final
-`pipeline_design.md` and no orchestrator run.
+`pipeline_design.md`. A final `pipeline_design.md` still does not authorize
+execution until the user reviews it and `Pipeline Review Status.status` becomes
+`approved_for_orchestration`.
 
 `pipeline_design.md` is for the Main Agent and Stage Coordinator phase. It is
 not the executor subagent's direct instruction file.
@@ -669,6 +678,11 @@ Required responsibilities:
 - declare verification criteria;
 - declare whether the stage needs review;
 - declare retry limits or human blockers.
+- include `Pipeline Review Status`, initially `awaiting_user_review`, with
+  approval fields that must be populated before `task-orchestrator.md` runs.
+
+After writing `pipeline_design.md`, the planner stops for user review. Stage
+brief generation is a separate `task-orchestrator.md` phase.
 
 ### Phase 5: Stage Brief Generation
 
@@ -776,6 +790,16 @@ Reviewers must classify every issue they find:
 - `acceptable_risk`: a non-blocking concern that should be surfaced but does not
   prevent `draft_ready`.
 
+Spec hard requirements are blocking spec-compliance requirements. If the
+authoritative assignment source says a final deliverable must/required/only do
+something, or gives exact file, data, source, package, format, page/time, naming,
+template, style, class, citation, or rubric-critical requirements, the pipeline
+should declare `required_spec_constraints`. Missing evidence is a blocker, not
+`acceptable_risk`. This is a no-downgrade rule: the requirement must remain
+intact across `spec -> pipeline -> stage brief -> artifact -> verification`.
+Fallback output is only preview/debug unless the authoritative spec explicitly
+allows it as final.
+
 When a review schema needs finer detail, split `auto_fixable` into
 `blocking_auto_fixable` and `optional_polish`. A blocking auto-fixable issue is
 one that affects a required deliverable, package parity, or final submission
@@ -807,6 +831,7 @@ result.json
 PASS | report.pdf exists | measured: 28642 bytes
 PASS | report.pdf magic bytes | measured: %PDF
 FAIL | rubric coverage | measured: criterion 3 missing
+FAIL | spec requirement drift | measured: source=spec.md:178; pipeline=fallback renderer
 SKIP | video upload | reason: requires user recording
 ```
 
@@ -822,9 +847,29 @@ PASS | draft_ready withheld | measured: result_status=revision_needed; remaining
 Do not use a misleading `FAIL | draft_ready eligibility` line when withholding
 `draft_ready` is the expected behavior.
 
+For deliverables governed by `required_spec_constraints`, final verification
+must check the exact evidence required by the source requirement. Generic checks
+such as file existence, `%PDF` magic bytes, page count, image count, or notebook
+JSON validity are insufficient when the spec demands more specific evidence. If
+only a fallback artifact exists, the final status must be `revision_needed` with
+the appropriate blocker, and the fallback output must be labeled as preview/debug
+rather than as the final submission artifact.
+
+Rendered PDF deliverables also need artifact-quality evidence, not only content
+presence. For slides and reports, final verification should record `pdffonts`
+and `pdftotext` output, check font embedding or the declared font strategy, and
+scan for replacement-glyph symptoms such as Unicode replacement characters, tofu
+boxes, or unexpected line-leading question marks. A slide deck whose Markdown
+source uses normal list markers but whose PDF extraction shows line-leading
+question marks is an `auto_fixable` render failure, not `draft_ready` evidence.
+If a fallback renderer is used, the stage receipt must preserve the exact render
+script/command and explain whether the output is final, preview, debug, or
+superseded.
+
 `result.json` is the task receipt used by later scans and sessions. It should
 distinguish at least:
 
+- `pipeline_ready`
 - `draft_ready`
 - `revision_needed`
 - `submitted`
@@ -898,8 +943,10 @@ Quality checks depend on the artifact:
 
 - code: execution, tests, structure, reproducibility;
 - report: argument quality, evidence grounding, citation integrity, style;
-- PDF: valid file, page count, rendering quality, no tofu CJK output;
-- slides: structure, visual coherence, export validity;
+- PDF: valid file, page count, rendering quality, no tofu CJK output, `pdffonts`
+  / `pdftotext` checks, no replacement-glyph failures;
+- slides: structure, visual coherence, export validity, font embedding or font
+  strategy evidence, no unexpected line-leading question marks;
 - notes: conceptual accuracy, useful organization, appropriate depth.
 
 It runs only after spec compliance passes.
@@ -929,6 +976,7 @@ data/homework/<COURSE>/<HWID>/
 ├── spec.md
 ├── problem.md
 ├── references/
+│   └── *syllabus*              # readable syllabus evidence when fetched
 ├── investigation/
 │   ├── rubric.md
 │   ├── unreachable.txt

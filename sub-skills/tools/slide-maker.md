@@ -12,6 +12,34 @@ Produce a slide deck for group presentations / talks. Two paths:
 | **guizang (default)** | `index.html` (single-file) + `slides.pdf` (Playwright print) | Most decks — magazine humanities, Swiss data / product, anything where visual quality matters |
 | **beamer (fallback)** | `slides.tex` + `slides.pdf` (tectonic) | Strict-PDF academic submissions, math-heavy proofs, or when guizang skill not installed |
 
+## Controlled Renderer Policy
+
+The final renderer path is controlled by this tool contract:
+
+- `guizang`: final HTML source plus Playwright PDF export.
+- `beamer`: final LaTeX source plus tectonic PDF export.
+
+Do not silently introduce a third final renderer path. PyMuPDF may be used only
+as a bounded repair, preview, or debug fallback when the stage brief explicitly
+authorizes it or when it regenerates a deliverable that still satisfies the
+selected `guizang` or `beamer` contract. PyMuPDF is not a third final renderer path by default.
+
+If a PyMuPDF repair/preview fallback is used, the stage result must record:
+
+- the exact render script path or inline render script;
+- the command used to run it;
+- the font strategy, including font file paths or an explicit ASCII-only list
+  marker strategy;
+- the `pdffonts` output;
+- the `pdftotext` replacement-glyph check result.
+
+Do not use PyMuPDF's default Helvetica/WinAnsi output for final slides that need
+Unicode list bullets, CJK, math symbols, or other non-ASCII glyphs. Either embed
+a Unicode-capable font, use ASCII list markers such as `-`, or stop with an
+`auto_fixable`/`revision_needed` issue. A PDF with line-leading question marks,
+tofu boxes, or replacement characters produced by glyph substitution is not a
+passing final deliverable.
+
 ## Capabilities
 
 - `render_slides` — slide spec → final deliverable (HTML+PDF or PDF)
@@ -140,6 +168,8 @@ Expected output: `<work_dir>/guizang/slides.pdf` at ~1-2 MB for a 10-slide deck 
 grep -c 'class="slide' "<work_dir>/guizang/index.html"   # should equal n_slides
 file "<work_dir>/guizang/slides.pdf"                      # PDF document, version 1.x
 mdls -name kMDItemNumberOfPages "<work_dir>/guizang/slides.pdf"
+pdffonts "<work_dir>/guizang/slides.pdf"                  # record font embedding evidence
+pdftotext "<work_dir>/guizang/slides.pdf" - | rg '^[[:space:]]*[?]' && exit 1 || true
 ```
 
 ## Path B — LaTeX beamer (fallback)
@@ -180,6 +210,19 @@ tectonic slides.tex 2>&1 | tail -10
 ```
 
 First run downloads ctexbeamer (~50MB cached). Subsequent compiles are seconds.
+
+### Step 3 — Verify
+
+```bash
+file "<work_dir>/slides.pdf"
+mdls -name kMDItemNumberOfPages "<work_dir>/slides.pdf"
+pdffonts "<work_dir>/slides.pdf"                          # record font embedding evidence
+pdftotext "<work_dir>/slides.pdf" - | rg '^[[:space:]]*[?]' && exit 1 || true
+```
+
+Treat line-leading question marks, tofu boxes, or Unicode replacement characters
+as replacement-glyph failures unless they are expected literal source text and
+documented with a source excerpt.
 
 ## What this tool is NOT for
 
