@@ -17,6 +17,61 @@ If you only read `skill.md`, you'd think the repo is a runtime tool. Reading thi
 
 The Canvas data layer (`canvascli`) lives at **`~/workspace/canvascli/`** (or wherever the user cloned it). It's a separate git repo, installed into AutoStudy's `.venv` via `pip install -e`. When you change Canvas access behavior, that work belongs in `canvascli/`, not here.
 
+For the full three-project workflow, branch policy, verification rules, and
+documentation-sync checklist, read `docs/COLLABORATION.md`.
+
+Layer boundary:
+
+- `canvascli` is the data layer: Canvas login/session, REST API calls, pagination, course/assignment/file/announcement/submission commands, and stable JSON output.
+- `autoust` is the application layer: skill routing, task orchestration, study/homework workflows, user confirmation points, and documentation for agents.
+
+When a bug or feature request touches both, land the data-layer change in `canvascli` first, then update AutoStudy docs/tasks against the new CLI contract. For rapid development, keep both repos on the user's long-lived update branch (`codex/deepwisdom-updates`) and commit there; open a PR only when the user asks for review or release.
+
+## Reference project
+
+Canvas Copilot is the design reference for this project. Prefer the local clone at **`/Users/deepwisdom/Desktop/project/canvas_copilot`** when it exists; otherwise use the public repo [X-isdoingreat/Canvas_pilot_public](https://github.com/X-isdoingreat/Canvas_pilot_public). Before inventing a new Canvas workflow, inspect how Canvas Copilot solved similar problems, especially around deep assignment reconnaissance, submission safeguards, hooks, tests, and recurring automation.
+
+AutoStudy's distilled notes live in `docs/canvas-pilot-reference.md`. Treat that file as the first stop for "what should we borrow from Canvas Copilot?" and go to the source repo when implementation details matter.
+
+Superpowers is the workflow reference for agent handoff discipline: brainstorm
+before plans, plans before execution, fresh subagents with curated context, and
+independent review before completion claims. It is a design reference, not a
+runtime dependency. AutoStudy translates these practices into its own runtime
+protocol in `docs/runtime-agent-protocol.md`.
+
+Current M3.5 homework direction is recorded in `docs/COLLABORATION.md` and
+`docs/canvas-pilot-reference.md`: use agent-led Canvas Generic Stage 1-5
+reconnaissance, write a standardized `spec.md`, keep `problem.md` only as
+compatibility, run a post-recon alignment loop that writes confirmed
+`investigation/alignment_brief.md`, and execute through `pipeline_design.md`
+instead of `task_profile.yaml`.
+
+Five design principles govern M3.5+ development (full text in
+`docs/COLLABORATION.md` → Design Principles):
+
+1. Assistant, not automation
+2. Dynamic skills composition, no fixed pipelines
+3. Multi-turn iteration (in-session resume + cross-session refinement)
+4. Three-layer preference system (task / course / user)
+5. Review-first design (composable sub-agent review per pipeline stage)
+
+## Skills architecture
+
+Skills are **domain expertise supplements** — not fixed pipeline scripts. The
+complete spec is in **`docs/skills-architecture-spec.md`**. Read that file before
+modifying any skill or adding a new one.
+
+Key rules:
+- `_index.md` only lists top-level skills; sub-skills are discovered progressively
+- Each skill follows a standard template: Contract → Guidance → Appendices →
+  Post-processing → Self-check
+- Skills compose via files in the workbench, not direct calls
+- Language/type specifics go in appendix files, not the main skill or `_index.md`
+- Defaults live in skill files; overrides come from confirmed
+  `investigation/alignment_brief.md` plus `pipeline_design.md` (task),
+  `data/course-overrides/` (course, not yet implemented), or Claude Code memory
+  (user, not yet implemented)
+
 ## Start-of-session checklist
 
 Run through these before touching code:
@@ -41,6 +96,7 @@ Don't close out a session without:
 | What | Where |
 |---|---|
 | Roadmap (the big picture) | [docs/ROADMAP.md](./docs/ROADMAP.md) |
+| Runtime agent handoff protocol | [docs/runtime-agent-protocol.md](./docs/runtime-agent-protocol.md) |
 | Skill entry for end-users | [skill.md](./skill.md) at repo root |
 | Marketing scenarios | [docs/MARKETING.md](./docs/MARKETING.md) |
 | Burnt-once pitfalls | [docs/PITFALLS.md](./docs/PITFALLS.md) |

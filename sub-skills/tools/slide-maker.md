@@ -12,6 +12,34 @@ Produce a slide deck for group presentations / talks. Two paths:
 | **guizang (default)** | `index.html` (single-file) + `slides.pdf` (Playwright print) | Most decks — magazine humanities, Swiss data / product, anything where visual quality matters |
 | **beamer (fallback)** | `slides.tex` + `slides.pdf` (tectonic) | Strict-PDF academic submissions, math-heavy proofs, or when guizang skill not installed |
 
+## Controlled Renderer Policy
+
+The final renderer path is controlled by this tool contract:
+
+- `guizang`: final HTML source plus Playwright PDF export.
+- `beamer`: final LaTeX source plus tectonic PDF export.
+
+Do not silently introduce a third final renderer path. PyMuPDF may be used only
+as a bounded repair, preview, or debug fallback when the stage brief explicitly
+authorizes it or when it regenerates a deliverable that still satisfies the
+selected `guizang` or `beamer` contract. PyMuPDF is not a third final renderer path by default.
+
+If a PyMuPDF repair/preview fallback is used, the stage result must record:
+
+- the exact render script path or inline render script;
+- the command used to run it;
+- the font strategy, including font file paths or an explicit ASCII-only list
+  marker strategy;
+- the `pdffonts` output;
+- the `pdftotext` replacement-glyph check result.
+
+Do not use PyMuPDF's default Helvetica/WinAnsi output for final slides that need
+Unicode list bullets, CJK, math symbols, or other non-ASCII glyphs. Either embed
+a Unicode-capable font, use ASCII list markers such as `-`, or stop with an
+`auto_fixable`/`revision_needed` issue. A PDF with line-leading question marks,
+tofu boxes, or replacement characters produced by glyph substitution is not a
+passing final deliverable.
+
 ## Capabilities
 
 - `render_slides` — slide spec → final deliverable (HTML+PDF or PDF)
@@ -19,9 +47,14 @@ Produce a slide deck for group presentations / talks. Two paths:
 ## Inputs / Outputs
 
 ```
-Input:  <work_dir>/task_profile.yaml     (n_slides ≈ 8-12, language, style hint)
-        <work_dir>/problem.md            (PRIMARY: presentation topic / brief from problem-extractor)
-        <work_dir>/assignment.json       (metadata only: due_at, rubric, points)
+Input:  <work_dir>/spec.md               (PRIMARY: standardized reconnaissance report)
+        <work_dir>/pipeline_design.md    (slides stage, count, audience, constraints, verification plan)
+        <work_dir>/investigation/rubric.md
+        <work_dir>/references/           (fetched spec text, slides/readings, images if relevant)
+        <work_dir>/problem.md            (compatibility presentation topic / brief)
+        <work_dir>/investigation/user_notes.md  (optional)
+        <work_dir>/investigation/user_scope.md  (optional)
+        <work_dir>/canvas/assignment.json (metadata only: due_at, rubric, points)
         <work_dir>/figures/*.{pdf,png}   (optional, embed in slides)
 Output (guizang):
         <work_dir>/guizang/index.html    (single-file deck, ~50KB)
@@ -32,9 +65,21 @@ Output (beamer):
         <work_dir>/slides.pdf            (tectonic, A4 or beamer 16:9)
 ```
 
-**Read `problem.md` first, completely.** The `## Attached:` sections contain the presentation brief — the assigned topic, required content, length, audience. The assignment title alone (e.g. "Group presentation") tells you nothing. If `problem.md` says "present on classroom motivation theory X applied to case Y", that's what the deck must cover — by name, with engagement. Do NOT fall back to a generic "topic overview / methods / findings" template.
+**Read `spec.md` first, then `pipeline_design.md`, rubric, references, user
+supplements, and finally `problem.md`, completely.** The workbench files contain
+the presentation brief — the assigned topic, required content, length, audience,
+and supporting context. The assignment title alone (e.g. "Group presentation")
+tells you nothing. If `spec.md` says the main spec is an external document and
+another module item is nearby supporting context, ground the deck in that source
+trail. Do not fall back to a generic "topic overview / methods / findings"
+template.
 
-For group presentations specifically: if `problem.md` requires the *group* to choose a sub-topic (e.g. "each group picks one motivation theory"), and the user has not specified which sub-topic, write `[CLARIFICATION NEEDED: which sub-topic? options from problem.md: A / B / C]` in slide 2 and continue with the most general framing — surfaced at do-homework [E]. Do NOT leave `[此处由小组成员填入选题]` placeholders littered through the deck.
+For group presentations specifically: if `spec.md` requires the group to choose
+a sub-topic and the user has not specified which sub-topic, write one
+`[CLARIFICATION NEEDED: which sub-topic? options from spec.md: A / B / C]`
+marker in slide 2 and continue with the most general framing. This is surfaced
+at do-homework [E]. Do not leave `[此处由小组成员填入选题]` placeholders throughout
+the deck.
 
 ## Path A — guizang-ppt-skill (default)
 
@@ -123,6 +168,8 @@ Expected output: `<work_dir>/guizang/slides.pdf` at ~1-2 MB for a 10-slide deck 
 grep -c 'class="slide' "<work_dir>/guizang/index.html"   # should equal n_slides
 file "<work_dir>/guizang/slides.pdf"                      # PDF document, version 1.x
 mdls -name kMDItemNumberOfPages "<work_dir>/guizang/slides.pdf"
+pdffonts "<work_dir>/guizang/slides.pdf"                  # record font embedding evidence
+pdftotext "<work_dir>/guizang/slides.pdf" - | rg '^[[:space:]]*[?]' && exit 1 || true
 ```
 
 ## Path B — LaTeX beamer (fallback)
@@ -142,7 +189,7 @@ The agent writes `<work_dir>/slides.tex`:
 \usepackage{graphicx}
 \graphicspath{{./figures/}}
 
-\title{<from task_profile.title>}
+\title{<from spec.md or pipeline_design.md>}
 \author{}
 \date{\today}
 
@@ -164,6 +211,19 @@ tectonic slides.tex 2>&1 | tail -10
 
 First run downloads ctexbeamer (~50MB cached). Subsequent compiles are seconds.
 
+### Step 3 — Verify
+
+```bash
+file "<work_dir>/slides.pdf"
+mdls -name kMDItemNumberOfPages "<work_dir>/slides.pdf"
+pdffonts "<work_dir>/slides.pdf"                          # record font embedding evidence
+pdftotext "<work_dir>/slides.pdf" - | rg '^[[:space:]]*[?]' && exit 1 || true
+```
+
+Treat line-leading question marks, tofu boxes, or Unicode replacement characters
+as replacement-glyph failures unless they are expected literal source text and
+documented with a source excerpt.
+
 ## What this tool is NOT for
 
 - ❌ PowerPoint .pptx output — that needs pandoc → pptx (separate path)
@@ -174,7 +234,13 @@ First run downloads ctexbeamer (~50MB cached). Subsequent compiles are seconds.
 
 ### guizang path
 
-1. **Ground every slide in `problem.md`.** A presentation deck that doesn't name the actual topic, doesn't engage with the assigned content, and instead leaves `[此处由小组成员填入选题]` / `[此处填入论点]` placeholders is failing the quality bar — even if the visual is pretty. Acceptable placeholder: `[CLARIFICATION NEEDED: which sub-topic from problem.md options A/B/C]` (one per ambiguous decision, surfaced at do-homework [E]).
+1. **Ground every slide in `spec.md`, `references/`, and
+   `pipeline_design.md`.** A presentation deck that doesn't name the actual
+   topic, doesn't engage with the assigned content, and instead leaves
+   `[此处由小组成员填入选题]` / `[此处填入论点]` placeholders is failing the quality
+   bar — even if the visual is pretty. Acceptable placeholder:
+   `[CLARIFICATION NEEDED: which sub-topic from spec.md options A/B/C]` (one per
+   ambiguous decision, surfaced at do-homework [E]).
 2. **Class names are template-specific.** `h-hero` in Style A is serif (Noto Serif SC), in Style B is sans (Inter). Don't mix layouts.md and layouts-swiss.md class names.
 3. **`<title>` placeholder.** `assets/template.html` has `[必填] 替换为 PPT 标题` — replace immediately or browser tabs look broken. Grep `[必填]` after copy.
 4. **Style B layout lock.** Every `data-layout` must be `S01`–`S22` (or the `SWISS-COVER-ASCII` / `SWISS-CLOSING-ASCII` extensions). Inventing `S23` or "Swiss Image Split" is rejected by `validate-swiss-deck.mjs`.

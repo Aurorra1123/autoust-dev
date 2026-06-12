@@ -58,7 +58,7 @@ export http_proxy=http://127.0.0.1:6666 https_proxy=http://127.0.0.1:6666 \
 
 **根因**：未知 —— 可能是 HKUST(GZ) 的 enrollment 数据状态不符合 Canvas 默认的 active 判定。
 
-**解法**：**不要传 `enrollment_state`**，拉全量后在客户端按 `workflow_state == "available"` + term name 过滤。
+**解法**：**不要传 `enrollment_state`**。拉全量后在客户端按 `workflow_state == "available"` 过滤。默认学期范围属于 `canvascli` 数据层的 CLI contract，AutoStudy 不应在 skill/task 文档里重写这套判断；用户明确要查历史学期时，用 `--term`。
 
 ```python
 # 错
@@ -67,8 +67,7 @@ courses = client.paginate("/api/v1/courses", {"enrollment_state": "active"})
 # 对
 all_courses = client.paginate("/api/v1/courses", {"include[]": "term"})
 courses = [c for c in all_courses
-           if c.get("workflow_state") == "available"
-           and (c.get("term") or {}).get("name") == "2025-26 Fall"]
+           if c.get("workflow_state") == "available"]
 ```
 
 ### 6. 不能假设每门课都开了 Canvas 全部功能
@@ -100,7 +99,7 @@ except RuntimeError as e:
 
 启示：**Files 才是真正的数据底座**，Modules 是辅助索引（老师不一定整理）。
 
-### 6b. `assignment.description` 经常只是一个 PDF 附件链接 — 必须下载附件才能读到真题
+### 6b. `assignment.description` 不是完整 spec — 必须逐源侦查
 
 **现象**：MVP 第一轮跑 4 个旗舰场景，agent 产出的 `solution.md` 里全是 `[PROBLEM N]` 占位符，`report.md` 写着 `[TODO: align with actual project spec]`，`slides.pdf` 是 `[此处由小组成员填入选题]`。pipeline 跑通了，作业没做。
 
@@ -114,18 +113,70 @@ except RuntimeError as e:
       data-api-returntype="File">DSAA2043_Assignment_1.pdf</a></p>
 ```
 
-真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。
+真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。后来又遇到 DSAA2011 Project：assignment description 是空的，真正项目说明在 module item PDF 里；UCUG1505 FINAL project 则是 assignment description 和 Week 4 module item 都指向同一个 Google Doc spec。
 
-**正确做法**：`do-homework.md [A3]` 必须调 `tools/problem-extractor.md`，把 description HTML 里的 `/files/<id>` 全部 grep 出来，用 `canvascli download <fid>` 下回来，pdftotext / pdfminer.six 抽文本，组装成 `problem.md`。下游 `writing-helper` / `code-writer` / `slide-maker` 只能读 `problem.md`，不准读 `assignment.json.description`。
+**正确做法**：`do-homework.md [A3]` 必须调 agent-led `tools/assignment-recon.md`，按 Canvas Copilot `canvas-generic` Stage 1-5 逐源查看 assignment、rubric、front page、syllabus、modules、module-items、pages、files、external URLs。产出 `spec.md` 作为标准化侦查报告，不是 raw dump；`references/` 保存完整来源文本和文件；`investigation/rubric.md` / `review_a.json` 记录评分标准和侦查充分性；`pipeline_design.md` 记录输出模式。`problem.md` 只是旧工具兼容层。下游不准直接读 `assignment.description` 当题目，也不准让独立脚本代替 agent 判断主 spec 或写最终侦查报告。
 
 **规则强化**（写进 `skill.md` Safety #7 + `do-homework.md` Safety #7）：deliverable 文件里**禁止出现** `[PROBLEM N]` / `[TODO: align...]` / `[此处由小组成员填入...]` 这种占位符。只允许 `[CITATION NEEDED: ...]` 和 `[CLARIFICATION NEEDED: ...]` 两种 marker，且都要在 do-homework `[E]` 一次性回流给用户。
+
+### 6c. Notebook 有图、report 没图：这是工具接口断裂
+
+**现象**：DSAA2011 Project 的 notebook 生成了 12 张 PNG，slides 也嵌了图，但
+`draft/report.md` 没有任何图片引用，`pdfimages` 显示
+`report_G01_dropout.pdf` 里 0 张嵌入图片。验证只检查了 report 文本覆盖任务，
+于是 text-only report 被当成 acceptable risk。
+
+**根因**：
+- notebook 代码直接 `plt.savefig('tsne_2d.png')`，把图平铺到 `draft/`
+- `writing-helper.md` 只提示读取 `figures/fig_N.*`，没有扫描/整理 `draft/*.png`
+- report quality review 没把“有可用实验图但 report 未嵌入”视为可自动修复质量问题
+
+**正确做法**：
+- notebook / figure-maker 输出统一进 `draft/figures/`
+- `draft/report.md` 用相对路径引用：`![caption](figures/tsne_2d.png){width=70%}`
+- ML/data report 至少嵌入支撑主要结论的代表图（t-SNE、clustering、confusion/ROC、feature importance 等）
+- 若已有图但 report 没嵌，分类为 `auto_fixable`，触发 report/asset repair stage
+
+### 6d. Pandoc + XeLaTeX 默认不保留中间 `.tex`
+
+**现象**：`report_G01_dropout.pdf` 的 metadata 显示 `Creator: LaTeX via pandoc`
+和 `Producer: xdvipdfmx`，但 workbench 里找不到 `.tex` / `.log`。
+
+**根因**：`pandoc --pdf-engine=xelatex` 走 native PDF 路径时会用临时 TeX
+文件，成功后默认清理；不是 AutoStudy 特意删除了原始 XeLaTeX 文件。
+
+**正确做法**：
+- PDF stage receipt 记录渲染引擎：`pandoc+xelatex` / `pandoc->tectonic` / fallback
+- 需要 provenance 时额外写 `draft/render/<report>.tex` 和日志
+- 渲染带图 markdown 时加 resource path，确保 `figures/foo.png` 能找到
+
+### 6e. 连续大图不是只要 `pdfimages` 有图就算通过
+
+**现象**：DSAA2011 clean-start report 里，clustering 小节的第一张 t-SNE
+cluster 图从 page 2 底部开始，被页面边界裁掉；下一页只看到第二张 Ward 图。
+`pdfimages -list` 仍然显示图片已嵌入，所以单靠 image embedding 检查会误判通过。
+
+**根因**：
+- Markdown 连续写两张大图，Pandoc 转成两个独立 LaTeX `figure` float
+- 第一张图位于一个已经接近满页的位置，LaTeX 在 float 输出时产生
+  `Overfull \vbox ... while \output is active`
+- 质量审查只看了 PDF 元数据、`pdfimages` 和部分文本，没有视觉检查对应页面
+
+**正确做法**：
+- 多图 report 保留 `draft/render/*.tex` 和 `.log`，不要只保留 PDF
+- 渲染日志出现 figure 附近的 `Overfull \vbox` 时，必须打开相关页面或渲染
+  page screenshot 检查是否裁切/漂移
+- 连续大图要么缩小并分组为一个原子 LaTeX figure block，要么加清晰的
+  page/float boundary，确保图、caption 和讨论在合理位置
+- 修复后重新跑 `pdfinfo`、`pdfimages -list`、`pdftotext` caption 顺序检查，
+  并视觉检查 affected pages
 
 **HKUST(GZ) 6 门课当前学期附件分布观察**（grep `assignment.description` 里的 `/files/`）：
 - 96 个 assignments 里有 ~70% 的 description 包含至少一个 PDF / DOCX 链接
 - 群组作业 (UCUG) 通常附件是题目说明 + rubric；lab 类作业附件是数据集 + 题目
 - 极少有老师把题目正文直接粘到 Canvas WYSIWYG 里
 
-启示：**没有 problem-extractor 这一步，整个 do-homework 就是个 pipeline demo**，不是真能做作业的工具。
+启示：**没有 Copilot 式 assignment-recon 这一步，整个 do-homework 就是个 pipeline demo**，不是真能做作业的工具。
 
 ### 7. Canvas REST API 直接带 cookie 调，不用 OAuth token
 
@@ -138,6 +189,26 @@ data = resp.json()  # 直接拿 dict
 ```
 
 这比 AutoPku 用 `pku3b` CLI + ANSI 色码正则解析的路径干净得多。
+
+### 7b. `canvascli init` 不是登录态检查；`state.json` 和 SSO remember-login 是两层
+
+**现象**：用户怀疑频繁登录是因为 SSO 页面没有勾选 "remember login"。验证时误把 `canvascli init` 当成"测试是否还需要登录"来跑，结果它必然打开浏览器，制造了错误信号。
+
+**正确模型**：
+
+- `canvascli init` 是显式登录 / 刷新命令：打开浏览器，完成 SSO，写入新的 `~/Library/Application Support/canvascli/state.json`。
+- `canvascli whoami` 才是状态检查：它读取现有 `state.json`，成功返回用户对象就说明当前 session 可用。
+- `state.json` 是否生成只取决于本次 `init` 是否成功完成 SSO；和是否勾选 remember-login 没有直接关系。
+- SSO 的 "remember login" / "trust this browser" 影响的是**下一次重新走 SSO 时是否能快速通过**。不勾也会生成可用的 `state.json`，但下次 state 过期或刷新时可能又要完整登录。
+
+**验证记录（2026-06-01）**：
+
+- 当前有效 `state.json` 下，`.venv/bin/canvascli whoami --pretty` 正常返回 Canvas 用户信息，无需浏览器。
+- 移走 `state.json` 后跑 `canvascli init`，不勾 remember-login 仍会生成新的 `state.json`。
+- 再次移走该 `state.json` 后跑 `init`，SSO 需要重新手动登录。
+- 用户之后勾选 remember-login 生成的 state 可被 `whoami` 正常使用；这说明日常命令依赖的是 `state.json`，不是每次重新 SSO。
+
+**规则**：文档和 agent 流程里，永远用 `whoami` / 实际读命令检查登录态；只有 `No saved session`、`session expired`、HTTP 401 时才让用户跑 `init`。运行 `init` 时提醒用户勾选 remember-login / trust-this-browser。
 
 ### 8. 分页用 Link header，不要瞎设 `page` 参数
 
@@ -185,11 +256,11 @@ def safe_name(s):
 ### 12. 状态文件 / 认证文件 / 数据文件 要分目录
 
 ```
-.auth/canvas_state.json     # 登录态（绝对不能进 git）
-.state/downloads.json       # 增量下载记录
-data/courses.json           # 拉到的真实数据
-data/files/<course>/...     # 下载的课件
-.venv/                      # python 虚拟环境
+~/Library/Application Support/canvascli/state.json  # Canvas 登录态（绝对不能进 git）
+data/sync/current/*.json                            # 最近一次 sync-status 当前快照
+data/runs/<date>/raw/*.json                         # 某次 scan-plan 使用过的快照副本
+data/courses/<course>/materials/...                 # 下载的课件
+.venv/                                              # python 虚拟环境
 ```
 
 `.gitignore` 全部排除前面四个。

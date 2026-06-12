@@ -1,143 +1,270 @@
 # AutoStudy
 
-> HKUST(GZ) 本科学业自动化 skill
-> 同步 Canvas 课程状态 · 下载课件 · 自然语言驱动
+> 面向 HKUST(GZ) Canvas 的本地学业助手 skill。
+> 同步 Canvas、规划 ddl、侦查作业要求、生成可审核草稿、归档课件、生成课程笔记。
+
+其他版本：
+
+- [English README](./README.en.md)
+- [快速版中文 README](./README.quick.md)
+
+AutoStudy 是一个跑在 Claude Code / Codex 这类 agentic coding 环境里的
+**本地 skill 包**。你用自然语言提出需求，agent 读取 `skill.md`，调用本地
+`canvascli` 数据层，把证据和产物写回这个仓库，并在关键节点询问你。
+
+它不是网页应用，不是托管服务，也不是后台偷偷跑的自动化机器人。它更像一个
+学业助手：先收集 Canvas 上的真实上下文，解释它找到了什么，遇到开放性任务时
+和你对齐方向，然后生成你可以检查、修改、决定是否提交的本地 artifacts。
 
 ---
 
-## 这是什么
+## 你可以让它做什么
 
-AutoStudy 是一个 **skill 包**，让你在 Claude Code（或未来的 Codex / Kimi Code CLI）里用自然语言指挥 agent 处理 HKUST(GZ) 的学业任务：
-
+```text
+"看看这周有什么作业"
+"同步课程状态"
+"帮我完成 DSAA2011 Project，先生成本地草稿，不提交"
+"继续改上次那个 report，让实验讨论更深入"
+"同步 DSAA2011 的课件"
+"把 DSAA2011 的 lecture notes 写出来"
 ```
-你："看看这周有什么作业？"
-agent: 拉 Canvas 数据 → 整理摘要 → 列出 ddl 优先级
 
-你："把 DSAA2043 的 midterm 资料下下来"
-agent: 列文件夹 → 询问范围 → 下载到本地
-```
+当前用户侧任务：
 
-设计上参考了 [AutoPku](https://github.com/ICUlizhi/AutoPku) 的"skill 寄生在宿主 agent 上"思路。**没有 npm install、没有自建后端、没有要配的 API key**，全部数据在你本地。
+| 任务 | 能力 | 产物位置 |
+|---|---|---|
+| `sync-status` | 同步 Canvas 课程、作业、公告，并生成建议计划。只规划，不自动执行作业。 | `data/runs/<date>/REPORT.md`, `plan.json`, `pending_assignments.json` |
+| `do-homework` | 建立单作业工作台，侦查 Canvas 来源，和你对齐意图，动态设计 pipeline，生成本地草稿，最后询问是否提交。 | `data/homework/<COURSE>/<HWID>/` |
+| `sync-course` | 按课程归档课件、公告、module 结构，供后续复习和笔记复用。 | `data/courses/<COURSE>/` |
+| `write-course-notes` | 从已同步的 lecture PDFs 生成 Obsidian 风格 Markdown 笔记。 | `data/courses/<COURSE>/notes/` |
+
+旧 M3 阶段已经验证过 paper / slides / math / lab 四类真实作业产出。现在的主线是
+M3.5+：更深的 Canvas 侦查、明确的用户对齐、动态 pipeline、阶段级审查、可恢复的本地工作台。
 
 ---
 
 ## 快速开始
 
-### 第一步：把 skill 扔给 agentic AI
+### 1. 让 agent 加载这个 skill
 
-打开 Claude Code（或未来支持的 Codex / Kimi Code），告诉它：
+AutoStudy 是一个完整的本地仓库，不是单独一个 `skill.md` 文件。第一次使用时，建议让 agent 把它 clone 到一个独立文件夹，比如 `~/workspace/autoust-dev`：
 
-```
-下载 https://github.com/Aurorra1123/autoust-dev，并执行这个 skill
-```
-
-它会自己 `git clone` 这个仓库、读取 `skill.md`、检测环境、自动装好 canvascli 和 Chromium。
-
-### 第二步：完成一次 SSO 登录
-
-agent 会在合适的时机让你扫码 / 登录学校 SSO（一次性，cookie 持久化在 `~/Library/Application Support/canvascli/`）。这是整个流程里**唯一**需要你动手的步骤。
-
-### 第三步：下达命令
-
-```
-"看看这周有什么作业"
-"帮我同步课程状态"
-"下载 DSAA2043 的 midterm 资料"
-"帮我完成 DSAA2043 Lab-Assignment 1"
+```text
+请把 https://github.com/Aurorra1123/autoust-dev clone 到 ~/workspace/autoust-dev，
+然后进入这个文件夹，读取里面的 skill.md，并按步骤帮我完成初始化。
 ```
 
-剩下的去做别的，相信 agent。
+如果你想自己先 clone，也可以这样做：
 
-> 提示：Claude Code 不会主动激活之前加载过的 skill，下次开新会话时你需要再提一句"参考 autoust-dev 这个 skill"。
+```bash
+mkdir -p ~/workspace
+git clone https://github.com/Aurorra1123/autoust-dev.git ~/workspace/autoust-dev
+cd ~/workspace/autoust-dev
+```
+
+然后在这个目录里告诉 agent：
+
+```text
+请使用当前目录里的 AutoStudy skill，阅读 skill.md，然后帮我初始化。
+```
+
+`~/workspace/autoust-dev` 只是推荐位置；你也可以换成自己喜欢的文件夹。关键是 AutoStudy 要作为一个独立仓库存在，因为 `.venv/`、`data/`、`scripts/` 和 `sub-skills/` 都会在这个仓库目录下使用。agent 应该读取 `skill.md`，检查环境，并把缺失依赖安装到本地 `.venv/`。
+
+### 2. 完成一次 Canvas 登录
+
+AutoStudy 使用独立的 [`canvascli`](https://github.com/Aurorra1123/canvascli)
+作为 Canvas 数据层。第一次使用时，agent 会打开浏览器让你完成 HKUST(GZ) SSO：
+
+```bash
+.venv/bin/canvascli init
+```
+
+Canvas 登录态保存在本机：
+
+```text
+~/Library/Application Support/canvascli/state.json
+```
+
+这个文件是 credential。agent 不应该打印、复制到聊天、或提交到 git。检查登录态是否仍可用时，应该运行：
+
+```bash
+.venv/bin/canvascli whoami
+```
+
+`canvascli init` 是登录/刷新命令，不是健康检查。
+
+### 3. 从同步状态开始
+
+最安全的第一句是：
+
+```text
+看看这周有什么作业
+```
+
+AutoStudy 会：
+
+1. 拉取 Canvas courses / assignments / announcements；
+2. 保存当前 sync 快照到 `data/sync/current/`；
+3. 写入当天运行目录 `data/runs/<date>/`；
+4. 给出编号的下一步建议；
+5. 等你选择是否进入某个作业。
+
+如果你选择某个编号，AutoStudy 会用 `scripts/select_plan_item.py` 解析出准确的
+Canvas IDs 和建议 workbench。选中编号后，不应该再靠标题模糊匹配。
 
 ---
 
-## 它在做什么（透明版）
+## 作业流程现在是怎样的
 
-如果你想知道 agent 在背后跑了什么：
+AutoStudy 不会只看作业标题就开始生成。当前 homework contract 是：
 
-1. **环境检测**：检查当前目录有没有 `.venv/`，`canvascli` 是否能跑、Canvas session 是否有效
-2. **首次安装**（缺什么补什么）：
-   ```bash
-   python3 -m venv .venv
-   .venv/bin/pip install "git+https://github.com/Aurorra1123/canvascli"
-   .venv/bin/playwright install chromium
-   .venv/bin/canvascli init   # ← 你登录的地方
-   ```
-3. **跑实际任务**：根据你的意图路由到 `sub-skills/tasks/` 下的某个 task spec，由 task spec 调度 `sub-skills/tools/` 下的工具链产出 deliverable
+```text
+Canvas sources
+-> spec.md
+-> investigation/explore_context.md
+-> investigation/alignment_brief.md or repair_plan.md
+-> pipeline_design.md or repair_pipeline_design.md
+-> stage_briefs/
+-> stage_results/ and stage_reviews/
+-> draft/
+-> verification.log
+-> result.json
+```
+
+换成普通话就是：
+
+1. **侦查**：通过 `canvascli` 检查 assignment page、rubric、front page、
+   syllabus、modules、module items、files、pages 和外部链接。
+2. **写 spec**：把真正的作业要求总结到 `spec.md`；把抓到的 PDF、Google Doc、
+   starter code、数据集等放进 `references/`。
+3. **和你对齐**：只问那些不问就会猜错的问题，例如 topic、group info、dataset、
+   architecture、style、scope。
+4. **确认 agreement**：新作业写入 `investigation/alignment_brief.md`；继续修改已有草稿时写入 `repair_plan.md`。
+5. **设计 pipeline**：根据 spec 和确认后的 intent 写 `pipeline_design.md`。现在不再有固定的 “paper pipeline” 或 “lab pipeline”，而是按作业现场组合工具。
+6. **执行和审查**：生成 stage briefs，必要时派发 executor/reviewer，记录 receipts，运行检查，把最终产物放进 `draft/`。
+7. **提交前询问**：Canvas submission 从不自动发生。
+
+所以一个复杂项目可以在同一个 workbench 里同时产生 notebook、report PDF、slides、
+requirements、source zip、verification log 和 human review items。
 
 ---
 
-## 当前阶段
+## 课程资料和笔记
 
-**MVP（M3 核心）** — 4 个旗舰作业场景（paper / slides / math / lab）已在真实的 HKUST(GZ) Canvas 作业上端到端验证。
+同步课程资料：
 
-已完成：
-- ✅ Canvas 抓取器（课程 / 作业 / 公告 / 课件 / Quiz / 讨论）+ 增量下载
-- ✅ 主 skill.md + sub-skills 三层架构（runtime/tools/tasks）
-- ✅ `tasks/sync-status.md` — 同步状态 + 摘要
-- ✅ `tasks/do-homework.md` — 作业端到端（含 problem-extractor 数据接地）
-- ✅ `tasks/task-orchestrator.md` — 工具链调度
-- ✅ 8 个工具 sub-skill（pdf-renderer / writing-helper / paper-search / figure-maker / code-writer / test-runner / slide-maker / problem-extractor）
+```text
+同步 DSAA2011 的资料
+```
 
-下一步：交互式澄清回合、submission 接口验证、多 runtime（Codex / Kimi）。详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
+会进入 `sync-course`，确认范围后归档到：
+
+```text
+data/courses/<COURSE>/
+├── materials/
+├── canvas_sync/
+├── notes/
+├── meta.json
+└── index.md
+```
+
+然后你可以说：
+
+```text
+写 DSAA2011 的课程笔记
+```
+
+这会进入 `write-course-notes`，从课程归档里的 lecture PDFs 生成结构化 Markdown notes。
 
 ---
 
 ## 仓库结构
 
-```
+```text
 AutoStudy/
-├── skill.md                    # Claude Code 入口（用户侧）
-├── AGENTS.md                   # 开发者入口
-├── README.md                   # 你正在读的
-├── docs/
-│   ├── ROADMAP.md              # 分阶段路线图
-│   ├── MARKETING.md            # 对外宣发场景
-│   ├── PITFALLS.md             # 踩坑记录（重要）
-│   ├── AutoStudy.pdf           # 原始设计理念
-│   ├── plan.md                 # 项目最初的 brief
-│   ├── plans/feature-list.json # 结构化 backlog
-│   └── progress/agent-progress.md  # 会话交接日志
+├── skill.md                         # 用户侧 skill 入口和路由
+├── AGENTS.md                        # 开发者交接和仓库规则
+├── README.md                        # 中文默认 README
+├── README.en.md                     # 英文完整版
+├── README.quick.md                  # 中文快速版
+├── scripts/
+│   ├── write_scan_plan.py           # Canvas snapshot -> plan/report
+│   ├── select_plan_item.py          # 编号计划项 -> 精确 handoff
+│   └── write_homework_result.py     # 稳定 result.json writer
 ├── sub-skills/
-│   ├── tools/
-│   │   ├── canvascli-setup.md  # 安装外部工具 + 首次登录
-│   │   ├── canvascli-api.md    # canvascli 命令手册
-│   │   ├── _index.md           # M3 tool 注册表
-│   │   └── pdf-renderer.md     # markdown → PDF
-│   └── tasks/
-│       ├── sync-status.md      # 同步状态任务
-│       └── task-orchestrator.md # M3 调度器
-└── data/                       # 拉到的 JSON + 下载的文件（gitignored）
+│   ├── tasks/
+│   │   ├── sync-status.md
+│   │   ├── do-homework.md
+│   │   ├── task-orchestrator.md
+│   │   ├── sync-course.md
+│   │   └── write-course-notes.md
+│   └── tools/
+│       ├── canvascli-setup.md
+│       ├── canvascli-api.md
+│       ├── assignment-recon.md
+│       ├── code-writer.md
+│       ├── writing-helper.md
+│       ├── pdf-renderer.md
+│       ├── slide-maker.md
+│       └── ...
+├── docs/
+│   ├── ROADMAP.md
+│   ├── COLLABORATION.md
+│   ├── runtime-agent-protocol.md
+│   ├── skills-architecture-spec.md
+│   ├── PITFALLS.md
+│   ├── plans/feature-list.json
+│   └── progress/agent-progress.md
+└── data/                            # 本地 Canvas 快照和产物，gitignored
 ```
 
-Canvas 数据层（抓取器）抽出来了 —— 是独立仓库 [`canvascli`](https://github.com/Aurorra1123/canvascli)，MIT 开源。AutoStudy 通过 `pip install "git+https://github.com/Aurorra1123/canvascli"` 一行装到本地 venv 里。
-设计思路对应 AutoPku 的 `pku3b`：把数据底座做成可被任何 agent shell out 调用的独立工具。
+`data/` 是本地工作区，可能包含课程文件、作业草稿、verification logs 和 result receipts。
+当前 Canvas sync 快照固定放在 `data/sync/current/`，每次 scan-plan 使用过的副本会放在
+`data/runs/<date>/raw/`。
 
 ---
 
-## 与 AutoPku 的关系
+## 当前状态
 
-[AutoPku](https://github.com/ICUlizhi/AutoPku) 是这个项目的灵感来源。两者的区别：
+已经可用：
 
-| | AutoPku | AutoStudy |
-|---|---|---|
-| 学校 | 北京大学（教学网） | HKUST(GZ)（Canvas） |
-| 数据采集 | 依赖外部 CLI `pku3b` | 自己写的 playwright + Canvas REST API |
-| 当前覆盖 | 同步通知 / 完成作业 / 写笔记 | 同步状态（更多 task 在 roadmap） |
-| 差异化 | Agent Team 全自动完成作业 | 反问式学习 + 设计审核（M3+） |
+- `canvascli` Canvas 数据层。
+- `sync-status` scan-plan 流程。
+- `do-homework` workbench、侦查、alignment、动态 pipeline、本地草稿流。
+- M3 工具：prose、code、figures、tests、slides、PDF rendering、humanizer。
+- 课程资料同步和课程笔记生成。
+- `result.json` 记录 skipped、draft_ready、submitted、error 等状态。
+
+仍在 hardening：
+
+- 统一 executor/reviewer runtime 的 clean process validation。
+- 保留已有草稿的 repair / continue 体验。
+- course-level 和 user-level preference memory。
+- 在安全的未过期/sandbox 作业上做一次真实 Canvas submission E2E。
+- Claude Code 之外的多 runtime 支持。
+
+详细状态见：
+
+- [docs/ROADMAP.md](./docs/ROADMAP.md)
+- [docs/plans/feature-list.json](./docs/plans/feature-list.json)
 
 ---
 
-## 安全规则
+## 安全和学术诚信
 
-- 登录态保存在 `.auth/canvas_state.json`（gitignored），**不会上传任何地方**
-- 任何下载 / 提交动作前都会用 `AskUserQuestion` 让你确认
-- 不会自动选择"最新的"作业或课件
-- 不会自动提交作业（M3 加入提交功能时仍会保留确认环节）
+- AutoStudy 不会自动提交 Canvas。
+- `sync-status` 只给计划，不会自动执行计划项。
+- 大范围下载、生成作业草稿、提交文件前都应该有用户确认点。
+- AutoStudy 不应该编造 group details、datasets、personal experience、partner names、instructor oral instructions 或不可达来源。
+- 草稿是本地 artifacts，必须由你检查、修改、决定是否提交。
+- 目标是减少重复劳动、提升可追溯性，而不是替学生隐藏责任。
+
+拿不准时，AutoStudy 应该停下来解释不确定性，而不是猜。
 
 ---
 
-## 反馈 / 贡献
+## 贡献开发
 
-issue 和 PR 欢迎。先看 [docs/ROADMAP.md](./docs/ROADMAP.md) 了解当前阶段范围。
+如果你是开发者，先读 [AGENTS.md](./AGENTS.md)。它解释了 AutoStudy 与
+`canvascli` 的边界、Canvas Copilot 参考项目、当前分支策略、progress/backlog
+更新规则和验证要求。

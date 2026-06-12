@@ -24,7 +24,15 @@ Input:  path/to/document.md         (UTF-8 markdown)
         + optional: path/to/figures/  (referenced images)
         + optional: title, author, date metadata in frontmatter
 Output: path/to/document.pdf
+        + render provenance under path/to/render/ when practical
 ```
+
+If the assignment or `pipeline_design.md` declares `required_spec_constraints`,
+the input must include the evidence needed to satisfy those exact constraints,
+or an explicit blocker receipt explaining why they are unavailable. A fallback
+renderer can produce a preview/debug artifact, but it does not satisfy the final
+deliverable when the spec requires different evidence and
+`fallback_allowed_for_final: false`.
 
 ## Setup
 
@@ -102,11 +110,59 @@ mv "$(dirname OUTPUT.pdf)/autostudy_render.pdf" OUTPUT.pdf
 pandoc INPUT.md \
   -o OUTPUT.pdf \
   --pdf-engine=xelatex \
+  --resource-path="$(dirname INPUT.md):." \
   -V mainfont="PingFang SC" \
   -V monofont="Menlo" \
   -V geometry:margin=1in \
   -V documentclass=article
 ```
+
+Pandoc native does not preserve the generated `.tex` or `.log` files by
+default. If later review needs render provenance, also write a standalone TeX
+sidecar before or after rendering:
+
+```bash
+mkdir -p "$(dirname INPUT.md)/render"
+pandoc INPUT.md \
+  -o "$(dirname INPUT.md)/render/$(basename INPUT.md .md).tex" \
+  --standalone \
+  --resource-path="$(dirname INPUT.md):." \
+  -V mainfont="PingFang SC" \
+  -V monofont="Menlo" \
+  -V geometry:margin=1in
+```
+
+Record the exact engine path in the stage receipt, e.g. `pandoc+xelatex` or
+`pandoc->tectonic`, plus whether TeX/log sidecars were preserved. For
+development validation and final deliverable PDFs, preserve the log sidecar
+under `draft/render/` when the renderer exposes one and the stage has permission
+to copy it. If the engine does not expose a log under the allowed write set, or
+the stage intentionally records only a warning summary, record that reason in
+render provenance. Do not leave a reviewer guessing why no `.tex` or `.log`
+file exists.
+
+For deliverables governed by hard spec requirements, preserve specific evidence
+as part of render provenance: generated source, build log, command line, input
+files, page/layout checks, or other proof named by `required_spec_constraints`.
+If the required evidence is missing, render only a clearly named preview/debug
+PDF when useful and return the appropriate blocker for the final deliverable.
+
+For report PDFs with multiple figures, preserve enough render provenance for
+reviewers to diagnose float placement: source Markdown, generated TeX when
+available, log or warning summary, page count, and image-embedding evidence.
+If figures drift into an unrelated later section in the rendered PDF, or if the
+TeX log reports an `Overfull \vbox` near figure placement and visual inspection
+shows a figure clipped by a page boundary, treat it as an auto-fixable
+report-quality issue. Do not accept `pdfimages` evidence alone: it can prove an
+image is embedded while missing that the visible placement is clipped. For
+consecutive large figures, prefer an explicit grouped LaTeX figure block, a
+float barrier, a size change, or a section/page break that keeps the figure(s)
+with their captions and nearby discussion.
+
+For English deliverables rendered through CTeX or other localized templates,
+check generated labels such as table of contents and figure/table prefixes. If
+the PDF mixes localized labels into an otherwise English report, configure
+English names or record the remaining issue explicitly.
 
 ### With LaTeX math and code highlighting (works for both paths)
 
@@ -176,6 +232,7 @@ mkdir -p data/tools  # if it doesn't exist
 pandoc INPUT.md \
   -o OUTPUT.pdf \
   --pdf-engine=xelatex \
+  --resource-path="$(dirname INPUT.md):." \
   --lua-filter=data/tools/callout.lua \
   -H <(echo '\usepackage{tcolorbox}\tcbuselibrary{breakable,skins}') \
   -V mainfont="PingFang SC" \
@@ -199,6 +256,7 @@ def render_pdf(md_path, pdf_path, *, with_callouts=False, font="PingFang SC"):
     cmd = [
         "pandoc", str(md_path), "-o", str(pdf_path),
         "--pdf-engine=xelatex",
+        "--resource-path", f"{md_path.parent}:.",
         "-V", f"mainfont={font}",
         "-V", "monofont=Menlo",
         "-V", "geometry:margin=1in",
@@ -220,6 +278,64 @@ def render_pdf(md_path, pdf_path, *, with_callouts=False, font="PingFang SC"):
 render_pdf("draft.md", "data/homework/DSAA2043/hw3/final.pdf")
 ```
 
+## Post-processing (fallback chain)
+
+Before rendering, **check each engine in order** — do NOT skip to fpdf2
+without first attempting the higher-quality paths:
+
+```bash
+# Step 1: Check tectonic
+tectonic --version 2>/dev/null && echo "TECTONIC_OK" || echo "TECTONIC_MISSING"
+# Step 2: Check xelatex
+xelatex --version 2>/dev/null | head -1 && echo "XELATEX_OK" || echo "XELATEX_MISSING"
+```
+
+Then try rendering paths **in this order, stopping at first success**:
+
+1. **Tectonic two-step** (preferred) — `pandoc → tex → tectonic → PDF`
+   - Only attempt if `tectonic --version` succeeds
+   - Do NOT `brew install tectonic` in background and skip ahead — wait for install
+     or skip this path entirely
+
+2. **Pandoc + xelatex** — `pandoc --pdf-engine=xelatex → PDF`
+   - Only attempt if `xelatex --version` succeeds
+
+3. **fpdf2 pure Python** (last resort) — only if both LaTeX engines are unavailable:
+   ```bash
+   pip install fpdf2
+   ```
+   Render a simplified text-only PDF. **fpdf2 cannot embed images or complex
+   formatting** — expect degraded output. Record in `human_review_items`:
+   "PDF rendered via fpdf2 fallback — formatting quality may be degraded.
+   Consider installing tectonic for better output."
+
+If the final PDF is suspiciously small (<10KB for a multi-page report),
+it likely failed silently. Re-run with a different path.
+
+If fpdf2 output doesn't meet `min_quality` (e.g., < 5 pages when required),
+record this as a FAIL in verification.log and add to `human_review_items`.
+
+## Self-check
+
+- [ ] Output PDF exists and is > 1KB
+- [ ] Magic bytes are `%PDF` (run: `head -c 4 output.pdf`)
+- [ ] Page count matches expectations (run: `pdfinfo output.pdf | grep Pages` if available)
+- [ ] Chinese characters render correctly (not tofu boxes) — open and visually verify
+- [ ] No LaTeX errors in stderr output
+- [ ] For multi-page documents: page count >= 3 (sanity minimum)
+- [ ] Referenced images are embedded (for reports with figures, run
+      `pdfimages -list output.pdf` or inspect the PDF visually)
+- [ ] Stage receipt records render engine and whether `.tex`/`.log`
+      provenance was preserved, or why a separate log sidecar is unavailable
+- [ ] Multi-figure reports keep figures near their intended sections; important
+      figures do not float under unrelated later headings, lose their captions,
+      or get clipped at page boundaries
+- [ ] TeX logs do not contain unresolved figure-placement `Overfull \vbox`
+      warnings; if they do, visually inspect the affected pages and repair
+      clipped/drifted figures before marking quality review PASS
+- [ ] Language-specific labels match the deliverable language, or the mismatch
+      is explicitly classified
+
 ## Pitfalls
 
 These came from AutoPku phase 11 and our own validation — fix them once, here, for everyone:
@@ -231,6 +347,14 @@ These came from AutoPku phase 11 and our own validation — fix them once, here,
 5. **` ` (non-breaking space) in markdown breaks pandoc.** If you generated the markdown from web text, normalize: `sed 's/\xc2\xa0/ /g' input.md > clean.md`.
 6. **Mermaid diagrams don't render natively.** If a markdown file has ` ```mermaid ` blocks, pre-process with `mermaid-cli` to PNG/SVG first, then pandoc renders the image. Do not ignore — they'll silently become text dumps.
 7. **lualatex differs from xelatex.** Some workflows online show `lualatex` config — don't paste those wholesale, our setup is `xelatex`-specific.
+8. **Pandoc native hides intermediate TeX.** `pandoc --pdf-engine=xelatex`
+   creates temporary TeX files and deletes them. If provenance matters, write a
+   sidecar under `draft/render/` with `pandoc --standalone -o ...tex`.
+   A missing `.log` is acceptable only when render provenance records the
+   engine, warnings, and the reason the log could not be preserved.
+9. **Image paths are relative to render cwd unless resource paths are set.**
+   Use `--resource-path="$(dirname INPUT.md):."` so `draft/report.md` can embed
+   `figures/foo.png` reliably.
 
 ## What this tool is NOT for
 

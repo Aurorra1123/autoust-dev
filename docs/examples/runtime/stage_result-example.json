@@ -1,0 +1,23 @@
+{
+  "stage": "stage_02_report",
+  "status": "DONE",
+  "executed_by": "subagent",
+  "delegation_mode": "subagent",
+  "delegation_deviation": null,
+  "agent_id": "agent-123",
+  "transcript": "child-executor-stage_02_report-agent-123",
+  "transcript_export_path": "transcripts/stage_02_report_executor.md",
+  "summary": "Wrote a complete report draft grounded in spec, rubric, user notes, and notebook metrics.",
+  "outputs": [
+    {"path": "draft/report.md", "size_bytes": 18432}
+  ],
+  "commands_run": [
+    "python3 - <<'PY'\nfrom pathlib import Path\ntext = Path('draft/report.md').read_text()\nprint(len(text.split()))\nPY"
+  ],
+  "verification_evidence": [
+    "draft/report.md exists",
+    "no forbidden placeholder markers found",
+    "rubric criteria are explicitly addressed"
+  ],
+  "concerns": []
+}

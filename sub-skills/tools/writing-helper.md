@@ -1,39 +1,101 @@
 ---
 name: writing-helper
-description: Draft structured academic prose (essay / report / reflection) from an assignment description + rubric. The agent itself writes the markdown; this file is the spec + checklist. Output is pandoc-friendly markdown that pdf-renderer can convert to PDF.
+description: Draft structured academic prose (essay/report/reflection) from spec + pipeline + rubric. Type-specific structure guidance in appendix files loaded on demand.
 ---
 
 # writing-helper
 
-The paper/report/reflection workhorse. Reads a `task_profile.yaml` + the original `assignment.json`, produces `draft.md` in the same `work_dir`. **The agent writes the prose directly** — there's no subprocess, no LLM call. This file is the spec the agent follows.
+Academic prose workhorse. Reads the assignment workbench and produces
+`draft.md`. This file provides cross-type writing guidance; type-specific
+structure (essay/report/reflection) is in appendix files loaded based on
+`pipeline_design.md` declarations.
 
-## Capabilities
+**Skills provide reference guidance, not hard constraints.** If the task spec
+has explicit format requirements, follow the spec.
 
-- `write_essay` — produce structured academic markdown from assignment context
+## Contract
 
-## Inputs / Outputs
+- **reads:**
+  - `spec.md` (PRIMARY)
+  - `pipeline_design.md` (prose stage, deliverables, constraints)
+  - `investigation/rubric.md`
+  - `references/` (fetched readings, spec text, data)
+  - `problem.md` (compatibility; read after spec.md)
+  - `investigation/user_notes.md` (optional)
+  - `investigation/user_scope.md` (optional)
+  - `references.bib` (optional, from paper-search)
+  - `draft/figures/*.{pdf,png}` or `figures/*.{pdf,png}` (optional, from code
+    or figure-maker stages)
+  - `draft/*.{pdf,png}` (compatibility scan only; prefer organized figures)
+- **writes:**
+  - `draft.md` (pandoc-friendly markdown with YAML frontmatter)
+- **preconditions:**
+  - `spec.md` and `pipeline_design.md` must exist and contain actual content
 
+## Guidance
+
+### Determine structure
+
+Read spec, pipeline_design, rubric, and references. Match the prose stage
+against supported structures:
+
+| Structure | Cues | Typical sections |
+|---|---|---|
+| `essay` | "argue", "critique", "analyze", "thesis" | Intro (thesis) → body paragraphs → conclusion |
+| `report` | "results", "methodology", "discussion", "experiment" | Abstract → Intro → Methods → Results → Discussion → Conclusion |
+| `reflection` | "reflect", "experience", "learned" | Context → What happened → What I learned → Implications |
+
+If `pipeline_design.md` declares `type`, use that. Otherwise infer from cues.
+Load the matching appendix for detailed structure guidance.
+
+### Honor length and citation style
+
+Take from spec/pipeline_design/rubric:
+
+- `length: ~1500 words` → aim ±10%, budget per section
+- `citation_style: APA` → in-text `(Author, 2024)`, end `## References`
+- `citation_style: IEEE` → in-text `[1]`, end `## References`
+- `citation_style: none` → no citations; don't fake them
+
+### Use references.bib if available
+
+If `references.bib` exists, pull citations from it. Don't invent references.
+If you need a reference not in the bib, write `[CITATION NEEDED: <description>]`
+inline — surfaced at do-homework [E].
+
+### Embed figures
+
+For experimental reports, figures are part of the argument, not loose
+attachments. Scan for generated images in this order:
+
+1. `draft/figures/*.{pdf,png}` when the report is `draft/report.md`;
+2. `figures/*.{pdf,png}` for older workbench-level figure-maker output;
+3. `draft/*.{pdf,png}` only as a compatibility fallback.
+
+If relevant figures exist, embed a representative set in the report and cite
+them in text:
+
+```markdown
+![2D t-SNE projection of the standardized feature space.](figures/tsne_2d.png){width=70%}
 ```
-Input:  <work_dir>/task_profile.yaml      (constraints: length, citation_style, language, partial_scope)
-        <work_dir>/problem.md             (PRIMARY: grounded problem text from problem-extractor)
-        <work_dir>/assignment.json        (metadata only: due_at, rubric, points, submission_types)
-        <work_dir>/references.bib         (optional, from paper-search)
-        <work_dir>/figures/*.{pdf,png}    (optional, from figure-maker)
-Output: <work_dir>/draft.md               (pandoc-friendly markdown with YAML frontmatter)
-```
 
-**Read `problem.md` first, completely, before writing anything.** The `## Attached:` sections contain the actual problems / prompts / paper content. The `## Inline description` section is usually just metadata noise (an attachment link rendered as text). If `problem.md` is missing or < 1 KB, refuse to proceed and write a single `[CLARIFICATION NEEDED: problem statement was not grounded; do-homework [A3] failed]` marker — do NOT pad it with template content.
+Use paths relative to the markdown file. For `draft/report.md`, this usually
+means `figures/<name>.png`, not `draft/figures/<name>.png`.
 
-## Setup
+If useful figures exist only as flat `draft/*.png`, either move/copy them into
+`draft/figures/` before writing the report or explicitly record a blocking
+`auto_fixable` concern for the organizer/report stage. Do not accept a text-only
+experimental report when generated plots are available unless the assignment
+explicitly forbids figures or the report is already over a strict page limit.
 
-No external dependencies. Pure agent-authored markdown.
+### Write the draft
 
-The `draft.md` must include a frontmatter block that pdf-renderer can pass through:
+Produce `draft.md` with YAML frontmatter (pdf-renderer reads it):
 
 ```yaml
 ---
 title: <Assignment name>
-author: <leave blank — student fills>
+author:
 date: \today
 documentclass: ctexart
 geometry: margin=1in
@@ -42,76 +104,59 @@ monofont: Menlo
 ---
 ```
 
-## Invocation (decision flow)
+If `pipeline_design.md` declares `required_spec_constraints`, or if `spec.md`
+contains explicit hard requirements for this prose deliverable or stage
+artifact, the draft must not weaken those requirements. Examples include exact
+section order, page limits, citation style, required datasets/sources, required
+template/style files, file names, and credit/disclosure wording.
+Use this scope phrase: prose deliverable or stage artifact.
 
-The agent runs this entirely in-context — no shell commands required for content generation. Follow this order:
+- Preserve each hard requirement in the draft or stage receipt with enough
+  evidence for the renderer/reviewer to verify it later.
+- If a hard requirement needs a specific source format, produce that source
+  format, or produce content clearly labeled as preview only.
+- If the requirement cannot be satisfied with available context, classify the
+  affected final deliverable as blocked by `needs_user_input`,
+  `manual_only`, or `external_blocker`.
+- Do not claim that generic Markdown, generic Pandoc output, or any fallback
+  satisfies a final deliverable when `fallback_allowed_for_final: false`.
 
-### Step 1 — Pick the structure from the rubric
+Quality bar:
 
-Read `problem.md` end-to-end. Then read `assignment.json` rubric. Match the assignment against the three supported structures:
+- Every assertion grounded in spec/references/pipeline_design
+- Specific problems get specific answers (no `[PROBLEM N]` placeholders)
+- For critiques: name the paper, authors, quote specific claims
+- Every section has a topic sentence
+- No "As an AI" / "I will discuss" filler
+- Match user's language (en/zh) — if zh, draft in Chinese, frontmatter keys stay English
+- Only acceptable markers: `[CITATION NEEDED]` and `[CLARIFICATION NEEDED]`
 
-| Structure | Cues in problem.md / rubric | Typical sections |
-|---|---|---|
-| `essay` | "argue", "critique", "analyze", "thesis", "evaluate"  | Intro (with thesis) → 2-4 body paragraphs → Conclusion |
-| `report` | "results", "methodology", "discussion", "lab", "experiment" | Abstract → Introduction → Methods → Results → Discussion → Conclusion → References |
-| `reflection` | "reflect", "experience", "learned", "personal" | Context → What happened → What I learned → Implications |
+## Appendices (loaded on demand)
 
-If multiple cues match, default to `essay`. If `partial_scope` is set in `task_profile.yaml`, write only the requested sections.
+| Appendix | When to load |
+|---|---|
+| [writing-helper-report.md](./writing-helper-report.md) | When `type: report` or report cues detected |
+| `writing-helper-essay.md` (future) | When `type: essay` or essay cues detected |
 
-### Step 2 — Honor length and citation style
+## Post-processing
 
-- `length: ~1500 words` → aim ±10%. Each section gets a rough budget (essay: 200/1000/300; report: 100/300/300/400/300/200).
-- `citation_style: APA` → in-text `(Author, 2024)`, end-of-doc `## References` with hanging indent.
-- `citation_style: IEEE` → in-text `[1]`, end-of-doc `## References` with numeric list.
-- `citation_style: none` → no citations; don't fake them.
+- Hand off to `pdf-renderer.md` with `draft.md` → `final.pdf`
+- If `pipeline_design.md` declares `post-process: humanize`, or user requested
+  at [B], load `humanizer.md` and apply to draft before rendering
+- **Suggestion for pipeline design**: for academic reports and essays submitted
+  to institutions with AI-detection tools, consider adding `post-process: humanize`
+  to the pipeline_design stage. This is optional and should be the agent's judgment call.
 
-### Step 3 — Use `references.bib` if it exists
+## Self-check
 
-If `<work_dir>/references.bib` exists (from paper-search), pull citations from there. Don't invent references. If you need a reference the bib doesn't have, write `[CITATION NEEDED: <description>]` inline — `pdf-renderer` will surface this so the user / paper-search can fill it later.
-
-### Step 4 — Embed figures if any
-
-If `<work_dir>/figures/fig_N.{pdf,png}` exist (from figure-maker), reference them in the markdown:
-
-```markdown
-![Caption text](figures/fig_1.pdf){width=60%}
-```
-
-Cite the figure in-text (`see Figure 1`).
-
-### Step 5 — Write the draft
-
-Produce `<work_dir>/draft.md`. Quality bar (non-negotiable):
-
-- **Every assertion is grounded in `problem.md`.** If the assignment asks "critique this paper X", the draft engages with X's actual arguments (as found in `problem.md`'s `## Attached:` section), not with a generic "the paper makes some claims" gloss.
-- **Specific problems get specific answers.** If `problem.md` lists Problem 1 (prove BST height bound), Problem 2 (solve recurrence), Problem 3 (DP table), the draft has a section per problem with a real proof / derivation — NOT a `[PROBLEM N]` placeholder.
-- **For papers/critiques**: name the paper. Name its authors. Quote (with citation) at least one specific claim from the paper. Generic "this paper discusses..." sentences fail the quality bar.
-- **No `[PROBLEM N]` / `[TODO: ...]` / `[此处填入...]` placeholders.** The only acceptable markers:
-  - `[CITATION NEEDED: <topic>]` — when `references.bib` lacks a needed entry. Surfaced at [E].
-  - `[CLARIFICATION NEEDED: <specific question about problem.md>]` — when `problem.md` is genuinely ambiguous on a specific point. Surfaced at [E].
-- Every section has a topic sentence.
-- No "As an AI" / "I will discuss" filler.
-- Use rubric criteria as section emphasis (if rubric says "30% argument quality", make the argument explicit).
-- Match the user's chosen language (`en` / `zh`) — if `zh`, the draft is in Chinese, but the YAML frontmatter stays English keys.
-
-### Step 6 — Hand off
-
-After writing, the orchestrator calls `pdf-renderer` with `<work_dir>/draft.md` → `<work_dir>/final.pdf`. Don't render the PDF from writing-helper itself.
-
-## What this tool is NOT for
-
-- ❌ Generating slides — use `slide-maker.md`
-- ❌ Writing code — use `code-writer.md`
-- ❌ Doing the LaTeX math itself — `pdf-renderer` handles math when the markdown source uses `$...$`
-- ❌ Researching citations — use `paper-search.md` first, then this tool reads `references.bib`
-
-## Pitfalls
-
-1. **Don't fake citations.** If you write `(Smith, 2023)` without a real `references.bib` entry, the bibliography is broken. Use `[CITATION NEEDED]` placeholders instead.
-2. **Match the language.** If `problem.md` is in Chinese and rubric mentions "中文写作", the draft must be Chinese — `pdf-renderer` ctexart handles both, but mismatched language gets points off.
-3. **`problem.md` is the source of truth, NOT `assignment.json.description`.** The description is HTML and often just a file link. Reading it directly produces "the assignment is about X" template content. Always read `problem.md`'s `## Attached:` sections for the real prompt.
-4. **`partial_scope` is binding.** If the user said "only problem 2 and 4", do NOT write 1 and 3 even if the rubric says they're required. The user knows what they want.
-5. **Don't auto-conclude with "In conclusion, ..." for short reflections.** Reflections are personal — let the structure follow the rubric, not a rigid 5-paragraph template.
-6. **Frontmatter `date: \today`** — keep the backslash; pdf-renderer's LaTeX will resolve it. Don't replace with a literal date unless the user asked.
-7. **Engage with specific content.** A paper critique that doesn't name the paper, its authors, or quote a single sentence from it is failing the quality bar regardless of word count.
-8. **If `problem.md` is missing or thin** (< 1 KB), STOP. Write a single-line draft.md containing `[CLARIFICATION NEEDED: problem.md was not grounded — do-homework [A3] failed or extraction yielded no text]` and return. Do not pad with template content.
+- [ ] `spec.md` and `pipeline_design.md` read completely
+- [ ] Draft engages with specific content from spec/references (not generic)
+- [ ] Word count within ±10% of requirement (if specified)
+- [ ] All rubric criteria addressed in draft
+- [ ] No fabricated citations — only `references.bib` entries or `[CITATION NEEDED]`
+- [ ] No `[PROBLEM N]` / `[TODO]` / `[此处填入...]` placeholders
+- [ ] Language matches spec requirements (en/zh)
+- [ ] Figures referenced and cited in-text (if any exist)
+- [ ] Experimental reports embed representative generated figures when plots are
+      available; text-only reports with available plots are flagged for repair
+- [ ] For reports: data/numbers come from actual execution results, not estimates

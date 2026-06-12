@@ -46,24 +46,36 @@ courses = json.loads(out)
 ## Command reference
 
 ### `init`
-One-time SSO login. **Run in user's own terminal**, not from agent.
+Explicit SSO login / refresh. This opens a browser and writes a new
+`state.json`; it is not a status check. **Run in the user's own terminal or only
+when the user is ready for the browser popup.**
 ```bash
 .venv/bin/canvascli init
 ```
 
+If the SSO page offers "remember login" / "trust this browser", ask the user to
+select it. A successful `init` writes `state.json` either way; the checkbox only
+affects whether the next SSO refresh can skip a full manual login.
+
 ### `whoami`
-Verify current session. Returns user object.
+Verify the current saved session. Returns the user object without opening a
+browser.
 ```bash
 .venv/bin/canvascli whoami
 ```
 
 ### `courses`
-List enrolled courses. Defaults to current term.
+List enrolled courses. Defaults to the latest active Canvas term.
 ```bash
-.venv/bin/canvascli courses                  # current term, JSON
+.venv/bin/canvascli courses                  # latest active term, JSON
 .venv/bin/canvascli courses --pretty         # human-readable
 .venv/bin/canvascli courses --all-terms      # include past/future terms
+.venv/bin/canvascli courses --term "2025-26 Spring"
 ```
+
+Default term selection is owned by canvascli. AutoStudy treats it as a CLI
+contract: call the default command for the normal current semester, and pass
+`--term` only when the user explicitly asks for another semester.
 
 Output shape (per item):
 ```json
@@ -76,11 +88,17 @@ Output shape (per item):
 ```
 
 ### `assignments`
-List assignments. Defaults to all current-term courses.
+List assignments. Defaults to all courses in the latest active Canvas term.
 ```bash
 .venv/bin/canvascli assignments
 .venv/bin/canvascli assignments --course-id 2151
+.venv/bin/canvascli assignments --term "2025-26 Spring"
 ```
+
+`assignments` uses `--course-id`; do not assume every command has the same
+short option aliases. When a command example and the installed CLI disagree,
+run `<command> --help` and follow the installed CLI contract, then record the
+drift as a docs/tool concern.
 
 Output shape (per item):
 ```json
@@ -98,23 +116,107 @@ Output shape (per item):
 ```
 
 ### `assignment <id> --course-id <cid>`
-Full detail of one assignment (description HTML, rubric, submission state).
+Full detail of one assignment (description HTML/text, linked file ids, external URLs, submission state).
 ```bash
 .venv/bin/canvascli assignment 12345 --course-id 2151
 ```
 
+Important fields:
+
+```json
+{
+  "id": 12345,
+  "name": "Homework 3",
+  "description": "<p>raw Canvas HTML...</p>",
+  "description_html": "<p>raw Canvas HTML...</p>",
+  "description_text": "plain text version",
+  "description_file_ids": [475078],
+  "external_urls": [{"url": "https://docs.google.com/...", "kind": "third_party", "text": "Spec"}],
+  "rubric_present": false,
+  "submission_types": ["online_upload"],
+  "attachments_count": 0
+}
+```
+
+### Copilot-style assignment context commands
+
+These commands mirror Canvas Copilot's mature data layer. They are **atomic**: each command reads one source and prints JSON. AutoStudy must inspect all likely sources and decide which one is the main spec; do not reintroduce an `assignment-context` aggregate command in the app layer.
+
+```bash
+.venv/bin/canvascli rubric 12345 -c 2151
+.venv/bin/canvascli front-page -c 2151
+.venv/bin/canvascli syllabus -c 2151
+.venv/bin/canvascli modules -c 2151
+.venv/bin/canvascli module-items 67890 -c 2151
+.venv/bin/canvascli page project-guidelines -c 2151
+.venv/bin/canvascli file 475078
+.venv/bin/canvascli assignment-files 12345 -c 2151
+```
+
+Use pattern:
+
+1. Fetch `assignment`, `rubric`, `front-page`, `syllabus`, `modules`, and `assignment-files`.
+2. Fetch `module-items` for every module, not only the first apparent match.
+3. Fetch `page` for every module item whose type is `Page`.
+4. Fetch `file` metadata for every file id discovered in assignment/front-page/syllabus/pages/module items. Note: `canvascli file` takes only `<file_id>` — no `-c` flag needed because file IDs are globally unique across courses.
+5. Download only files that are plausibly part of the assignment context via `canvascli download`.
+
+Expected output shapes:
+
+```json
+// front-page / syllabus / page
+{
+  "status": "ok",
+  "body_html": "<p>...</p>",
+  "body_text": "...",
+  "body_text_bytes": 1234,
+  "file_ids": [475078],
+  "external_urls": [{"url": "https://...", "kind": "external", "text": "Link"}]
+}
+```
+
+```json
+// modules
+{
+  "status": "ok",
+  "count": 4,
+  "modules": [{"id": 12955, "name": "Project guidelines", "items_count": 4}]
+}
+```
+
+```json
+// module-items
+{
+  "status": "ok",
+  "module": {"id": 12955, "name": "Project guidelines"},
+  "items": [
+    {"type": "File", "title": "project_announce.pdf", "content_id": 625115},
+    {"type": "Page", "title": "Final project specification", "page_url": "final-project"}
+  ]
+}
+```
+
+Generic reconnaissance patterns:
+
+- Assignment descriptions may be empty while module items reveal the real spec
+  file.
+- The same valid spec link may appear from multiple Canvas surfaces. Treat
+  duplicates as corroboration and still distinguish nearby supporting context.
+
 ### `announcements`
-List announcements across all current-term courses.
+List announcements across all courses in the latest active Canvas term.
 ```bash
 .venv/bin/canvascli announcements
+.venv/bin/canvascli announcements --term "2025-26 Spring"
 ```
 
 Note: HKUST(GZ) instructors rarely use Canvas announcements (often 0).
 
 ### `files [--course-id <cid>]`
-List files (no download). Defaults to all current-term courses, optionally scoped.
+List files (no download). Defaults to all courses in the latest active Canvas term, optionally scoped.
 ```bash
 .venv/bin/canvascli files --course-id 2151
+.venv/bin/canvascli files --term "2025-26 Spring"
 ```
 
 ### `folders <course-id>`
@@ -170,13 +272,16 @@ Submit a file to a Canvas assignment via `online_upload`.
 
 1. **Never echo `state.json`** or any cookie value to the user.
 2. **Treat 401 as session expiration**, not a transient error. Direct user to `canvascli-setup.md` step 3. Do not retry.
-3. **Don't auto-download or auto-submit.** Always confirm scope with `AskUserQuestion`.
-4. **Don't auto-pick "the latest"** assignment / file / folder. The user picks explicitly.
-5. **Pipe JSON, not stdout text.** The text in `--pretty` mode is for humans, not parsing.
+3. **Don't use `init` as a session check.** It always opens a browser. Use `whoami` or the real read command to verify the existing session.
+4. **Don't auto-download or auto-submit.** Always confirm scope with `AskUserQuestion`.
+5. **Don't auto-pick "the latest"** assignment / file / folder. The user picks explicitly.
+6. **Pipe JSON, not stdout text.** The text in `--pretty` mode is for humans, not parsing.
 
 ## Common pitfalls
 
 - **Run via `.venv/bin/canvascli`, not bare `canvascli`** — system PATH might not have the venv binary.
+- **`state.json` and SSO remember-login are separate.** `state.json` is canvascli's saved Canvas API cookie. The SSO checkbox does not decide whether `state.json` is written; it decides whether the next browser login is fast or requires full credentials again.
+- **Term scope belongs in canvascli.** AutoStudy tasks should call `courses`, `assignments`, and `announcements` directly unless the user explicitly asks for a semester, in which case pass `--term`.
 - **HTTP 404 on quizzes/modules/discussions is normal** — that course turned the feature off. canvascli returns `[]` in those cases.
 - **Tuples of `(datetime, dict)`** aren't sortable in Python (dict isn't comparable) — when sorting by `due_at`, always use `key=lambda x: x["due_at"]`.
 - **Filenames with Chinese / spaces are common.** Always quote paths in shell calls.
@@ -184,20 +289,35 @@ Submit a file to a Canvas assignment via `online_upload`.
 
 ## Recipes
 
-### Extract the real problem text from an assignment with PDF attachments
+### Build a homework workbench before generation
 
-Canvas's `description` field on many assignments is just an `<a>...pdf</a>` link wrapping the real problem statement. Reading `description` directly is the most common cause of agents producing template / placeholder content.
+Canvas's `description` field may be an attachment link, a Google Doc link, an empty string, or only a small hint. Reading it directly is the most common cause of agents producing template / placeholder content.
 
-**Don't write your own extractor inline** — use `sub-skills/tools/problem-extractor.md`. It:
+**Don't write your own extractor inline** — use
+`sub-skills/tools/assignment-recon.md`. It follows Canvas Copilot's
+Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
 
-1. Scans `description` HTML for file IDs in two embedding styles (`href="...files/<id>"` and `data-api-endpoint="...files/<id>"`)
-2. Calls `canvascli download <fid> -o <work_dir>/attachments/<filename>` for each
-3. Extracts text (PDF → `pdftotext` or `pdfminer.six`)
-4. Writes `<work_dir>/problem.md` with frontmatter + inline plain-text description + per-attachment `## Attached:` sections + rubric
+1. Calls atomic context commands above: `assignment`, `rubric`,
+   `front-page`, `syllabus`, `modules`, `module-items`, `page`, `file`, and
+   `assignment-files`.
+2. Stores raw CLI JSON under `<work_dir>/canvas/`.
+3. Reads all likely sources before judging which one is the main spec.
+4. Writes `<work_dir>/spec.md` as a standardized reconnaissance report, not a
+   raw dump.
+5. Finds grading criteria into `<work_dir>/investigation/rubric.md`.
+6. Downloads or fetches needed inputs into `<work_dir>/references/`, and logs
+   blocked resources in `<work_dir>/investigation/unreachable.txt`.
+7. Writes `<work_dir>/investigation/review_a.json` after a cold investigation
+   review.
+8. Starts `<work_dir>/pipeline_design.md` with the output mode, then keeps
+   `<work_dir>/problem.md` only as a compatibility summary for older tools.
 
-Downstream tools (`writing-helper`, `code-writer`, `slide-maker`) consume `problem.md`, not `assignment.json.description`. This is the spec's only guarantee against `[PROBLEM N]` template output.
+Do not use or recreate an `assignment-context` aggregate command. The mature
+pattern is atomic data access plus agent judgment after reading all sources.
+Downstream tools should read `spec.md` and `pipeline_design.md` first;
+`problem.md` is temporary compatibility.
 
-### One-liner: list file IDs embedded in a description
+### One-liner: list file IDs embedded in a saved assignment snapshot
 
 If you need a quick lookup without running the full extractor:
 
@@ -208,7 +328,7 @@ d = json.load(open(sys.argv[1]))
 desc = d.get("description") or ""
 ids = set(re.findall(r"/files/(\d+)", desc))
 print(*sorted(ids), sep="\n")
-' data/homework/<COURSE>/<HW>/assignment.json
+' data/homework/<COURSE>/<HW>/canvas/assignment.json
 ```
 
 ### Download a single attachment by ID with the real filename
@@ -217,7 +337,7 @@ print(*sorted(ids), sep="\n")
 
 ```python
 import json, re
-data = json.load(open("assignment.json"))
+data = json.load(open("canvas/assignment.json"))
 desc = data["description"] or ""
 # Title and ID often appear together in a link tag
 for m in re.finditer(r'title="([^"]+)"[^>]*?/files/(\d+)', desc):
@@ -227,5 +347,5 @@ for m in re.finditer(r'title="([^"]+)"[^>]*?/files/(\d+)', desc):
 Then:
 
 ```bash
-.venv/bin/canvascli download 475078 -o attachments/DSAA2043_Assignment_1.pdf
+.venv/bin/canvascli download 475078 -o references/DSAA2043_Assignment_1.pdf
 ```

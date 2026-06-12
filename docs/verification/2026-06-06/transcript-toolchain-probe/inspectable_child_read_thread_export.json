@@ -1,0 +1,49 @@
+{
+  "schema": "autostudy_read_thread_export_v1",
+  "thread_id": "019e9be8-93a1-7a03-a454-f2cc0f25c378",
+  "exported_while_thread_status": "active/inProgress",
+  "exported_before_finalize": true,
+  "marker": "TRANSCRIPT_PROBE_MARKER_20260606_INSPECTABLE_HARNESS",
+  "observed_transcript_content": {
+    "delegation_prompt_present": true,
+    "source_thread_id_present": "019e960b-e506-7e20-9b71-410bd5f11346",
+    "child_commentary_present": true,
+    "file_change_diff_present": true,
+    "ready_for_transcript_export_status_present": true,
+    "receipt_file_change_present": "docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_receipt.json",
+    "trace_bundle_file_change_present": "docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_trace_bundle.json"
+  },
+  "read_thread_items_observed": [
+    {
+      "type": "userMessage",
+      "contains": [
+        "TRANSCRIPT_PROBE_MARKER_20260606_INSPECTABLE_HARNESS",
+        "Stage: transcript_harness_probe",
+        "Role: executor",
+        "READY_FOR_TRANSCRIPT_EXPORT"
+      ]
+    },
+    {
+      "type": "agentMessage",
+      "text": "I’ll keep this tightly scoped to the probe directory and write only the two requested receipt files."
+    },
+    {
+      "type": "agentMessage",
+      "text": "Using superpowers:using-superpowers only to honor the session rule; delegated probe can skip the workflow; writing requested JSON files."
+    },
+    {
+      "type": "fileChange",
+      "paths": [
+        "/Users/deepwisdom/Desktop/project/autoust/docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_receipt.json",
+        "/Users/deepwisdom/Desktop/project/autoust/docs/verification/2026-06-06/transcript-toolchain-probe/inspectable_child_trace_bundle.json"
+      ],
+      "diff_contains_marker": true,
+      "diff_contains_ready_status": true
+    }
+  ],
+  "export_limitations": [
+    "This probe stores a normalized export summary instead of the entire tool-return JSON because tool output is exposed to the agent turn, not as a filesystem object. The important acceptance evidence is present: prompt, commentary, fileChange paths, fileChange diff marker, receipt path, trace bundle path, and READY_FOR_TRANSCRIPT_EXPORT status.",
+    "For production use, the parent should write the complete read_thread tool result when the platform exposes it as a serializable object to the parent runtime."
+  ],
+  "conclusion": "The inspectable harness can obtain transcript-body evidence before child finalization."
+}

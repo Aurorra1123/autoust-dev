@@ -1,101 +1,65 @@
 ---
 name: tools-index
-description: Index of available tools. The task-orchestrator reads this to decide which tools to compose for a given task. Update this whenever you add or remove a tool.
+description: Capability menu for AutoStudy tools. Read this to discover what tools exist and what each can do. Sub-skills and appendices are discovered by reading the parent skill file, not listed here.
 ---
 
 # Tools Index
 
-This is the **capability registry** for AutoStudy. The `task-orchestrator` reads this file to discover what tools exist and what each one can do. Tool implementation lives in `sub-skills/tools/<name>.md` — each markdown file contains the spec + shell/Python snippets the agent will execute directly (no separate `.py` files; same philosophy as AutoPku).
+This is the **capability menu** for AutoStudy. Read this file to discover
+available tools and their contracts. Each tool's full guidance lives in
+`sub-skills/tools/<name>.md`.
 
-The data-acquisition layer is a separate concern: `canvascli` is a sister CLI repo (`~/workspace/canvascli/`), installed into `.venv` via `pip install -e`. It is NOT a tool listed here — its commands are invoked directly by tasks (e.g. `do-homework.md` calls `canvascli assignment`).
-
-## How orchestrator uses this
-
-1. Read this file to enumerate available tools
-2. Match `capabilities` against the current task's `required_capabilities`
-3. Read the matched tool's full `.md` file for invocation details
-4. Compose a pipeline: which tool runs first, what intermediate files flow between them
+**For pipeline design guidance** (common pipeline shapes, tool chaining),
+see `sub-skills/tasks/do-homework.md [C]`.
 
 ## Tool registry
 
-| Tool | File | Capabilities | Inputs | Outputs | Stability |
-|---|---|---|---|---|---|
-| **problem-extractor** | [problem-extractor.md](./problem-extractor.md) | `extract_problem` (assignment.json → problem.md by downloading + extracting attachment PDFs) | assignment.json, course_id | `attachments/<file>` + `problem.md` (grounded problem text) | 🟢 stable |
-| **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | `render_pdf` (markdown→PDF), supports Chinese, LaTeX math, callouts | markdown file path, options (font, geometry, callouts) | PDF file path | 🟢 stable |
-| **writing-helper** | [writing-helper.md](./writing-helper.md) | `write_essay` (problem.md + rubric → structured draft.md: essay/report/reflection) | task_profile.yaml, problem.md, references.bib (opt) | draft.md (pandoc-friendly) | 🟡 experimental |
-| **paper-search** | [paper-search.md](./paper-search.md) | `search_papers` (topic keywords → bib + json via arxiv API) | topic keywords, max_results | references.bib, references.json | 🟡 experimental |
-| **figure-maker** | [figure-maker.md](./figure-maker.md) | `make_figure` (line/bar/scatter via matplotlib) | figure_spec dict | fig_N.pdf + fig_N.png in work_dir/figures/ | 🟡 experimental |
-| **code-writer** | [code-writer.md](./code-writer.md) | `write_code` (problem.md → src/*.py + tests + README) | task_profile.yaml, problem.md | work_dir/src/*.py | 🟡 experimental |
-| **test-runner** | [test-runner.md](./test-runner.md) | `run_tests` (pytest + entry point → markdown report) | work_dir/src/ | test_report.md + test_report.json | 🟡 experimental |
-| **slide-maker** | [slide-maker.md](./slide-maker.md) | `render_slides` — default wraps [guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill) (magazine / Swiss HTML deck + Playwright PDF print); LaTeX-beamer fallback for strict-PDF academic submissions | task_profile.yaml, problem.md, figures/ | `guizang/index.html` + `guizang/slides.pdf` (default) **or** `slides.tex` + `slides.pdf` (beamer fallback) | 🟡 experimental |
+| Tool | File | One-line capability | Inputs | Outputs |
+|---|---|---|---|---|
+| **assignment-recon** | [assignment-recon.md](./assignment-recon.md) | Canvas Generic Stage 1-5 reconnaissance → spec.md + rubric + references | course_id, assignment_id, work_dir | spec.md, investigation/, references/, problem.md |
+| **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | Markdown → PDF (Chinese, LaTeX math, code, callouts) | markdown file, options | PDF file |
+| **writing-helper** | [writing-helper.md](./writing-helper.md) | Structured academic prose (essay/report/reflection) | spec.md, pipeline_design.md, rubric, references | draft.md |
+| **paper-search** | [paper-search.md](./paper-search.md) | Literature search via arxiv → bib + json | keywords, max_results | references.bib, references.json |
+| **figure-maker** | [figure-maker.md](./figure-maker.md) | Charts/plots via matplotlib | figure_spec dict | fig_N.pdf/png |
+| **code-writer** | [code-writer.md](./code-writer.md) | Source code from spec (Python/C++/etc.) | spec.md, pipeline_design.md, references | src/*.py + tests |
+| **test-runner** | [test-runner.md](./test-runner.md) | pytest execution + report | work_dir/src/ | test_report.md/json |
+| **slide-maker** | [slide-maker.md](./slide-maker.md) | Presentation slides (guizang HTML or beamer) | spec.md, pipeline_design.md | slides.pdf |
+| **humanizer** | [humanizer.md](./humanizer.md) | Post-processing: reduce AI-detectable patterns | draft text | revised text |
 
-> 🟢 stable · 🟡 experimental · 🔴 work-in-progress
+> Loading order: read this file first → read the matched tool's .md → if tool lists appendices, load relevant appendix on demand.
 
-**`problem-extractor` is special**: it's a *pre-orchestrator data grounding* step, invoked by `do-homework.md [A3]` BEFORE the orchestrator runs. It doesn't appear in the scenario chains below because every chain implicitly assumes `problem.md` already exists in the work_dir. If it doesn't, the orchestrator refuses to proceed (see `task-orchestrator.md` Safety rule #2).
+## Task registry
 
-## Adding a new tool
+| Task | File | One-line capability | Trigger |
+|---|---|---|---|
+| **sync-course** | [../tasks/sync-course.md](../tasks/sync-course.md) | Persistent course material sync (files, announcements, modules) | "同步课程资料", "下载课件" |
+| **write-course-notes** | [../tasks/write-course-notes.md](../tasks/write-course-notes.md) | Parallel Agent notes from lecture PDFs (Obsidian style) | "写笔记", "课程笔记" |
 
-When you write a new tool:
-
-1. Create `sub-skills/tools/<name>.md` with this frontmatter:
-   ```yaml
-   ---
-   name: <kebab-case-name>
-   description: One-line summary of what it does, for the orchestrator
-   ---
-   ```
-2. The body must contain:
-   - **Capabilities**: short list of verbs (`search_papers`, `render_pdf`, `generate_slides`, ...)
-   - **Inputs / Outputs**: file paths and shapes, in plain text
-   - **Setup**: any one-time install (note proxy if relevant — see `scraper-setup.md`)
-   - **Invocation**: actual shell or Python snippets the agent will run
-   - **Pitfalls**: anything we've burned on already
-3. Add a row to the registry table above
-4. If your tool depends on others (e.g. `slide-maker` calls `figure-maker` for charts), say so in the body
-
-## Capability vocabulary (consistent verb naming)
-
-To keep the orchestrator's matching simple, use these verbs when describing what a tool does:
+## Capability vocabulary
 
 | Verb | Meaning |
 |---|---|
-| `extract_problem` | unwrap Canvas description → real problem text (downloads attached PDFs) |
-| `parse_pdf` | extract text/structure from PDF |
-| `render_pdf` | produce PDF from markdown/LaTeX |
-| `render_slides` | produce slides (PPTX/HTML/PDF) |
-| `search_papers` | find references for a topic |
-| `make_figure` | generate charts/plots |
-| `write_essay` | draft structured prose (intro/body/conclusion) |
-| `solve_proof` | mathematical proof / derivation |
-| `write_code` | generate code with tests |
-| `run_tests` | execute tests + entry point, capture results |
-| `edit_video` | video editing / clipping / subtitles |
-| `transcribe_audio` | speech-to-text |
-
-If you need a verb not in this list, add it here when you add the tool, so future tools can refer to it consistently.
+| `assignment_recon` | Canvas reconnaissance → spec.md |
+| `render_pdf` | Markdown → PDF |
+| `render_slides` | Slides (HTML/PDF) |
+| `search_papers` | Literature search → bib |
+| `make_figure` | Charts/plots |
+| `write_essay` | Structured academic prose |
+| `write_code` | Source code + tests |
+| `run_tests` | Execute tests + report |
+| `humanize` | Reduce AI patterns in text |
 
 ## What is NOT a tool
 
-To avoid scope creep:
-
-- ❌ Anything that talks to Canvas — that's `canvascli` (data layer, separate repo)
+- ❌ Anything that talks to Canvas — that's `canvascli`
 - ❌ One-off shell snippets the orchestrator can write inline
-- ❌ Things that depend on services without a stable API (e.g. some unstable LLM-only hack)
-- ✅ Anything that produces a tangible artifact (PDF / PPT / video / code / figure)
-- ✅ Anything reused across multiple homework / task types
+- ❌ Things that depend on services without a stable API
+- ✅ Anything that produces a tangible artifact
+- ✅ Anything reused across multiple task types
 
-## Scenario → Tool chain
+## Adding a new tool
 
-`do-homework.md` consults this table to populate `required_capabilities` per task type. Each row is a full pipeline from blank work_dir to deliverable.
-
-**Implicit prefix for every chain:** `extract_problem` (run by `do-homework [A3]` before the orchestrator). The chains below assume `problem.md` already exists.
-
-| Scenario | type | Tool chain (in order) | Final deliverable |
-|---|---|---|---|
-| **paper** (essay / critique / report) | `paper` | `search_papers` → `make_figure` (opt) → `write_essay` → `render_pdf` | `final.pdf` |
-| **slides** (group presentation, talk) | `slides` | `make_figure` (opt) → `render_slides` (default: guizang HTML + Playwright PDF; fallback: beamer + tectonic) | `guizang/slides.pdf` or `slides.pdf` |
-| **math** (proof, problem set) | `math` | `write_essay` (with LaTeX math) → `render_pdf` | `solution.pdf` |
-| **lab** (programming assignment) | `lab` | `write_code` → `run_tests` → `write_essay` (lab report) → `render_pdf` | `src/` + `report.pdf` |
-| **video** (presentation video) | `video` | _(out of scope for AutoStudy MVP — implemented by a separate video skill, see `docs/ROADMAP.md` M3-VIDEO)_ | — |
-
-**Math note**: MVP doesn't ship a dedicated `proof-solver` or `math-renderer` — the agent writes LaTeX directly inside the `draft.md` markdown source, and `pdf-renderer`'s existing `xelatex` / `tectonic` toolchain handles compilation. If a future course needs tikz-heavy diagrams or symbolic CAS work, add `proof-solver.md` then.
+1. Create `sub-skills/tools/<name>.md` following the unified template (Contract → Guidance → Appendices → Post-processing → Self-check)
+2. Add a row to the registry table above
+3. If the tool has language/type-specific variants, create `<name>-<variant>.md` as an appendix file and list it in the parent skill's Appendices section
+4. Do NOT list appendix files in this registry — they are discovered through the parent skill

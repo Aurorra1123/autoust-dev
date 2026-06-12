@@ -1,0 +1,20 @@
+{
+  "parent_agent_id_if_known": null,
+  "parent_runtime_thread_id_observed_from_node_repl_request_meta": "019e9be1-334f-7e00-a76d-1af9366469f6",
+  "parent_runtime_parent_thread_id_observed_from_node_repl_request_meta": "019e960b-e506-7e20-9b71-410bd5f11346",
+  "child_agent_id_returned_by_spawn": "019e9be1-8e64-78f0-bb8f-ffe197f38143",
+  "child_receipt_path": "/Users/deepwisdom/Desktop/project/autoust/docs/verification/2026-06-06/transcript-toolchain-probe/nested_child_receipt.json",
+  "child_receipt_exists": true,
+  "direct_parent_export_attempted": false,
+  "direct_parent_export_success": false,
+  "direct_parent_export_limitation": "No read/export-thread/transcript tool was exposed to the parent tool surface, so the parent could not directly export the child transcript.",
+  "tools_you_observed_relevant_to_transcript_export": [
+    "multi_agent_v1.spawn_agent",
+    "multi_agent_v1.wait_agent",
+    "multi_agent_v1.send_input",
+    "multi_agent_v1.resume_agent",
+    "multi_agent_v1.close_agent",
+    "mcp__node_repl.js with nodeRepl.requestMeta for runtime metadata only; no transcript export capability observed",
+    "tool_search.tool_search_tool used to search for transcript/export/read-thread tools"
+  ]
+}

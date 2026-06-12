@@ -21,8 +21,8 @@ Input:  figure_spec (a dict, usually written inline by the orchestrator):
           ylabel: str
           data: dict (keys depend on type — see Invocation)
           style: "default" | "publication"
-Output: <work_dir>/figures/fig_<N>.pdf     (vector, for LaTeX embedding)
-        <work_dir>/figures/fig_<N>.png     (raster, for previews)
+Output: <work_dir>/draft/figures/fig_<N>.pdf     (vector, for LaTeX embedding)
+        <work_dir>/draft/figures/fig_<N>.png     (raster, for previews)
 ```
 
 ## Setup
@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 WORK_DIR = Path(__file__).resolve().parents[1]
-OUT_DIR = WORK_DIR / "figures"
+OUT_DIR = WORK_DIR / "draft" / "figures"
 OUT_DIR.mkdir(exist_ok=True)
 N = 1
 
@@ -130,3 +130,6 @@ plt.rcParams.update({
 4. **`numpy` default integer overflow on Apple Silicon**: if you compute large products, cast `np.int64`. For typical homework figures this never bites.
 5. **Don't `plt.show()`** in the script — it blocks indefinitely when run non-interactively. Use `fig.savefig` then exit.
 6. **The orchestrator embeds the figure later via writing-helper.** This tool just makes the file; it does NOT inject markdown.
+7. **Keep report assets near the report.** For homework reports, prefer
+   `draft/figures/` so `draft/report.md` can reference `figures/fig_1.png`.
+   Older `figures/` workbench-root output is compatibility only.

@@ -1,0 +1,7 @@
+{
+  "attempted": false,
+  "success": false,
+  "child_agent_id": "019e9be1-8e64-78f0-bb8f-ffe197f38143",
+  "limitation": "No read/export-thread/transcript tool was exposed to the parent tool surface. Observed multi_agent_v1 lifecycle tools only: spawn_agent, wait_agent, send_input, resume_agent, close_agent.",
+  "observed_at_utc": "2026-06-06T07:42:30Z"
+}

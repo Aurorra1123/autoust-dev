@@ -1,0 +1,41 @@
+{
+  "schema": "autostudy_transcript_toolchain_probe_v1",
+  "probe_name": "codex_thread_readability_probe",
+  "created_at": "2026-06-06T15:55:00+08:00",
+  "workspace": "/Users/deepwisdom/Desktop/project/autoust",
+  "completed_immediately_thread": {
+    "thread_id": "019e9be5-319b-72e0-9446-480bd4b1fad2",
+    "marker": "TRANSCRIPT_PROBE_MARKER_20260606_CODEX_THREAD",
+    "receipt_path": "docs/verification/2026-06-06/transcript-toolchain-probe/codex_thread_child_receipt.json",
+    "initial_read_thread_result": "success_while_thread_active",
+    "post_completion_read_thread_result": "failed_invalid_arguments",
+    "list_threads_result": "not_found"
+  },
+  "long_lived_thread": {
+    "thread_id": "019e9be6-2d47-7e93-8109-415834da7796",
+    "marker": "TRANSCRIPT_PROBE_MARKER_20260606_CODEX_LONG_LIVED",
+    "receipt_path": "docs/verification/2026-06-06/transcript-toolchain-probe/codex_thread_long_lived_receipt.json",
+    "active_read_thread_result": "success",
+    "active_read_thread_observed_items": [
+      "delegation prompt",
+      "agent commentary",
+      "fileChange diff for codex_thread_long_lived_receipt.json",
+      "marker in transcript body"
+    ],
+    "finalize_message_sent": true,
+    "post_finalize_read_thread_result": "failed_invalid_arguments",
+    "list_threads_result": "not_found"
+  },
+  "conclusion": {
+    "codex_thread_transcripts_are_readable_while_active": true,
+    "codex_thread_transcripts_are_not_reliably_readable_after_completion": true,
+    "implementable_harness": "Create inspectable child threads that pause before final handoff; the parent/main thread calls codex_app.read_thread while the child is still active and writes the transcript export to disk, then sends a finalize message.",
+    "not_sufficient": "Do not rely on post-completion read_thread or list_threads discovery for transcript export."
+  },
+  "acceptance_for_next_harness_test": [
+    "Create child thread with pause-before-final instruction.",
+    "Read and save transcript while thread status is active/inProgress.",
+    "Verify exported transcript contains the marker and fileChange/tool evidence.",
+    "Only then send finalize message."
+  ]
+}
