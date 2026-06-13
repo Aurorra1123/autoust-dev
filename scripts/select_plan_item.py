@@ -114,6 +114,7 @@ def build_selection(date: str, plan_item: dict[str, Any], pending_item: dict[str
         "requires_recon": action == "recon",
         "requires_error_review": action == "continue",
         "requires_manual_review": action == "manual_review",
+        "has_existing_pipeline": existing_status == "pipeline_ready",
         "has_existing_draft": existing_status == "draft_ready",
         "suggested_work_dir": merged.get("suggested_work_dir"),
         "canvas_url": canvas_url,

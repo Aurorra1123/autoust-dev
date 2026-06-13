@@ -255,11 +255,13 @@ Passing and usable:
 
 - Canvas data layer via `canvascli`.
 - `sync-status` scan-plan flow.
-- `do-homework` workbench, reconnaissance, alignment, dynamic pipeline, and
-  local draft flow.
+- `do-homework` workbench, reconnaissance, alignment, and dynamic pipeline
+  planning.
+- `task-orchestrator` local draft execution from an approved pipeline.
 - M3 tools: prose, code, figures, tests, slides, PDF rendering, humanizer.
 - Course material sync and course-note generation.
-- `result.json` receipts for skipped, draft-ready, submitted, and error states.
+- `result.json` receipts for skipped, `pipeline_ready`, `draft_ready`, submitted,
+  and error states.
 
 Still being hardened:
 

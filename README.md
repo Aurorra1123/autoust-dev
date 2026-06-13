@@ -230,10 +230,11 @@ AutoStudy/
 
 - `canvascli` Canvas 数据层。
 - `sync-status` scan-plan 流程。
-- `do-homework` workbench、侦查、alignment、动态 pipeline、本地草稿流。
+- `do-homework` workbench、侦查、alignment、动态 pipeline planning。
+- `task-orchestrator` 基于已确认 pipeline 的本地草稿执行流。
 - M3 工具：prose、code、figures、tests、slides、PDF rendering、humanizer。
 - 课程资料同步和课程笔记生成。
-- `result.json` 记录 skipped、draft_ready、submitted、error 等状态。
+- `result.json` 记录 skipped、pipeline_ready、draft_ready、submitted、error 等状态。
 
 仍在 hardening：
 
