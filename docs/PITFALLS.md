@@ -115,7 +115,7 @@ except RuntimeError as e:
 
 真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。后来又遇到 DSAA2011 Project：assignment description 是空的，真正项目说明在 module item PDF 里；UCUG1505 FINAL project 则是 assignment description 和 Week 4 module item 都指向同一个 Google Doc spec。
 
-**正确做法**：`do-homework.md [A3]` 必须调 agent-led `tools/assignment-recon.md`，按 Canvas Copilot `canvas-generic` Stage 1-5 逐源查看 assignment、rubric、front page、syllabus、modules、module-items、pages、files、external URLs。产出 `spec.md` 作为标准化侦查报告，不是 raw dump；`references/` 保存完整来源文本和文件；`investigation/rubric.md` / `review_a.json` 记录评分标准和侦查充分性；`pipeline_design.md` 记录输出模式。`problem.md` 只是旧工具兼容层。下游不准直接读 `assignment.description` 当题目，也不准让独立脚本代替 agent 判断主 spec 或写最终侦查报告。
+**正确做法**：`do-homework.md [A3]` 必须调 agent-led `tools/assignment-recon.md`，按 Canvas Copilot `canvas-generic` Stage 1-5 逐源查看 assignment、rubric、front page、syllabus、modules、module-items、pages、files、external URLs。产出 `spec.md` 作为标准化侦查报告，不是 raw dump；`references/` 保存完整来源文本和文件；`investigation/rubric.md` / `review_a.json` 记录评分标准和侦查充分性；`pipeline_design.md` 记录输出模式。`canvas/syllabus.json` 只是 raw snapshot；如果 syllabus 含评分、政策、作业族要求，必须另写 `references/*syllabus*` 可读摘录或文本导出，避免下游只能依赖 raw JSON 或过度压缩的 relevance 判断。`problem.md` 只是旧工具兼容层。下游不准直接读 `assignment.description` 当题目，也不准让独立脚本代替 agent 判断主 spec 或写最终侦查报告。
 
 **规则强化**（写进 `skill.md` Safety #7 + `do-homework.md` Safety #7）：deliverable 文件里**禁止出现** `[PROBLEM N]` / `[TODO: align...]` / `[此处由小组成员填入...]` 这种占位符。只允许 `[CITATION NEEDED: ...]` 和 `[CLARIFICATION NEEDED: ...]` 两种 marker，且都要在 do-homework `[E]` 一次性回流给用户。
 

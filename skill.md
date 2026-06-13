@@ -140,6 +140,7 @@ prelaunch_startup_inventory.json
 -> spec.md
 -> investigation/rubric.md
 -> references/
+   -> readable syllabus extract/text export when syllabus is fetched
 -> investigation/review_a.json
 -> investigation/alignment_brief.md or repair_plan.md
 -> pipeline_design.md or repair_pipeline_design.md
@@ -154,6 +155,9 @@ prelaunch_startup_inventory.json
 Never draft from just the assignment title, Canvas description, or a single
 link. Canvas assignment descriptions are often empty or incomplete. The
 `problem.md` file is compatibility only; it is not the primary source.
+When Canvas syllabus is fetched, keep the raw snapshot under `canvas/` and also
+write a readable syllabus extract/text export under `references/` if it was used
+or judged for relevance.
 
 The user-facing checkpoints are:
 

@@ -20,6 +20,11 @@ Runtime invariants:
   and record whether it contains assignment requirements, grading criteria,
   submission policy, late policy, academic-integrity rules, AI/tool policy, or
   other course-level constraints.
+- When syllabus is fetched, also write a readable syllabus artifact under
+  `references/` (for example `references/<COURSE>-syllabus-relevant-extract.md`
+  or a full text export). Raw JSON stays in `canvas/`; downstream agents should
+  be able to review the syllabus evidence from `references/` without parsing
+  Canvas JSON.
 - Write `spec.md` as a concise evidence-grounded report, not as a raw dump.
 - Keep `problem.md` as compatibility only; downstream planning reads `spec.md`.
 - Do not let a helper script or scout decide the final main-spec judgment.
@@ -59,8 +64,8 @@ The workflow writes this structure under `<work_dir>`:
 `spec.md` is the standardized reconnaissance report written by the agent after
 reading the sources. `problem.md` is only a thin compatibility summary for older
 tools. `references/` stores fetched PDFs, Google Docs text, starter code, data,
-or other materials. `investigation/` records rubric findings, unreachable
-resources, and the investigation review.
+syllabus readable extracts/text exports, or other materials. `investigation/`
+records rubric findings, unreachable resources, and the investigation review.
 
 ## Non-goal: no script-led spec generation
 
@@ -118,6 +123,19 @@ integrity constraints that are not repeated on the assignment page. If the
 syllabus is irrelevant to the specific assignment, say so explicitly in
 `spec.md` and `investigation/review_a.json`; do not leave it implicit.
 
+After reading syllabus, create a readable artifact in `references/`:
+
+```text
+<work_dir>/references/<COURSE>-syllabus-relevant-extract.md
+```
+
+If the syllabus is relevant, extract the sections that affect this assignment
+and cite `canvas/syllabus.json` as the raw source. If it is not relevant, write a
+short relevance note explaining that judgment. If the full syllabus text is
+short and useful, a full text export is acceptable. This artifact is required
+because later executor/reviewer children read `references/` as source material
+and should not need to parse raw Canvas JSON to see course-level constraints.
+
 Now write the first standardized `spec.md`. This is not raw JSON and not copied
 PDF text. It is a report, in the agent's words, grounded by the sources:
 
@@ -148,7 +166,8 @@ PDF text. It is a report, in the agent's words, grounded by the sources:
 State whether `canvas/syllabus.json` adds assignment-specific requirements,
 grading/rubric criteria, assessment-family context, submission or late policy,
 collaboration rules, academic-integrity constraints, AI/tool policy, or no
-relevant constraints for this assignment. Include evidence pointers either way.
+relevant constraints for this assignment. Include evidence pointers to both the
+raw Canvas snapshot and the readable `references/` syllabus artifact.
 
 ## Main Spec Judgment
 State which source appears to be the main spec and why.
@@ -214,6 +233,7 @@ Fetch all materials needed to understand or execute the assignment:
   fetchable
 - starter code, scaffold archives, data files, or GitHub links
 - supporting slides/readings when the spec references them
+- readable syllabus extract/text export when syllabus was fetched
 
 Save them under `<work_dir>/references/`. For PDFs, also save extracted text
 beside the file when possible. Claude Code's built-in Read tool can read PDF
@@ -293,6 +313,7 @@ Reviewer must read:
 <work_dir>/canvas/assignment.json
 <work_dir>/canvas/rubric.json
 <work_dir>/canvas/syllabus.json
+<work_dir>/references/*syllabus*       # if syllabus was fetched
 <work_dir>/canvas/modules.json
 <work_dir>/canvas/module-items-*.json
 <work_dir>/canvas/page-*.json      # if present
@@ -388,10 +409,11 @@ Before returning to `do-homework [B]`:
 2. `canvas/` contains snapshots for assignment, rubric, front page, syllabus,
    modules, every inspected module's items, and relevant pages/files.
 3. `spec.md` contains an explicit `Syllabus Relevance` judgment backed by
-   `canvas/syllabus.json`, or `investigation/unreachable.txt` explains why
-   syllabus could not be fetched.
+   `canvas/syllabus.json` and a readable syllabus artifact in `references/`, or
+   `investigation/unreachable.txt` explains why syllabus could not be fetched.
 4. `references/` contains every reachable material needed to understand the
-   assignment.
+   assignment, including a readable syllabus extract/text export when syllabus
+   was fetched.
 5. `investigation/rubric.md` records Canvas, syllabus, or spec-based grading criteria, or
    clearly says rubric was not found.
 6. `investigation/unreachable.txt` lists blocked resources.
@@ -432,3 +454,6 @@ Before returning to `do-homework [B]`:
    whether the block is fatal.
 7. **Do not turn `spec.md` into a raw dump.** Full source text belongs in
    `references/`; `spec.md` is the decision report.
+8. **Do not hide syllabus in raw JSON only.** If syllabus is fetched and used or
+   judged, write a readable `references/*syllabus*` artifact so later children
+   and humans can review the source without parsing Canvas JSON.
