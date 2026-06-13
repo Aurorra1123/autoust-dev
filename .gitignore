@@ -5,6 +5,8 @@
 data/
 __pycache__/
 *.pyc
+.DS_Store
+AGENTS.md
 
 # Reference checkouts (not part of AutoStudy)
 pku3b/

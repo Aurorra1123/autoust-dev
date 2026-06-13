@@ -38,7 +38,7 @@ For the project developer and development agents maintaining AutoStudy itself.
 
 Examples:
 
-- `AGENTS.md`
+- `docs/DEVELOPMENT.md`
 - `docs/COLLABORATION.md`
 - `docs/ROADMAP.md`
 - `docs/progress/agent-progress.md`
@@ -1224,7 +1224,8 @@ repair before handoff.
 
 Runtime agents should not read these as task instructions:
 
-- `AGENTS.md`
+- `AGENTS.md` if a local ignored developer override exists at the repo root
+- `docs/DEVELOPMENT.md`
 - `docs/ROADMAP.md`
 - `docs/COLLABORATION.md`
 - `docs/progress/agent-progress.md`

@@ -183,7 +183,6 @@ data/courses/<COURSE>/
 ```text
 AutoStudy/
 ├── skill.md                         # 用户侧 skill 入口和路由
-├── AGENTS.md                        # 开发者交接和仓库规则
 ├── README.md                        # 中文默认 README
 ├── README.en.md                     # 英文完整版
 ├── README.quick.md                  # 中文快速版
@@ -208,6 +207,7 @@ AutoStudy/
 │       ├── slide-maker.md
 │       └── ...
 ├── docs/
+│   ├── DEVELOPMENT.md
 │   ├── ROADMAP.md
 │   ├── COLLABORATION.md
 │   ├── runtime-agent-protocol.md
@@ -266,6 +266,6 @@ AutoStudy/
 
 ## 贡献开发
 
-如果你是开发者，先读 [AGENTS.md](./AGENTS.md)。它解释了 AutoStudy 与
-`canvascli` 的边界、Canvas Copilot 参考项目、当前分支策略、progress/backlog
-更新规则和验证要求。
+如果你是开发者，先读 [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)。它解释
+AutoStudy 与 `canvascli` 的边界、Canvas Copilot 参考项目、当前分支策略、
+progress/backlog 更新规则和验证要求。

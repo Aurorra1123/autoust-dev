@@ -419,7 +419,7 @@
     "acceptance": [
       "五条设计理念写入 COLLABORATION.md Design Principles 小节",
       "ROADMAP.md M3.5 设计理念小节覆盖五条原则",
-      "AGENTS.md 引用设计理念摘要",
+      "docs/DEVELOPMENT.md 引用设计理念摘要",
       "canvas-pilot-reference.md 包含 Copilot 完整 11 阶段对比表和架构差异表"
     ],
     "evidence": [
@@ -704,9 +704,9 @@
     "id": "DOCS-HARNESS-LIGHT",
     "category": "docs-foundation",
     "priority": "P1",
-    "description": "采用 harness-best-practice 的最小切片（AGENTS.md + progress + feature-list）",
+    "description": "采用 harness-best-practice 的最小切片（docs/DEVELOPMENT.md + progress + feature-list）",
     "acceptance": [
-      "AGENTS.md 开发者视角入口",
+      "docs/DEVELOPMENT.md 开发者视角入口",
       "docs/progress/agent-progress.md 会话交接日志",
       "docs/plans/feature-list.json 结构化 backlog"
     ],

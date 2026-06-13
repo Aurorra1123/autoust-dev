@@ -290,7 +290,7 @@ Chat-only evidence does not count.
 
 After any feature or CLI contract change, check whether these need updates:
 
-- `AGENTS.md` — developer rules, repo boundaries, reference project entry.
+- `docs/DEVELOPMENT.md` — developer rules, repo boundaries, reference project entry.
 - `skill.md` — user-facing entry and safety rules.
 - `sub-skills/tools/canvascli-api.md` — CLI contract and JSON shapes.
 - `sub-skills/tasks/*.md` — task flow changes.

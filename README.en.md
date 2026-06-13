@@ -207,7 +207,6 @@ and writes structured Markdown notes under `notes/`.
 ```text
 AutoStudy/
 ├── skill.md                         # User-facing skill entry and routing
-├── AGENTS.md                        # Developer handoff and repo rules
 ├── README.md                        # Default Chinese README
 ├── README.en.md                     # English full README
 ├── README.quick.md                  # Chinese quick README
@@ -232,6 +231,7 @@ AutoStudy/
 │       ├── slide-maker.md
 │       └── ...
 ├── docs/
+│   ├── DEVELOPMENT.md
 │   ├── ROADMAP.md
 │   ├── COLLABORATION.md
 │   ├── runtime-agent-protocol.md
@@ -296,6 +296,6 @@ When unsure, AutoStudy should stop and explain uncertainty instead of guessing.
 
 ## Contributing
 
-For development work, start with [AGENTS.md](./AGENTS.md). It explains the
-boundary between AutoStudy and `canvascli`, the Canvas Copilot reference, branch
-policy, progress/backlog updates, and verification rules.
+For development work, start with [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md).
+It explains the boundary between AutoStudy and `canvascli`, the Canvas Copilot
+reference, branch policy, progress/backlog updates, and verification rules.

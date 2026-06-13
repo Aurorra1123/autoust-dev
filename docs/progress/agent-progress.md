@@ -2,6 +2,17 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-13 — Pipeline-ready handoff and developer-entry boundary
+
+Tightened homework reconnaissance docs after DSAA2011 runtime review: fetched
+syllabus now must have raw JSON under `canvas/` plus a readable extract/text
+export under `references/` when available, so downstream children and humans do
+not need to parse Canvas JSON or rely only on compressed relevance notes.
+Recorded `pipeline_ready` as the review-before-orchestration result state in
+scan-plan tooling and moved developer-only guidance out of root `AGENTS.md`
+into `docs/DEVELOPMENT.md`, leaving root `AGENTS.md` ignored for local overrides
+so user-mode runtime agents do not load developer instructions.
+
 ## 2026-06-11 — Homework reconnaissance docs hardened
 
 Cleaned runtime skill docs so homework reconnaissance no longer uses real
