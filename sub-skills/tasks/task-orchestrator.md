@@ -148,10 +148,13 @@ tools against an ungrounded assignment.
 `pipeline_design.md` follows the stage-based format defined in
 `docs/skills-architecture-spec.md §5`. It must include
 `## Pipeline Review Status` with `approved_for_orchestration` before this task
-runs. Each stage declares `id`, `tool`, `delegate`, `reads`, `writes`,
-`review.spec_compliance`, `review.quality`, `max_retries`, `quality_criteria`,
-and `human_blockers`. Stages may also declare `lang`, `type`, `post-process`,
-`fallback`, `min_quality`, and `required_spec_constraints`.
+runs. Each stage declares `id`, `primary_tool`, `tools`, `tool_roles`,
+`delegate`, `reads`, `writes`, `review.spec_compliance`, `review.quality`,
+`max_retries`, `quality_criteria`, and `human_blockers`. Stages may also declare
+`lang`, `type`, `post-process`, `fallback`, `min_quality`, and
+`required_spec_constraints`. For legacy plans, `tool: <path>` is shorthand for
+`primary_tool: <path>` plus `tools: [<path>]`; normalize it before generating
+stage briefs.
 
 The format is written by `do-homework [C]` — the orchestrator reads and executes it.
 Do not redesign the format here.
@@ -194,11 +197,14 @@ metadata only.
 
 ### Step 2 - Map Stages To Tools
 
-Use the current execution plan's "Tool Mapping" plus `sub-skills/tools/_index.md`.
+Use the current execution plan's tool declarations plus
+`sub-skills/tools/_index.md`. A stage has one `primary_tool` for ownership and
+an ordered `tools` list for every top-level tool skill the executor must read and
+apply. Do not drop supporting tools when generating briefs.
 
 Common mappings:
 
-| Stage kind | Tool |
+| Stage kind | Common tool(s) |
 |---|---|
 | literature search / references | `paper-search.md` |
 | prose / report / reflection | `writing-helper.md` |
@@ -208,7 +214,19 @@ Common mappings:
 | tests / execution report | `test-runner.md` |
 | slides / deck | `slide-maker.md` |
 
-If a mapped tool does not exist, stop and return:
+Planning rule: split independent artifact boundaries into separate stages, but
+combine multiple tools in one stage when one executor must produce one coherent
+artifact or one stage receipt from multiple capabilities. Examples:
+
+- code stage that must both write and run a notebook:
+  `primary_tool: code-writer.md`, `tools: [code-writer.md, test-runner.md]`;
+- report stage that must draft and humanize prose:
+  `primary_tool: writing-helper.md`, `tools: [writing-helper.md, humanizer.md]`;
+- figure-heavy report stage that must create figures before embedding them:
+  include both `figure-maker.md` and `writing-helper.md`, unless figures are a
+  separate artifact stage with its own receipt.
+
+If any declared tool does not exist, stop and return:
 
 ```yaml
 status: failed
@@ -257,17 +275,18 @@ Each executor brief must include:
   other stages' receipts, trajectory audit files, and archive evidence unless
   explicitly declared;
 - declared writes;
-- selected tool skill paths;
+- selected tool skill paths, including `primary_tool`, every item in `tools`,
+  and each `tool_roles` entry;
 - relevant user intent, confirmed decisions, delegated decisions, and
   non-negotiables from the terminal agreement;
 - applicable `required_spec_constraints`, including source, requirement,
   applies_to, required_evidence, status, blocker type when blocked, and
   `fallback_allowed_for_final`;
   Required fields: source, requirement, applies_to, required_evidence, status.
-- applicable tool contracts copied from the selected tool skill, not merely the
-  tool filename. Include `allowed_renderer_paths`, the selected `renderer_path`
-  when known, required source artifacts, required verification evidence, and
-  fallback limits.
+- applicable tool contracts copied from every selected top-level tool skill, not
+  merely the filenames. Include `allowed_renderer_paths`, the selected
+  `renderer_path` when known, required source artifacts, required verification
+  evidence, and fallback limits.
 - measurable quality criteria;
 - review criteria;
 - context from previous stages;
@@ -305,10 +324,10 @@ Each executor brief must include:
 
 Tool Contract Preservation Gate:
 
-- A stage brief that names a tool skill must preserve that tool's non-negotiable
-  output contract. The orchestrator may specialize the contract for the current
-  assignment, but it must not drop required source artifacts, renderer choices,
-  validation commands, or fallback limits.
+- A stage brief that names one or more tool skills must preserve every named
+  tool's non-negotiable output contract. The orchestrator may specialize the
+  contracts for the current assignment, but it must not drop required source
+  artifacts, renderer choices, validation commands, or fallback limits.
 - For slides, copy the slide-maker renderer contract into the brief:
   `allowed_renderer_paths: [guizang, beamer]`, the selected `renderer_path` if
   chosen by the plan, required `render_command_or_script`, source artifact

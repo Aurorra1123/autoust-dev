@@ -236,7 +236,13 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ### Stage 1 — 核心算法实现
 - id: stage_01_notebook
-- tool: sub-skills/tools/code-writer.md
+- primary_tool: sub-skills/tools/code-writer.md
+- tools:
+  - sub-skills/tools/code-writer.md
+  - sub-skills/tools/test-runner.md
+- tool_roles:
+  - code-writer: 生成 notebook/source artifacts
+  - test-runner: 执行测试或 notebook 验证并保存证据
 - delegate: subagent
 - lang: python
 - review:
@@ -252,15 +258,22 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
   - draft/notebook.ipynb
   - draft/requirements.txt
   - draft/metrics.json
+  - test_report.md
+  - test_report.json
 - quality_criteria:
   - notebook 能从 clean kernel 从头运行无报错
+  - test_report.json 记录验证命令、退出码和 pass/fail 状态
   - 报告引用的 metrics 必须来自实际执行输出
 - human_blockers:
   - dataset choice if the spec allows multiple datasets and user has not chosen
 
 ### Stage 2 — 实验报告
 - id: stage_02_report
-- tool: sub-skills/tools/writing-helper.md
+- primary_tool: sub-skills/tools/writing-helper.md
+- tools:
+  - sub-skills/tools/writing-helper.md
+- tool_roles:
+  - writing-helper: 根据 spec、rubric、用户意图和实验指标写报告草稿
 - delegate: subagent
 - type: report
 - lang: en
@@ -283,7 +296,11 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ### Stage 3 — 渲染 PDF
 - id: stage_03_pdf
-- tool: sub-skills/tools/pdf-renderer.md
+- primary_tool: sub-skills/tools/pdf-renderer.md
+- tools:
+  - sub-skills/tools/pdf-renderer.md
+- tool_roles:
+  - pdf-renderer: 将报告源文件渲染为最终 PDF 并记录渲染证据
 - delegate: subagent
 - review:
   - spec_compliance: true
@@ -305,7 +322,11 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ### Stage 4 — Presentation
 - id: stage_04_slides
-- tool: sub-skills/tools/slide-maker.md
+- primary_tool: sub-skills/tools/slide-maker.md
+- tools:
+  - sub-skills/tools/slide-maker.md
+- tool_roles:
+  - slide-maker: 生成演示文稿源文件和 slides PDF
 - delegate: subagent
 - review:
   - spec_compliance: true
@@ -336,7 +357,12 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 每个 stage 可包含：
 - `id`：稳定 stage id，例如 `stage_01_report`
-- `tool`：调用的顶层 skill
+- `primary_tool`：主顶层 skill，决定此 stage 的主要产物契约和执行责任
+- `tools`：此 stage 必须读取并应用的全部顶层 skill，有顺序，允许一个或多个
+- `tool_roles`：说明每个 tool 在本 stage 中承担的职责，防止 supporting tool
+  被漏掉或只写进 prose
+- `tool`：旧格式兼容字段，只等价于 `primary_tool: <path>` 和
+  `tools: [<path>]`；新 pipeline 应写 expanded fields
 - `delegate`：`main-agent` 或 `subagent`
 - `lang`：覆盖默认语言（code-writer 读取）
 - `type`：覆盖默认类型（writing-helper 读取）
@@ -373,8 +399,8 @@ agent 在写 `pipeline_design.md` 时，根据侦查结果和 [B] 结束时确�
 `investigation/alignment_brief.md`，在每个 stage 中声明具体参数：
 
 ```
-Stage 1: code-writer, lang: python
-Stage 2: writing-helper, type: report, lang: en
+Stage 1: primary_tool: code-writer, tools: [code-writer, test-runner], lang: python
+Stage 2: primary_tool: writing-helper, tools: [writing-helper], type: report, lang: en
 ```
 
 这些信息来自：

@@ -681,7 +681,10 @@ Required responsibilities:
 - name the output mode and final deliverables;
 - list constraints and rubric-derived quality requirements;
 - define ordered stages;
-- map each stage to a top-level tool skill;
+- map each stage to one `primary_tool` and an ordered `tools` list of all
+  top-level tool skills required by that stage;
+- normalize legacy `tool: <path>` as `primary_tool: <path>` plus
+  `tools: [<path>]`;
 - declare stage reads and writes;
 - declare verification criteria;
 - declare whether the stage needs review;
@@ -741,7 +744,9 @@ One-stage objective in concrete terms.
 - exact/output/path: expected content
 
 ## Tool Guidance
-- top-level tool skill path
+- primary top-level tool skill path
+- ordered top-level tool skill paths for the stage
+- role of each selected tool in this stage
 - appendix skill paths, if already selected by the Main Agent
 
 ## Quality Criteria
@@ -1020,7 +1025,13 @@ Example stage:
 ```markdown
 ### Stage 1 - Notebook Execution
 - id: stage_01_notebook
-- tool: sub-skills/tools/code-writer.md
+- primary_tool: sub-skills/tools/code-writer.md
+- tools:
+  - sub-skills/tools/code-writer.md
+  - sub-skills/tools/test-runner.md
+- tool_roles:
+  - code-writer: produce the notebook/source artifact
+  - test-runner: execute notebook/tests and write verification evidence
 - delegate: subagent
 - review:
   - spec_compliance: true

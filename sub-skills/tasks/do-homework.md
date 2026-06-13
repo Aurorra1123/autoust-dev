@@ -809,7 +809,9 @@ For mixed assignments, write multiple sub-pipelines in pipeline_design.md.
 - `## Stages`
   - stable stage id
   - concrete stage goal
-  - tool path
+  - `primary_tool`: the main top-level tool skill for stage ownership
+  - `tools`: ordered list of all top-level tool skills the stage must use
+  - `tool_roles`: why each listed tool is needed in this stage
   - `delegate`: `subagent` or `main-agent`
   - allowed reads
   - writes
@@ -869,6 +871,12 @@ Planning rules:
 
 For mixed assignments, keep one ordered stage plan. Use stage ids and headings
 to group sub-pipelines instead of creating independent uncoordinated plans.
+Within a stage, `tools` is composable: use one tool for simple stages and
+multiple tools when the same executor must combine capabilities to produce one
+coherent stage artifact. `primary_tool` declares the stage's lead contract.
+Legacy `tool: <path>` is accepted only as shorthand for
+`primary_tool: <path>` plus `tools: [<path>]`; new plans should write the
+expanded fields so supporting tools are auditable.
 
 Complete `pipeline_design.md`. It is the single-assignment execution plan:
 
@@ -892,7 +900,13 @@ repo_root: <absolute path from [A2]>
 
 ### Stage 1 - Notebook Execution
 - id: stage_01_notebook
-- tool: sub-skills/tools/code-writer.md
+- primary_tool: sub-skills/tools/code-writer.md
+- tools:
+  - sub-skills/tools/code-writer.md
+  - sub-skills/tools/test-runner.md
+- tool_roles:
+  - code-writer: create the notebook/source artifact and executable cells
+  - test-runner: execute validation commands and preserve run evidence
 - delegate: subagent
 - lang: python
 - review:
@@ -906,15 +920,24 @@ repo_root: <absolute path from [A2]>
 - writes:
   - draft/project.ipynb
   - draft/metrics.json
+  - test_report.md
+  - test_report.json
 - quality_criteria:
   - notebook executes from a clean kernel
+  - test_report.json records validation commands, exit codes, and pass/fail state
   - no fabricated metrics; report metrics must come from actual notebook output
 - human_blockers:
   - dataset choice if the spec allows multiple datasets and user has not chosen
 
 ### Stage 2 - Report Draft
 - id: stage_02_report
-- tool: sub-skills/tools/writing-helper.md
+- primary_tool: sub-skills/tools/writing-helper.md
+- tools:
+  - sub-skills/tools/writing-helper.md
+  - sub-skills/tools/humanizer.md
+- tool_roles:
+  - writing-helper: draft the report from spec, rubric, user intent, and metrics
+  - humanizer: post-process prose because this stage declares `post-process: humanize`
 - delegate: subagent
 - type: report
 - review:
@@ -994,8 +1017,9 @@ clean review format:
    - User constraints from `alignment_brief.md`.
    - Forbidden actions, especially Canvas submission behavior.
 4. **Full stage plan**
-   - For every stage, show: stage id, goal, tool, delegate mode, allowed reads,
-     writes, review settings, retry limit, quality criteria, and human blockers.
+   - For every stage, show: stage id, goal, primary tool, full tools list, tool
+     roles, delegate mode, allowed reads, writes, review settings, retry limit,
+     quality criteria, and human blockers.
    - If a stage is `delegate: main-agent`, explain why it is simple enough for
      inline execution. If there is no clear reason, revise the pipeline before
      asking for approval.
@@ -1041,9 +1065,9 @@ Use this response shape:
 - ...
 
 **Execution Stages**
-| # | Stage | Tool | Delegate | Writes | Reviews | Retry | Human blockers |
+| # | Stage | Tools | Delegate | Writes | Reviews | Retry | Human blockers |
 |---|---|---|---|---|---|---|---|
-| 1 | ... | ... | subagent | ... | spec + quality | 1 | ... |
+| 1 | ... | primary: ...; supporting: ... | subagent | ... | spec + quality | 1 | ... |
 
 **Stage Details**
 1. `<stage_id>` — <goal>

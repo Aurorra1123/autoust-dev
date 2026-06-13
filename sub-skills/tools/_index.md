@@ -26,7 +26,12 @@ see `sub-skills/tasks/do-homework.md [C]`.
 | **slide-maker** | [slide-maker.md](./slide-maker.md) | Presentation slides (guizang HTML or beamer) | spec.md, pipeline_design.md | slides.pdf |
 | **humanizer** | [humanizer.md](./humanizer.md) | Post-processing: reduce AI-detectable patterns | draft text | revised text |
 
-> Loading order: read this file first → read the matched tool's .md → if tool lists appendices, load relevant appendix on demand.
+> Loading order: read this file first → read every matched top-level tool's .md
+> from the stage `tools` list → if a tool lists appendices, load relevant
+> appendix files on demand. For legacy single-tool stages, `tool` means
+> `tools: [tool]`.
+> `primary_tool` is the stage ownership/lead contract; `tools` is the complete
+> ordered list of top-level tool contracts the stage must preserve.
 
 ## Task registry
 
