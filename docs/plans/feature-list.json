@@ -616,6 +616,27 @@
     "notes": "Status remains in-progress. DSAA2011 full-flow validation is largely functional with complete ordinary-spawn transcript export, and the 2026-06-10 fresh-user sync-status-to-do-homework run validated the public entry path through scan-plan, direct graded-assignment resolution, source-spec scout, executor/reviewer children, and D/E transcript audits. DSAA2011 repair-flow validation now covers both report-depth repair and experiment-iteration repair with complete D/E transcript audit coverage. The docs now frame full_flow and repair_flow as compatibility presets over one shared startup inventory, explore, alignment, execution, and review runtime. Clean PASS still requires tighter coordinator identity propagation, less startup/plugin scope noise, direct or cleaner transcript export, and narrower Canvas reconnaissance."
   },
   {
+    "id": "M3.5-GENERIC-CANVAS-INSTANCE",
+    "category": "data-layer",
+    "priority": "P0",
+    "description": "将 Canvas 实例从 HKUST(GZ) 硬编码扩展为单用户可配置的通用 Canvas LMS 实例",
+    "acceptance": [
+      "canvascli 支持保存 Canvas web_base / api_base 配置",
+      "canvascli init 支持 --canvas-url，接受 Canvas 登录页或 /api/v1 URL",
+      "CanvasClient 和 login 流程使用已配置实例，不再依赖 hkust-gz 常量作为运行时真相源",
+      "AutoStudy setup skill 首次运行询问学校/域名/Canvas URL，并把 URL 传给 canvascli",
+      "AutoStudy 当前产品文案改为通用 Canvas LMS，保留 HKUST(GZ) validated evidence 表述",
+      "scripts/write_scan_plan.py 将 html_url 传入 plan.json，scripts/select_plan_item.py 不再在 html_url 缺失时拼 HKUST(GZ) URL",
+      "do-homework 输出模板使用 Canvas 提供的 html_url 或 not available，不再展示固定 HKUST(GZ) URL"
+    ],
+    "evidence": [
+      "docs/superpowers/specs/2026-06-14-generic-canvas-instance-design.md",
+      "docs/superpowers/plans/2026-06-14-generic-canvas-instance.md"
+    ],
+    "status": "planned",
+    "notes": "Implementation should land in canvascli first, then AutoStudy should consume the new CLI contract. This slice is single configured Canvas instance, not multi-profile switching."
+  },
+  {
     "id": "M4-SYNC-COURSE",
     "category": "skill-task",
     "priority": "P1",

@@ -2,6 +2,14 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-14 — Generic Canvas instance support planned
+
+Updated `codex/deepwisdom-updates` to the latest remote branch while preserving
+the local fresh-clone-target commit, then wrote the Superpowers design spec and
+implementation plan for generic Canvas instance support. Next: implement the
+plan in `canvascli` first, then update AutoStudy setup/API docs and
+plan-selection behavior against the new CLI contract.
+
 ## 2026-06-13 — Pipeline-ready handoff and developer-entry boundary
 
 Tightened homework reconnaissance docs after DSAA2011 runtime review: fetched
