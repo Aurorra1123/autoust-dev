@@ -293,6 +293,15 @@ investigation/source_candidates.json
 investigation/reading_plan.json
 ```
 
+The source-reading workflow is strict sequential gates, not parallel phases:
+`metadata_scout -> reading_plan.json -> content_scout -> source_body_audit.json -> coverage_reviewer`.
+Do not dispatch `content_scout` until `metadata_scout` has produced
+`source_candidates.json` and the Main Agent has approved `reading_plan.json`.
+Do not dispatch `coverage_reviewer` until all required `content_scout` receipts,
+all required source-body fragments, and the merged `source_body_audit.json`
+exist. Content scouts may run in parallel with each other only after the reading
+plan assigns disjoint scopes.
+
 `source_candidates.json` records all discovered sources from assignment,
 rubric, front page, syllabus, pages, module items, file metadata, assignment
 files, and external URLs. Classify each candidate as:
@@ -441,7 +450,8 @@ For proposal/research/open-ended assignments, run the coverage-review layer
 before the final investigation review:
 
 - `coverage_reviewer` is a real child subagent when child dispatch is available.
-  It cold-reads `source_candidates.json`, `reading_plan.json`,
+  It must be dispatched only after the ordered metadata and content-reading
+  gates are complete. It cold-reads `source_candidates.json`, `reading_plan.json`,
   `source_body_audit.json`, `content_scout` Subagent receipts,
   `source_body_audit_fragments/`, `references/`, and `unreachable.txt`.
 - The coverage reviewer writes

@@ -193,3 +193,18 @@ def test_recon_summary_scales_with_investigation_depth():
     assert "methods/topic guidance, timeline/calendar facts" in policy_text
     assert "Do not collapse it into \"supporting context checked.\"" in policy_text
     assert "Important source bodies should not be\ncollapsed into vague phrases" in policy_text
+
+
+def test_source_scout_pipeline_has_strict_stage_order():
+    policy_text = "\n".join(
+        [
+            read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tools/assignment-recon.md"),
+            read("docs/runtime-agent-protocol.md"),
+        ]
+    )
+
+    assert "strict sequential gates, not parallel phases" in policy_text
+    assert "Do not dispatch `content_scout` until `metadata_scout` has produced" in policy_text
+    assert "Do not dispatch `coverage_reviewer` until all required `content_scout` receipts" in policy_text
+    assert "metadata_scout -> reading_plan.json -> content_scout -> source_body_audit.json -> coverage_reviewer" in policy_text

@@ -152,6 +152,14 @@ Main Agent / Subagent taxonomy is explicit:
 - Non-trivial source-heavy homework expands the `source_spec` domain into three
   dispatchable Subagent roles: `metadata_scout`, `content_scout`, and
   `coverage_reviewer`.
+- These roles are strict sequential gates, not parallel phases:
+  `metadata_scout -> reading_plan.json -> content_scout -> source_body_audit.json -> coverage_reviewer`.
+  Do not dispatch `content_scout` until `metadata_scout` has produced
+  `source_candidates.json` and the Main Agent has approved
+  `reading_plan.json`. Do not dispatch `coverage_reviewer` until all required
+  `content_scout` receipts, source-body fragments, and the merged
+  `source_body_audit.json` exist. Multiple `content_scout` children may run in
+  parallel only after the reading plan gives them disjoint scopes.
 - `content_scout` subdivisions are `scope` values, not child identities. Use
   `scope: spec_content`, `methods_content`, `theme_content`, or
   `policy_content` on a child whose `scout_type` is `content_scout`.
@@ -604,7 +612,9 @@ index into `canvas/syllabus.json`, not a replacement for the raw source.
 Main Agent-approved bounded body-reading budget. Each content scout writes a
 fragment under `source_body_audit_fragments/`; Main Agent merges those fragments
 into `source_body_audit.json` so parallel children never write the same merged
-JSON file. `source_body_audit.json` proves whether a candidate was read via
+JSON file. This order is mandatory: do not start content reads before candidate
+ranking and reading-plan approval, and do not start coverage review before the
+merged source-body audit exists. `source_body_audit.json` proves whether a candidate was read via
 `metadata_only`, `pdf_text_plus_links`, `keyword_windows`,
 `external_text_export`, `readable_extract`, or a blocked/unreachable mode.
 Sources left at `metadata_only` cannot be used as precise assignment, rubric,

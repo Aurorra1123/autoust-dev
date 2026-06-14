@@ -76,17 +76,23 @@ must happen at runtime.
    `metadata_scout`, `content_scout`, and `coverage_reviewer`. Each required
    child needs a real dispatch id in `stage_reviews/child_dispatch_ledger.json`
    and a receipt path under `investigation/scout_results/`.
-2. STOP before `[B]` unless all three required child subagents have real dispatch ids.
+2. Treat these source roles as strict sequential gates, not parallel phases:
+   `metadata_scout -> reading_plan.json -> content_scout -> source_body_audit.json -> coverage_reviewer`.
+   Do not dispatch `content_scout` until `metadata_scout` has produced
+   `source_candidates.json` and the Main Agent has approved
+   `reading_plan.json`. Do not dispatch `coverage_reviewer` until all required
+   `content_scout` receipts and the merged `source_body_audit.json` exist.
+3. STOP before `[B]` unless all three required child subagents have real dispatch ids.
    Main-Agent source indexing, manual JSON writing, or a summary paragraph is
    recovery evidence only; it is not a successful child dispatch.
-3. `metadata_scout` writes or returns the payload for
+4. `metadata_scout` writes or returns the payload for
    `investigation/source_candidates.json`; `content_scout` writes or returns
    source-body fragment payloads; `coverage_reviewer` reviews after
    `source_body_audit.json` and content receipts exist.
-4. A `recover` from `coverage_reviewer` is a gate failure until coverage is re-run by a child subagent.
+5. A `recover` from `coverage_reviewer` is a gate failure until coverage is re-run by a child subagent.
    The Main Agent may materialize missing artifacts named by the reviewer, but
    it must not self-certify the final coverage verdict.
-5. Write `investigation/recon_summary.md` as the human-readable entrance to reconnaissance.
+6. Write `investigation/recon_summary.md` as the human-readable entrance to reconnaissance.
    JSON files are machine evidence, not the user-facing completion story. The
    user-facing recon summary must state the source trail, deliverables, missing
    user decisions, skipped/recovered children, and the next question. Scale the
@@ -95,7 +101,7 @@ must happen at runtime.
    PDFs, timelines, methods guidance, source conflicts, or non-blocking gaps
    must expand the summary enough that the user can see the important findings
    without opening audit JSON.
-6. Do not turn "simulate I am the user" into Main-Agent permission to choose the project direction.
+7. Do not turn "simulate I am the user" into Main-Agent permission to choose the project direction.
    In normal runtime, ask the real user at `[B]`. In development validation,
    use the documented simulated-user bridge or a startup prompt that explicitly
    supplies delegated choices. If the assignment direction is open and not
@@ -191,6 +197,14 @@ Use these rules:
 | Retained user-visible draft, source code, package files, previous result, or current checks exist and affect planning | Enable only the matching artifact/codebase/process-history/verification scouts. |
 | A scout input does not exist or does not affect planning | Mark that scout `SKIPPED` with a reason in `explore_manifest.json`. |
 | The task is tiny and mechanically obvious, or child dispatch is unavailable/blocked | Main Agent may do inline exploration, but must record `delegation_mode: "inline_fallback"` or `executed_by: "main-agent"` with the concrete reason. |
+
+Source-reading scouts have strict sequential gates, not parallel phases. Do not
+dispatch `content_scout` until `metadata_scout` has produced
+`source_candidates.json` and the Main Agent has written or approved
+`reading_plan.json`. Do not dispatch `coverage_reviewer` until all required
+`content_scout` receipts, source-body fragments, and the merged
+`source_body_audit.json` exist. Parallelism is allowed inside the
+`content_scout` layer only after the reading plan assigns disjoint scopes.
 
 A read-only scout is a Subagent role that independently discovers or verifies
 current task facts for the Main Agent. It writes a receipt under
@@ -477,13 +491,17 @@ Follow the Canvas Generic stages:
    `references/*.pdf.links.json` or nested
    `references/**/*.pdf.links.json`; do not treat PDF text extraction as complete
    until the visible text and embedded link annotations have both been checked.
-   Write `investigation/source_candidates.json`,
-   `investigation/reading_plan.json`, and
+   Write the source-reading chain in order:
+   `metadata_scout -> reading_plan.json -> content_scout -> source_body_audit.json -> coverage_reviewer`.
+   First write `investigation/source_candidates.json`. Then the Main Agent
+   approves `investigation/reading_plan.json`. Only after that, dispatch
+   `content_scout` children to write
    `investigation/source_body_audit_fragments/`; then merge fragments into
-   `investigation/source_body_audit.json` and write
-   `investigation/source_coverage_feedback.json` so metadata discovery is
-   separated from body-read evidence. Revise `spec.md` if fetched inputs change
-   the main spec judgment.
+   `investigation/source_body_audit.json`. Do not write
+   `investigation/source_coverage_feedback.json` until a `coverage_reviewer`
+   has run after the merged audit exists. This keeps metadata discovery,
+   bounded body reading, and coverage review as separate ordered gates. Revise
+   `spec.md` if fetched inputs change the main spec judgment.
 
 4. **Stage 4 review investigation**
    Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`,
