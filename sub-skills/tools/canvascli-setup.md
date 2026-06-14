@@ -87,16 +87,35 @@ This installs the full headed Chromium build alongside the headless one.
 
 ## Step 3: One-time SSO login
 
-`canvascli init` launches a real browser, waits for the user to complete HKUST(GZ) SSO, and saves a cookie. **This is an explicit login/refresh command, not a health check.** To check whether the current saved session already works, run `canvascli whoami`; do not run `init` just to "try logging in".
+`canvascli init` launches a real browser, waits for the user to complete Canvas SSO, and saves a cookie. **This is an explicit login/refresh command, not a health check.** To check whether the current saved session already works, run `canvascli whoami`; do not run `init` just to "try logging in". If `whoami` already works, do not ask the user for their school or Canvas URL.
 
 This step needs a real terminal — Claude Code's `!` bash channel has no TTY — but `init` doesn't use `input()` (it polls), so you can still launch it from the agent. The user just has to be at their keyboard when the browser pops.
 
-Before launching:
+For a fresh setup with no configured Canvas instance, ask exactly one setup question:
 
-```
-✋ The next command opens a Chromium window for HKUST(GZ) SSO.
-   Complete the login in that window — it auto-detects success and closes itself.
-   If the SSO page offers "remember login" or "trust this browser", select it.
+- "Which school do you use Canvas with? A school name, domain, or Canvas login page URL is enough."
+
+Interpret the answer:
+
+- URL-looking answer: normalize it to the Canvas web root and run:
+
+  ```bash
+  .venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
+  ```
+
+- School/domain answer: search `<school> Canvas login`; prefer `canvas.<domain>`, `<school>.instructure.com`, or another page that is clearly a Canvas login page. If the result is ambiguous, ask for the direct Canvas login page URL.
+- Expired configured session: do not ask for school/URL again; run:
+
+  ```bash
+  .venv/bin/canvascli init
+  ```
+
+Before launching, adapt this message to the selected instance:
+
+```text
+The next command opens a Chromium window for Canvas SSO.
+Complete the login in that window; canvascli auto-detects success and closes itself.
+If the SSO page offers "remember login" or "trust this browser", select it.
 ```
 
 The remember-login checkbox is separate from `state.json`: a successful `init`
@@ -105,15 +124,11 @@ SSO remember this browser for the next re-login. If the user skips it, today's
 `state.json` can still work, but the next `init` after expiration may require a
 full manual login again.
 
-Then:
-
-```bash
-.venv/bin/canvascli init
-```
+Then run the appropriate command from above.
 
 What you'll see in stderr:
 
-- `Opening browser at https://hkust-gz.instructure.com/ ...`
+- `Opening browser at https://<configured Canvas host>/ ...`
 - (user finishes SSO in the window)
 - `logged in as <Name> (id=<uid>)`
 - `session saved to ~/Library/Application Support/canvascli/state.json`
@@ -161,5 +176,5 @@ When `canvascli` returns "Canvas session expired" or HTTP 401:
 2. **Don't drive `canvascli init` non-interactively.** The user must actually be at their machine to complete SSO; the `init` command can't be automated end-to-end.
 3. **Don't use `canvascli init` as a status check.** It always opens a browser. Use `canvascli whoami` to verify the existing `state.json`.
 4. **Remember login is not `state.json`.** `state.json` is the Canvas API cookie saved by canvascli; the SSO remember-login checkbox only affects how much manual work the next SSO refresh needs.
-5. **HKUST(GZ) only.** canvascli hardcodes `hkust-gz.instructure.com`. Multi-instance support is explicitly out of scope.
-6. **Treat HTTP 404 from canvascli as "feature disabled"**, not as an error. Some HKUST(GZ) courses turn off Quizzes / Modules / Discussions; canvascli returns empty arrays in that case.
+5. **Single configured Canvas instance.** canvascli stores one configured Canvas instance with the saved session. If the user changes schools or Canvas hosts, re-run `canvascli init --canvas-url "<direct Canvas URL>"`.
+6. **Treat HTTP 404 from canvascli as "feature disabled"**, not as an error. Some Canvas courses turn off Quizzes / Modules / Discussions; canvascli returns empty arrays in that case.

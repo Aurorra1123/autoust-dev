@@ -631,10 +631,14 @@
     ],
     "evidence": [
       "docs/superpowers/specs/2026-06-14-generic-canvas-instance-design.md",
-      "docs/superpowers/plans/2026-06-14-generic-canvas-instance.md"
+      "docs/superpowers/plans/2026-06-14-generic-canvas-instance.md",
+      "canvascli commits: c13de5b feat: add Canvas instance configuration; 750128b feat: route Canvas requests through configured instance; 0d1ea8d docs: describe canvascli as generic Canvas LMS client; 7ecac35 fix: preserve saved Canvas API base; 0100caf fix: keep Canvas instance changes atomic",
+      "AutoStudy commits: 0857dea fix: preserve Canvas URLs in plan handoff; d5a5470 docs: add generic Canvas setup contract; 87a6e9d docs: position AutoStudy as generic Canvas assistant; 2975d7e docs: remove residual HKUST-only positioning",
+      "Automated verification: canvascli unittest 10 tests, compileall, init --help with --canvas-url, git diff --check; AutoStudy unittest 3 tests, feature-list JSON parse, script compileall, forbidden HKUST-only grep, git diff --check",
+      "Real flow verification: temporary CANVASCLI_CONFIG_DIR with .venv/bin/canvascli init --canvas-url https://hkust-gz.instructure.com completed browser SSO and whoami; copied temp state plus https://hkust-gz.instructure.com/api/v1 config also completed whoami"
     ],
-    "status": "planned",
-    "notes": "Implementation should land in canvascli first, then AutoStudy should consume the new CLI contract. This slice is single configured Canvas instance, not multi-profile switching."
+    "status": "passing",
+    "notes": "This slice supports one configured Canvas instance per local installation. Multi-profile switching and broader non-HKUST term-name heuristics remain future work."
   },
   {
     "id": "M4-SYNC-COURSE",

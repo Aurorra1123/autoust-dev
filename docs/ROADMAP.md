@@ -1,9 +1,9 @@
 # AutoStudy Roadmap
 
-> Goal: let an HKUST(GZ) student load one local skill in an agentic coding
-> environment and get a Canvas-grounded study assistant: status planning,
-> assignment reconnaissance, draft production, course-material archiving, notes,
-> and eventually tutoring and reminders.
+> Goal: let a Canvas LMS student load one local skill in an agentic coding
+> environment and get a Canvas-grounded study assistant, validated on HKUST(GZ):
+> status planning, assignment reconnaissance, draft production,
+> course-material archiving, notes, and eventually tutoring and reminders.
 
 AutoStudy is deliberately local. It has no hosted backend and no project-owned
 API key. Canvas access is handled by the separate `canvascli` CLI, while this
@@ -340,6 +340,6 @@ use the data layer. M5 is mostly about subagent dispatch and reminder mechanics.
 - central backend or database;
 - multi-user collaboration;
 - automatic course registration or enrollment changes;
-- generic multi-school support in this repo;
+- hosted multi-account or multi-instance Canvas management;
 - direct OJ/external-site submission without explicit user approval and a
   separate safety review.

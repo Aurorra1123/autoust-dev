@@ -324,6 +324,7 @@ def build_plan(pending: list[dict[str, Any]]) -> dict[str, Any]:
                 "course_name": item["course_name"],
                 "assignment_id": item["assignment_id"],
                 "assignment_name": item["assignment_name"],
+                "html_url": item.get("html_url"),
                 "due_at": item["due_at"],
                 "due_at_local": item["due_at_local"],
                 "hours_left": item["hours_left"],

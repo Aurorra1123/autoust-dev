@@ -51,11 +51,18 @@ Explicit SSO login / refresh. This opens a browser and writes a new
 when the user is ready for the browser popup.**
 ```bash
 .venv/bin/canvascli init
+.venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
+.venv/bin/canvascli init --canvas-url "https://school.instructure.com/api/v1"
 ```
 
 If the SSO page offers "remember login" / "trust this browser", ask the user to
 select it. A successful `init` writes `state.json` either way; the checkbox only
 affects whether the next SSO refresh can skip a full manual login.
+
+`canvascli` stores the normalized Canvas web root and API root outside the repo
+next to the saved session cookie. AutoStudy should read Canvas-provided
+`html_url` values and must not reconstruct school-specific assignment URLs from
+course and assignment IDs.
 
 ### `whoami`
 Verify the current saved session. Returns the user object without opening a
@@ -109,7 +116,7 @@ Output shape (per item):
   "course_name": "DSAA2043 (L01) - ...",
   "due_at": "2025-11-13T15:59:00Z",
   "points_possible": 100,
-  "html_url": "https://hkust-gz.instructure.com/...",
+  "html_url": "https://canvas.example.edu/courses/2151/assignments/12345",
   "submission_state": "graded",
   "submission_types": ["online_upload"]
 }
@@ -210,7 +217,7 @@ List announcements across all courses in the latest active Canvas term.
 .venv/bin/canvascli announcements --term "2025-26 Spring"
 ```
 
-Note: HKUST(GZ) instructors rarely use Canvas announcements (often 0).
+Note: some Canvas instances rarely use announcements, so 0 results can be normal.
 
 ### `files [--course-id <cid>]`
 List files (no download). Defaults to all courses in the latest active Canvas term, optionally scoped.

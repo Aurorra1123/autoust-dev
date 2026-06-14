@@ -1233,6 +1233,9 @@ a new workflow phase owned by `task-orchestrator.md`; it is not part of
 
 ## Output Format
 
+Use the selected plan item's `canvas_url` or `canvas/assignment.json.html_url`;
+never reconstruct a host-specific Canvas URL from course and assignment IDs.
+
 After `[C5]`:
 
 ```markdown
@@ -1240,7 +1243,7 @@ After `[C5]`:
 
 **Pipeline:** `data/homework/<COURSE>/<HWID>/pipeline_design.md`
 **Status:** pipeline_ready / skipped / error
-**Canvas URL:** https://hkust-gz.instructure.com/courses/.../assignments/...
+**Canvas URL:** <assignment html_url, or "not available" if Canvas did not provide one>
 
 Human review items:
 - Review pipeline_design.md before orchestration.

@@ -10,7 +10,7 @@ This file is for the next person (or agent) who picks up AutoStudy development â
 
 | Audience | Entry | Asks |
 |---|---|---|
-| **Skill user** (agent doing Canvas tasks for the user) | [`skill.md`](../skill.md) | "What can I do for this HKUST(GZ) student right now?" |
+| **Skill user** (agent doing Canvas tasks for the user) | [`skill.md`](../skill.md) | "What can I do for this Canvas student right now?" |
 | **Skill developer** (this file) | `docs/DEVELOPMENT.md` | "How is this repo organized? What's the current state? Where do I write things?" |
 
 If you only read `skill.md`, you'd think the repo is a runtime tool. Reading this file first tells you it's also an evolving project with its own roadmap, conventions, and verification rituals.

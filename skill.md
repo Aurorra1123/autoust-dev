@@ -1,13 +1,13 @@
 ---
 name: autostudy
-description: HKUST(GZ) Canvas study assistant. Sync Canvas status, plan next actions, investigate assignments, draft local deliverables, archive course materials, and generate notes with user checkpoints.
+description: Local Canvas LMS study assistant, validated on HKUST(GZ). Sync Canvas status, plan next actions, investigate assignments, draft local deliverables, archive course materials, and generate notes with user checkpoints.
 ---
 
 # AutoStudy
 
-AutoStudy is a local academic assistant skill for HKUST(GZ) students using
-Canvas (`hkust-gz.instructure.com`). It depends on `canvascli` for Canvas data
-access and uses this repository's Markdown task/tool files as the runtime
+AutoStudy is a local academic assistant skill for students using Canvas LMS,
+validated on HKUST(GZ)'s Canvas instance. It depends on `canvascli` for Canvas
+data access and uses this repository's Markdown task/tool files as the runtime
 contract.
 
 ## Loading Model
@@ -85,8 +85,8 @@ test -d .venv && .venv/bin/canvascli version > /dev/null 2>&1 \
 
 Important login model:
 
-- `canvascli init` opens a browser for HKUST(GZ) SSO and refreshes the saved
-  session.
+- `canvascli init` opens a browser for the configured Canvas SSO and refreshes
+  the saved session.
 - It is not a health check. Use `.venv/bin/canvascli whoami` for that.
 - The saved session lives at `~/Library/Application Support/canvascli/state.json`
   on macOS. Treat it as a credential.

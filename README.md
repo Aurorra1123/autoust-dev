@@ -1,6 +1,6 @@
 # AutoStudy
 
-> 面向 HKUST(GZ) Canvas 的本地学业助手 skill。
+> 本地 Canvas LMS 学业助手 skill，已在 HKUST(GZ) 的 Canvas 实例上验证。
 > 同步 Canvas、规划 ddl、侦查作业要求、生成可审核草稿、归档课件、生成课程笔记。
 
 其他版本：
@@ -9,7 +9,7 @@
 - [快速版中文 README](./README.quick.md)
 
 AutoStudy 是一个跑在 Claude Code / Codex 这类 agentic coding 环境里的
-**本地 skill 包**。你用自然语言提出需求，agent 读取 `skill.md`，调用本地
+**本地 Canvas LMS skill 包**，已在 HKUST(GZ) 的 Canvas 实例上验证。你用自然语言提出需求，agent 读取 `skill.md`，调用本地
 `canvascli` 数据层，把证据和产物写回这个仓库，并在关键节点询问你。
 
 它不是网页应用，不是托管服务，也不是后台偷偷跑的自动化机器人。它更像一个
@@ -88,10 +88,10 @@ cd ~/workspace/autoust-dev
 ### 2. 完成一次 Canvas 登录
 
 AutoStudy 使用独立的 [`canvascli`](https://github.com/Aurorra1123/canvascli)
-作为 Canvas 数据层。第一次使用时，agent 会打开浏览器让你完成 HKUST(GZ) SSO：
+作为 Canvas 数据层。第一次使用时，agent 会先确认你的 Canvas 学校/域名或登录页，然后打开浏览器让你完成对应的 Canvas SSO：
 
 ```bash
-.venv/bin/canvascli init
+.venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
 ```
 
 Canvas 登录态保存在本机：

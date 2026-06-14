@@ -2,13 +2,16 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
-## 2026-06-14 — Generic Canvas instance support planned
+## 2026-06-14 — Generic Canvas instance support implemented
 
-Updated `codex/deepwisdom-updates` to the latest remote branch while preserving
-the local fresh-clone-target commit, then wrote the Superpowers design spec and
-implementation plan for generic Canvas instance support. Next: implement the
-plan in `canvascli` first, then update AutoStudy setup/API docs and
-plan-selection behavior against the new CLI contract.
+Implemented the first generic Canvas instance slice across `canvascli` and
+AutoStudy. `canvascli init --canvas-url` now stores a web/API base pair and
+keeps instance changes atomic on login failure; AutoStudy setup/API docs ask
+for school/domain/Canvas URL, plan handoff preserves Canvas `html_url`, and
+product positioning is generic Canvas LMS with HKUST(GZ) validation evidence.
+Verification passed for both repos' unit/compile/help/json/diff checks, plus a
+real browser login using a temporary `CANVASCLI_CONFIG_DIR` and HKUST(GZ) Canvas
+web/API URL forms.
 
 ## 2026-06-13 — Pipeline-ready handoff and developer-entry boundary
 

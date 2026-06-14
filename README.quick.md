@@ -2,7 +2,7 @@
 
 > 默认入口：中文完整版见 [README.md](./README.md)。英文完整版见 [README.en.md](./README.en.md)。
 
-AutoStudy 是 HKUST(GZ) Canvas 本地学业助手。它跑在 Claude Code / Codex 这类
+AutoStudy 是本地 Canvas LMS 学业助手，已在 HKUST(GZ) 的 Canvas 实例上验证。它跑在 Claude Code / Codex 这类
 agent 环境里，帮你同步作业、规划 ddl、侦查作业要求、生成本地草稿、整理课件和课程笔记。
 
 一句话记住：
@@ -104,7 +104,7 @@ cd ~/workspace/autoust-dev
 Canvas 登录：
 
 ```bash
-.venv/bin/canvascli init
+.venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
 ```
 
 检查登录态：

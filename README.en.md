@@ -1,6 +1,6 @@
 # AutoStudy
 
-> Local HKUST(GZ) Canvas study-assistant skill.
+> Local Canvas LMS study-assistant skill, validated on HKUST(GZ)'s Canvas instance.
 > Sync Canvas, plan deadlines, investigate assignments, draft reviewable
 > artifacts, archive course materials, and generate course notes.
 
@@ -9,9 +9,10 @@ Other versions:
 - [Default Chinese README](./README.md)
 - [Quick Chinese README](./README.quick.md)
 
-AutoStudy is a **local skill package** for Claude Code / Codex-style agentic
-coding environments. You ask in natural language; the agent reads `skill.md`,
-calls the local `canvascli` data layer, writes evidence and artifacts into this
+AutoStudy is a **local Canvas LMS skill package** for Claude Code /
+Codex-style agentic coding environments, validated on HKUST(GZ)'s Canvas
+instance. You ask in natural language; the agent reads `skill.md`, calls the
+local `canvascli` data layer, writes evidence and artifacts into this
 repository, and asks before key actions.
 
 It is not a web app, hosted service, or hidden automation bot. It is closer to a
@@ -102,10 +103,11 @@ dependencies into the local `.venv/`.
 ### 2. Complete Canvas Login Once
 
 AutoStudy uses the separate [`canvascli`](https://github.com/Aurorra1123/canvascli)
-data layer. The first run opens a browser for HKUST(GZ) SSO:
+data layer. On the first run, the agent confirms your Canvas school/domain or
+login page, then opens a browser for that Canvas SSO:
 
 ```bash
-.venv/bin/canvascli init
+.venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
 ```
 
 The saved Canvas session is stored locally:
