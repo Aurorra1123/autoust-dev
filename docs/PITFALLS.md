@@ -115,9 +115,30 @@ except RuntimeError as e:
 
 真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。后来又遇到 DSAA2011 Project：assignment description 是空的，真正项目说明在 module item PDF 里；UCUG1505 FINAL project 则是 assignment description 和 Week 4 module item 都指向同一个 Google Doc spec。
 
-**正确做法**：`do-homework.md [A3]` 必须调 agent-led `tools/assignment-recon.md`，按 Canvas Copilot `canvas-generic` Stage 1-5 逐源查看 assignment、rubric、front page、syllabus、modules、module-items、pages、files、external URLs。产出 `spec.md` 作为标准化侦查报告，不是 raw dump；`references/` 保存完整来源文本和文件；`investigation/rubric.md` / `review_a.json` 记录评分标准和侦查充分性；`pipeline_design.md` 记录输出模式。`canvas/syllabus.json` 只是 raw snapshot；如果 syllabus 含评分、政策、作业族要求，必须另写 `references/*syllabus*` 可读摘录或文本导出，避免下游只能依赖 raw JSON 或过度压缩的 relevance 判断。`problem.md` 只是旧工具兼容层。下游不准直接读 `assignment.description` 当题目，也不准让独立脚本代替 agent 判断主 spec 或写最终侦查报告。
+**正确做法**：`do-homework.md [A3]` 必须调 agent-led `tools/assignment-recon.md`，按 Canvas Copilot `canvas-generic` Stage 1-5 逐源查看 assignment、rubric、front page、syllabus、modules、module-items、pages、files、external URLs。产出 `spec.md` 作为标准化侦查报告，不是 raw dump；`references/` 保存外部/PDF/PPTX/数据等来源文本和文件；Canvas-native body 的原始事实源是 `canvas/*.json`，不是子代理摘要或派生 reference。`investigation/rubric.md` / `review_a.json` 必须记录 raw JSON 路径和 body section pointer；`pipeline_design.md` 记录输出模式。`problem.md` 只是旧工具兼容层。下游不准直接读 `assignment.description` 当题目，也不准让独立脚本代替 agent 判断主 spec 或写最终侦查报告；但当 assignment/syllabus/page body 细节会影响任务时，stage brief 必须显式允许子代理读取相应 `canvas/*.json`。
 
 **规则强化**（写进 `skill.md` Safety #7 + `do-homework.md` Safety #7）：deliverable 文件里**禁止出现** `[PROBLEM N]` / `[TODO: align...]` / `[此处由小组成员填入...]` 这种占位符。只允许 `[CITATION NEEDED: ...]` 和 `[CLARIFICATION NEEDED: ...]` 两种 marker，且都要在 do-homework `[E]` 一次性回流给用户。
+
+### 6b-2. proposal framework is not complete reconnaissance
+
+**现象**：开放式 proposal / research project 作业里，Canvas 可能直接给一个
+proposal template 或 final project 文件。Agent 如果只读这两个文件，通常只能拿到
+交付物框架，却不知道老师在课堂材料里怎么讲选题、research question、literature
+review、field research、questionnaire、timeline、topic scope，最后写出来的方案会
+有结构但没有课程方法论。
+
+**根因**：proposal/research/open-ended 作业的完整 spec 往往是组合型的：
+assignment shell 定义提交物，proposal/final-project 文件定义框架，methods 或
+topic-selection 课件定义如何选择课堂相关主题和研究路径，同周主题材料提供可选的
+supporting context。只读 proposal framework 会把“文件格式”误当成“作业理解”。
+
+**正确做法**：`assignment-recon` 需要写 `source_candidates.json` 和
+`source_body_audit.json`，把 metadata 发现和正文读取分开。proposal/research/open-ended
+任务在 `review_a.json.verdict == "proceed"` 前，必须有 assignment/spec body evidence，
+并且要有 methods/topic-selection coverage，或者明确记录课程没有可用方法指导。
+`content_scout` 应按 `reading_plan.json` 并发读取 required/high-signal source；主代理
+只精读 content scout 标出的 `precise_match`、高价值 `supporting_context` 和 coverage
+risk，不靠临时手动补读救场。
 
 ### 6c. Notebook 有图、report 没图：这是工具接口断裂
 

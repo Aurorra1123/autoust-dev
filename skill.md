@@ -137,10 +137,14 @@ The required source-of-truth chain is:
 prelaunch_startup_inventory.json
 -> investigation/explore_context.md
 -> investigation/explore_manifest.json
+-> investigation/source_candidates.json
+-> investigation/reading_plan.json
+-> investigation/source_body_audit.json
+-> investigation/source_coverage_feedback.json
 -> spec.md
 -> investigation/rubric.md
 -> references/
-   -> readable syllabus extract/text export when syllabus is fetched
+   -> fetched external/PDF/PPTX/source files and optional convenience exports
 -> investigation/review_a.json
 -> investigation/alignment_brief.md or repair_plan.md
 -> pipeline_design.md or repair_pipeline_design.md
@@ -155,9 +159,12 @@ prelaunch_startup_inventory.json
 Never draft from just the assignment title, Canvas description, or a single
 link. Canvas assignment descriptions are often empty or incomplete. The
 `problem.md` file is compatibility only; it is not the primary source.
-When Canvas syllabus is fetched, keep the raw snapshot under `canvas/` and also
-write a readable syllabus extract/text export under `references/` if it was used
-or judged for relevance.
+For Canvas-native bodies such as assignment, syllabus, front page, and pages,
+raw Canvas JSON is the canonical evidence. derived readable artifacts are
+optional convenience copies, not required gates and not authoritative sources.
+summary-only scout output must never replace raw Canvas JSON; downstream stages
+that need Canvas-native constraints must be explicitly allowed to read the
+relevant `canvas/*.json` files and cite raw JSON pointers.
 
 The user-facing checkpoints are:
 

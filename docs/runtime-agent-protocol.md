@@ -145,7 +145,23 @@ focused read-only explorer/scout subagents with curated context. Available scout
 capabilities are:
 
 - source/spec scout: discover or refresh Canvas assignment facts, rubrics,
-  linked docs, references, and required deliverables;
+  linked docs, references, and required deliverables. For non-trivial homework
+  reconnaissance, split this broad role into `metadata_scout`,
+  `content_scout`, and `coverage_reviewer`;
+- metadata_scout: index assignment, rubric, front page, syllabus, every module
+  item, pages, file metadata, assignment files, and external URLs, then write
+  `investigation/source_candidates.json` without making final source-body
+  judgments. If it reads a full Canvas page, syllabus body, front-page body, or
+  external document body, that read must be recorded as body evidence or
+  assigned to a `content_scout`;
+- content_scout: read assigned candidate source bodies from
+  `investigation/reading_plan.json`, preserve extracted text and source-adjacent
+  companion artifacts, and write body evidence fragments under
+  `investigation/source_body_audit_fragments/`;
+- coverage_reviewer: cold-read source candidates, reading plan, source body
+  audit, content receipts, references, and unreachable resources to catch missed
+  high-signal sources, metadata-only evidence, forbidden reads, and weak
+  proposal/research/open-ended coverage;
 - artifact scout: inspect current user-visible drafts, source code, packages,
   generated media, reports, slides, notebooks, or demos;
 - codebase scout: inspect repository structure, scripts, dependencies, tests, and
@@ -187,8 +203,7 @@ spec.md                         # source/spec exploration result
 problem.md                      # legacy source/spec compatibility
 investigation/rubric.md          # assignment rubric or extracted criteria
 references/                     # fetched source materials
-                                # includes readable syllabus extract/text export
-                                # when syllabus is fetched
+                                # optional derived Canvas convenience exports
 investigation/repair_recon.md    # retained-artifact/progress-focused summary
 ```
 
@@ -199,6 +214,24 @@ require user alignment. Raw prior logs, archived transcripts, prior reviews, and
 old pipeline files do not become general task context just because an explorer
 inspected them. Executor and reviewer children receive raw prior process files
 only when the final execution plan explicitly justifies that narrow access.
+Main Agent remains the final reconnaissance judge: scouts can rank, read, and
+review sources, but they do not write final `spec.md`, final `review_a.json`,
+pipeline approval, or user-facing alignment decisions.
+Content scouts narrow the read set; they do not replace Main Agent source reading.
+scout summaries are routing hints, not source evidence. The Main Agent must read
+the narrowed source bodies before writing or revising `spec.md`, using raw
+`canvas/*.json` bodies for Canvas-native sources and saved source text or exact
+page/slide/window artifacts for PDFs, decks, or external documents.
+
+Reconnaissance ends only after the coordinator passes a reconvergence gate.
+coverage feedback is not a terminal reconnaissance verdict: a covered
+`source_body_audit.json` / `source_coverage_feedback.json` pair does not replace
+`spec.md`, `investigation/rubric.md`, or `investigation/review_a.json`. If those
+terminal artifacts are missing, the coordinator must write a recover/blocking
+`review_a.json` or `stage_reviews/process_concerns.jsonl` that names the missing
+`spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` artifact
+before it stops, asks for recovery, dispatches a replacement, or proceeds.
+Rule for automated checks: missing `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` must write a recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`.
 
 ### Alignment Contract
 
@@ -297,6 +330,10 @@ receipt/transcript evidence supports the claimed final status. Otherwise the
 coordinator re-prompts, dispatches a replacement, or marks the stage `BLOCKED`.
 Transport recovery is acceptable for robustness, but clean validation should
 aim for normal `accepted` statuses.
+Filesystem receipts without transcript evidence are recovery evidence, not clean
+child-isolation validation. They may unblock a run when paired with explicit
+process concerns, but they cannot by themselves prove that the scout boundary was
+validated.
 
 Every receipt and dispatch record needs ordering evidence. Scout result
 receipts and stage result/review receipts use `created_at_utc` and
@@ -508,27 +545,57 @@ work_dir/
 ├── spec.md
 ├── problem.md                  # compatibility only
 ├── references/
-│   └── *syllabus*              # readable syllabus extract/text export when fetched
-│   └── *.pdf.links.json        # PDF link annotations beside fetched PDFs
+│   ├── source_docs/            # PDFs and source-adjacent text/link companions
+│   ├── slides/                 # PPTX decks and extracted slide text
+│   ├── external/               # fetched external text exports
+│   └── pdf_links.json          # optional aggregate of PDF link annotations
 └── investigation/
+    ├── source_candidates.json
+    ├── reading_plan.json
+    ├── source_body_audit_fragments/
+    ├── source_body_audit.json
+    ├── source_coverage_feedback.json
     ├── rubric.md
     ├── unreachable.txt
     └── review_a.json
 ```
 
-`spec.md` is the factual source of truth for the assignment. It must be grounded
-in Canvas sources and fetched references, not in the assignment title. Raw
-Canvas syllabus JSON belongs under `canvas/`, but if syllabus is fetched the
-reconnaissance must also write a readable syllabus extract or text export under
-`references/` so later executor/reviewer children and humans can audit
-syllabus-derived constraints without parsing raw Canvas JSON.
+`spec.md` is the factual decision report for the assignment. It must be grounded
+in Canvas sources and fetched references, not in the assignment title. For
+Canvas-native bodies such as assignment, syllabus, front page, and pages, raw
+Canvas JSON is the canonical evidence. derived readable artifacts are optional
+convenience copies, not required gates and not authoritative sources.
+summary-only scout output must never replace raw Canvas JSON; downstream stages
+that need Canvas-native constraints must be explicitly allowed to read the
+relevant `canvas/*.json` files and cite raw JSON pointers.
 
 Fetched PDFs are rich source objects, not just text files. The visible text layer
 does not necessarily contain URLs behind linked words. Reconnaissance must
-preserve PDF link annotations by writing `references/*.pdf.links.json` beside
-spec/rubric/input PDFs, using generic fields such as source PDF path, page,
-anchor text, URI, and rectangle. Later stages may decide which URLs matter, but
-the reconnaissance layer must not drop them while converting PDFs into text.
+preserve PDF link annotations by writing `references/*.pdf.links.json` or
+`references/**/*.pdf.links.json` beside spec/rubric/input PDFs, using generic
+fields such as source PDF path, page, anchor text, URI, and rectangle. Later
+stages may decide which URLs matter, but the reconnaissance layer must not drop
+them while converting PDFs into text.
+
+Do not require `references/*syllabus*` as the evidence gate for Canvas-native
+syllabus evidence. If a readable syllabus note exists, treat it as a derived
+index into `canvas/syllabus.json`, not a replacement for the raw source.
+`source_candidates.json` is metadata-level recall. `reading_plan.json` is the
+Main Agent-approved bounded body-reading budget. Each content scout writes a
+fragment under `source_body_audit_fragments/`; Main Agent merges those fragments
+into `source_body_audit.json` so parallel children never write the same merged
+JSON file. `source_body_audit.json` proves whether a candidate was read via
+`metadata_only`, `pdf_text_plus_links`, `keyword_windows`,
+`external_text_export`, `readable_extract`, or a blocked/unreachable mode.
+Sources left at `metadata_only` cannot be used as precise assignment, rubric,
+input, or source-context evidence.
+If a source body read found relevant Canvas-native content but the only
+downstream artifact is a compressed relevance summary, the coverage reviewer
+must block progress until the audit points to the raw `canvas/*.json` body
+section and later stage briefs explicitly allow that raw file to be read.
+For every required or high-signal source that will influence assignment
+understanding, the audit must say which original source body or exact source
+window the Main Agent should read; a paraphrase-only fragment is not enough.
 
 ### Phase 3: User Alignment
 
@@ -989,7 +1056,7 @@ data/homework/<COURSE>/<HWID>/
 ├── spec.md
 ├── problem.md
 ├── references/
-│   └── *syllabus*              # readable syllabus evidence when fetched
+│   └── <fetched external/source materials>
 ├── investigation/
 │   ├── rubric.md
 │   ├── unreachable.txt

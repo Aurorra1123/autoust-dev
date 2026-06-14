@@ -20,14 +20,17 @@ Runtime invariants:
   and record whether it contains assignment requirements, grading criteria,
   submission policy, late policy, academic-integrity rules, AI/tool policy, or
   other course-level constraints.
-- When syllabus is fetched, also write a readable syllabus artifact under
-  `references/` (for example `references/<COURSE>-syllabus-relevant-extract.md`
-  or a full text export). Raw JSON stays in `canvas/`; downstream agents should
-  be able to review the syllabus evidence from `references/` without parsing
-  Canvas JSON.
+- For Canvas-native bodies such as assignment, syllabus, front page, and pages,
+  raw Canvas JSON is the canonical evidence. derived readable artifacts are optional convenience copies, not required gates and not authoritative sources.
+  summary-only scout output must never replace raw Canvas JSON; record raw JSON
+  paths and JSON-pointer or section-heading evidence in source-body audit.
 - Write `spec.md` as a concise evidence-grounded report, not as a raw dump.
 - Keep `problem.md` as compatibility only; downstream planning reads `spec.md`.
 - Do not let a helper script or scout decide the final main-spec judgment.
+- Distinguish metadata discovery from body reading. A Canvas file metadata
+  record, module item title, or page link is only a candidate until
+  `investigation/source_body_audit.json` records how its body was read or why it
+  was blocked/excluded.
 
 ## Capability
 
@@ -54,6 +57,12 @@ The workflow writes this structure under `<work_dir>`:
 ├── problem.md
 ├── references/
 ├── investigation/
+│   ├── source_candidates.json
+│   ├── reading_plan.json
+│   ├── source_body_audit_fragments/
+│   │   └── <scope>_content.json
+│   ├── source_body_audit.json
+│   ├── source_coverage_feedback.json
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   └── review_a.json
@@ -64,8 +73,35 @@ The workflow writes this structure under `<work_dir>`:
 `spec.md` is the standardized reconnaissance report written by the agent after
 reading the sources. `problem.md` is only a thin compatibility summary for older
 tools. `references/` stores fetched PDFs, Google Docs text, starter code, data,
-syllabus readable extracts/text exports, or other materials. `investigation/`
-records rubric findings, unreachable resources, and the investigation review.
+PPTX exports, optional Canvas convenience exports, or other materials. New workbenches
+should keep source-adjacent companion files together instead of flattening every
+artifact:
+
+```text
+references/
+├── source_docs/
+│   └── <slug>/
+│       ├── <slug>.pdf
+│       ├── <slug>.pdf.txt
+│       └── <slug>.pdf.links.json
+├── slides/
+│   └── <slug>/
+│       ├── <slug>.pptx
+│       └── <slug>.pptx.txt
+├── external/
+│   └── <slug>.txt
+└── pdf_links.json
+```
+
+Existing flat `references/<name>.pdf` layouts remain valid. The invariant is
+that companion files stay beside their source. New policy text may refer to
+`references/**/*.pdf.links.json`; old `references/*.pdf.links.json` manifests
+are still accepted. `investigation/` records candidate ranking, body-reading
+evidence, rubric findings, unreachable resources, coverage feedback, and the
+investigation review.
+For Canvas-native bodies, keep the raw `canvas/*.json` as the source of truth.
+Optional readable exports may exist for human convenience, but they must be
+marked as derived and point back to the raw JSON path and section pointer.
 
 ## Non-goal: no script-led spec generation
 
@@ -123,18 +159,18 @@ integrity constraints that are not repeated on the assignment page. If the
 syllabus is irrelevant to the specific assignment, say so explicitly in
 `spec.md` and `investigation/review_a.json`; do not leave it implicit.
 
-After reading syllabus, create a readable artifact in `references/`:
+After reading syllabus, record raw evidence pointers such as:
 
 ```text
-<work_dir>/references/<COURSE>-syllabus-relevant-extract.md
+canvas/syllabus.json#body_text:Assessment and Grading
+canvas/syllabus.json#body_text:Grading Rubrics
+canvas/syllabus.json#body_text:Course AI Policy
 ```
 
-If the syllabus is relevant, extract the sections that affect this assignment
-and cite `canvas/syllabus.json` as the raw source. If it is not relevant, write a
-short relevance note explaining that judgment. If the full syllabus text is
-short and useful, a full text export is acceptable. This artifact is required
-because later executor/reviewer children read `references/` as source material
-and should not need to parse raw Canvas JSON to see course-level constraints.
+If a derived syllabus note or export is useful for a human reader, it may be
+written under `references/`, but it is not required and must not become the only
+evidence path. Downstream agents should read `canvas/syllabus.json` directly
+when syllabus details matter.
 
 Now write the first standardized `spec.md`. This is not raw JSON and not copied
 PDF text. It is a report, in the agent's words, grounded by the sources:
@@ -166,8 +202,8 @@ PDF text. It is a report, in the agent's words, grounded by the sources:
 State whether `canvas/syllabus.json` adds assignment-specific requirements,
 grading/rubric criteria, assessment-family context, submission or late policy,
 collaboration rules, academic-integrity constraints, AI/tool policy, or no
-relevant constraints for this assignment. Include evidence pointers to both the
-raw Canvas snapshot and the readable `references/` syllabus artifact.
+relevant constraints for this assignment. Include raw Canvas evidence pointers
+to `canvas/syllabus.json` sections.
 
 ## Main Spec Judgment
 State which source appears to be the main spec and why.
@@ -213,6 +249,11 @@ Locate grading criteria in this order:
 
 Write `<work_dir>/investigation/rubric.md`.
 
+If grading criteria come from the syllabus, cite `canvas/syllabus.json` with a
+specific body-text section pointer, not only a scout summary. A rubric search is
+incomplete when the only downstream evidence is a compressed summary of syllabus
+grading criteria.
+
 If no rubric is found, write:
 
 ```text
@@ -233,7 +274,7 @@ Fetch all materials needed to understand or execute the assignment:
   fetchable
 - starter code, scaffold archives, data files, or GitHub links
 - supporting slides/readings when the spec references them
-- readable syllabus extract/text export when syllabus was fetched
+- raw Canvas JSON body pointers for Canvas-native assignment/page/syllabus evidence
 
 Save them under `<work_dir>/references/`. For PDFs, also save extracted text
 beside the file when possible. Claude Code's built-in Read tool can read PDF
@@ -241,6 +282,97 @@ files directly and return their text content. Alternatively, use PyMuPDF
 (`python3 -c "import fitz; ..."`) if the agent needs to extract text
 programmatically. For Google Docs, attempt anonymous text export and save it
 as `references/<name>.txt` or `references/<name>.md`.
+
+### Source Candidate And Body Audit
+
+Before treating fetched or discovered material as assignment evidence, write
+metadata-level candidate ranking to:
+
+```text
+investigation/source_candidates.json
+investigation/reading_plan.json
+```
+
+`source_candidates.json` records all discovered sources from assignment,
+rubric, front page, syllabus, pages, module items, file metadata, assignment
+files, and external URLs. Classify each candidate as:
+
+```text
+required | high_signal | supporting | low_signal | forbidden | blocked
+```
+
+- `required`: direct assignment/spec/rubric/proposal/final-project files or
+  required inputs.
+- `high_signal`: title or context suggests proposal, research, methods,
+  timeline, topic selection, literature review, questionnaire, field research,
+  grading criteria, or submission rules.
+- `supporting`: same week/module/project topic material that may inform an
+  open-ended topic.
+- `low_signal`: course material with no clear assignment relationship.
+- `forbidden`: prior submissions, stale pipelines, old reviews, archive,
+  transcripts, or startup-forbidden context.
+- `blocked`: unavailable, login-walled, unparsable, or otherwise unreachable.
+
+`reading_plan.json` is the bounded plan approved by the Main Agent before
+content scouts read bodies. It assigns `required` and `high_signal` candidates,
+plus selected `supporting` candidates, to scoped `content_scout` children such
+as `spec_content_scout`, `methods_content_scout`, `theme_content_scout`, or
+`policy_content_scout`.
+
+Content scouts narrow the read set; they do not replace Main Agent source reading.
+Their job is to identify the relevant source files, raw `canvas/*.json` bodies,
+pages, slides, or exact source windows that the Main Agent must inspect next.
+scout summaries are routing hints, not source evidence.
+Main Agent must read the narrowed source bodies before writing or revising `spec.md`.
+Before writing or revising final `spec.md`, `investigation/rubric.md`, or
+`review_a.json`, use the source itself: for Canvas-native sources, read the
+relevant raw `canvas/*.json` body sections; for saved PDFs/PPTX/external text,
+read the saved source text or the exact page/slide/window pointed to by the
+scout.
+
+The `metadata_scout` reads index-level metadata, links, titles, item context,
+and short Canvas summaries. If a scout reads a full Canvas page, syllabus body,
+front-page body, PDF/PPTX body, or external document body, that read must be
+recorded through the body-audit path below or assigned to a `content_scout`.
+
+After body reading, write:
+
+```text
+investigation/source_body_audit_fragments/<scope>_content.json
+investigation/source_body_audit.json
+investigation/source_coverage_feedback.json
+```
+
+Each content scout writes its own fragment under
+`source_body_audit_fragments/` or includes an equivalent fragment in its scout
+receipt. Main Agent merges those fragments into `source_body_audit.json`;
+content scouts must not concurrently write the shared merged audit file. Each
+merged entry records `candidate_id`, `path_or_url`, `origin`, `assigned_scout`,
+`read_mode`, `body_artifact_path`, `classification`, `evidence_pointers`,
+`reading_cost`, and `reason`. Allowed body-level classifications are:
+
+```text
+precise_match | supporting_context | weak_related | excluded | forbidden | blocked
+```
+
+Use read modes such as:
+
+```text
+raw_canvas_json | metadata_only | readable_extract | pdf_text_plus_links |
+external_text_export | direct_pdf_read | keyword_windows | blocked_unreachable |
+not_relevant_after_review
+```
+
+`metadata_only` must never be used as `precise_match`, rubric evidence, input
+evidence, or source-context evidence. A source may become `precise_match` or
+`supporting_context` only after the audit records body-read evidence or a
+specific blocked/unavailable reason.
+
+For long PDFs or PPTX decks, do not dump full text into the Main Agent context.
+First save the file and extracted text, record page/slide/byte counts, search
+task-sensitive terms, and summarize keyword windows around matching pages or
+slides. Escalate to broader or full read only when the source is a direct spec
+or the windows cannot answer the assignment question.
 
 ### PDF Link Annotation Extraction
 
@@ -256,6 +388,9 @@ annotations and save them beside the PDF:
 references/<name>.pdf
 references/<name>.pdf.txt
 references/<name>.pdf.links.json
+references/source_docs/<slug>/<slug>.pdf
+references/source_docs/<slug>/<slug>.pdf.txt
+references/source_docs/<slug>/<slug>.pdf.links.json
 ```
 
 Use PyMuPDF `page.get_links()` or an equivalent PDF annotation reader. The link
@@ -282,7 +417,10 @@ decide whether each URL matters.
 
 When useful, also write an aggregate `references/pdf_links.json` that concatenates
 all per-PDF link records for quick review; the sibling `*.pdf.links.json`
-manifests remain the source-adjacent evidence.
+manifests remain the source-adjacent evidence. New workbenches may store these
+manifests under nested source directories, so review using
+`references/**/*.pdf.links.json` while accepting legacy flat
+`references/*.pdf.links.json`.
 
 Record resources that cannot be fetched in
 `<work_dir>/investigation/unreachable.txt`, with a short reason:
@@ -303,17 +441,32 @@ Run a cold review of the investigation. Prefer a separate reviewer/sub-agent
 when the runtime supports it; otherwise reread the workbench from scratch and
 answer the same questions without relying on memory.
 
+Before writing the review verdict, run the reconvergence gate. coverage feedback
+is not a terminal reconnaissance verdict: `source_coverage_feedback.json` can
+confirm source coverage, but it does not replace `spec.md`,
+`investigation/rubric.md`, or `investigation/review_a.json`. If
+`source_body_audit.json` or `source_coverage_feedback.json` exists while
+terminal reconnaissance artifacts are missing, write a recover/blocking
+`review_a.json` or append `stage_reviews/process_concerns.jsonl`; the entry must
+name the missing `spec.md`, `investigation/rubric.md`, or
+`investigation/review_a.json` artifact and state whether the next action is
+inline completion, replacement coordinator, user recovery, or stop.
+Rule for automated checks: missing `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` must write a recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`.
+
 Reviewer must read:
 
 ```text
 <work_dir>/spec.md
 <work_dir>/investigation/rubric.md
+<work_dir>/investigation/source_candidates.json
+<work_dir>/investigation/reading_plan.json
+<work_dir>/investigation/source_body_audit.json
+<work_dir>/investigation/source_coverage_feedback.json
 <work_dir>/references/
 <work_dir>/investigation/unreachable.txt
 <work_dir>/canvas/assignment.json
 <work_dir>/canvas/rubric.json
 <work_dir>/canvas/syllabus.json
-<work_dir>/references/*syllabus*       # if syllabus was fetched
 <work_dir>/canvas/modules.json
 <work_dir>/canvas/module-items-*.json
 <work_dir>/canvas/page-*.json      # if present
@@ -342,6 +495,14 @@ Write strict JSON to `<work_dir>/investigation/review_a.json`:
     "constraints_added": []
   },
   "inputs_complete": true,
+  "source_body_audit_checked": true,
+  "source_candidates_complete": true,
+  "unread_source_candidates": [],
+  "open_ended_coverage": {
+    "assignment_spec_body_read": true,
+    "methods_or_topic_guidance_body_read": true,
+    "supporting_topic_context_checked": true
+  },
   "missing_sources": [],
   "blocking_unreachables": [],
   "verdict": "proceed",
@@ -360,6 +521,16 @@ Allowed verdicts:
 
 If `verdict != "proceed"`, do not proceed silently. Surface the gap in
 `do-homework [B]`.
+
+For proposal/research/open-ended assignments, `verdict` must not be `proceed`
+unless an assignment/spec source has body-read evidence and
+methods/topic-selection guidance has body-read evidence, or the reviewer records
+why such guidance is unavailable. Supporting topic context must be read enough
+to inform the topic choice or explicitly judged unnecessary. Reading budget
+overruns, too-broad reading, too-narrow reading, missed sources, and misreads
+must be recorded in `source_coverage_feedback.json`. Required or high-signal
+candidates left at `metadata_only` require `recover` unless they are explicitly
+excluded with evidence.
 
 ## Stage 5 - classify-output
 
@@ -409,16 +580,28 @@ Before returning to `do-homework [B]`:
 2. `canvas/` contains snapshots for assignment, rubric, front page, syllabus,
    modules, every inspected module's items, and relevant pages/files.
 3. `spec.md` contains an explicit `Syllabus Relevance` judgment backed by
-   `canvas/syllabus.json` and a readable syllabus artifact in `references/`, or
-   `investigation/unreachable.txt` explains why syllabus could not be fetched.
+   `canvas/syllabus.json` raw body pointers, or `investigation/unreachable.txt`
+   explains why syllabus could not be fetched.
 4. `references/` contains every reachable material needed to understand the
-   assignment, including a readable syllabus extract/text export when syllabus
-   was fetched.
-5. `investigation/rubric.md` records Canvas, syllabus, or spec-based grading criteria, or
-   clearly says rubric was not found.
-6. `investigation/unreachable.txt` lists blocked resources.
-7. `investigation/review_a.json` has a verdict and records syllabus relevance.
-8. `pipeline_design.md` starts with the preliminary output mode.
+   assignment, such as fetched PDFs, decks, external text exports, starter code,
+   or datasets. Do not require `references/*syllabus*` as the evidence gate for
+   Canvas-native syllabus evidence; use `canvas/syllabus.json` directly.
+5. `investigation/source_candidates.json`, `investigation/reading_plan.json`,
+   and `investigation/source_body_audit.json` distinguish metadata discovery
+   from body-read evidence.
+6. `investigation/rubric.md` records Canvas, syllabus, or spec-based grading
+   criteria, or clearly says rubric was not found. When syllabus contributes
+   criteria, `investigation/rubric.md` must cite raw `canvas/syllabus.json`
+   section pointers; summary-only scout output is incomplete.
+7. `investigation/unreachable.txt` lists blocked resources.
+8. `investigation/review_a.json` has a verdict and records syllabus relevance
+   plus source body audit coverage.
+9. `pipeline_design.md` starts with the preliminary output mode.
+10. The reconvergence gate has confirmed that `source_coverage_feedback.json`
+    alone is insufficient and that missing `spec.md`,
+    `investigation/rubric.md`, or `investigation/review_a.json` forces a
+    recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`
+    record instead of a silent stop.
 
 ## Source Selection Philosophy
 
@@ -428,6 +611,10 @@ Before returning to `do-homework [B]`:
 - Do not assume modules are irrelevant when assignment description has a link.
 - Treat duplicate sources as corroboration.
 - Label nearby context as supporting context instead of hiding it.
+- Rank candidates broadly, then read bodies under a bounded `reading_plan.json`.
+- Use content scouts for broad source body reading; the Main Agent remains the
+  final judge and should read the narrowed source bodies plus scout routing
+  evidence, not rely on scout prose alone.
 - Keep Canvas API internals in `canvascli`; AutoStudy uses the CLI contract.
 
 ## Cross-references
@@ -454,6 +641,15 @@ Before returning to `do-homework [B]`:
    whether the block is fatal.
 7. **Do not turn `spec.md` into a raw dump.** Full source text belongs in
    `references/`; `spec.md` is the decision report.
-8. **Do not hide syllabus in raw JSON only.** If syllabus is fetched and used or
-   judged, write a readable `references/*syllabus*` artifact so later children
-   and humans can review the source without parsing Canvas JSON.
+8. **Do not hide Canvas-native source bodies behind summaries.** If assignment,
+   syllabus, front-page, or page JSON is fetched and used, cite the raw
+   `canvas/*.json` file and body-text section pointer. Optional derived
+   reference notes may help humans, but summary-only scout output must never
+   replace raw Canvas JSON.
+9. **Do not require Canvas-native bodies to be copied into `references/`.**
+   Downstream agents should be explicitly allowed to read the relevant
+   `canvas/*.json` source instead of relying on a lossy extract.
+10. **Do not confuse metadata with body evidence.** `canvas/file-*.json`,
+   module item titles, and source filenames create candidates; they do not prove
+   relevance until `source_body_audit.json` records a body read, exclusion, or
+   blocker.

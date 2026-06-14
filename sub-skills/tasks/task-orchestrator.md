@@ -22,7 +22,6 @@ work_dir/
 ├── spec.md
 ├── problem.md
 ├── references/
-│   └── *syllabus*        # readable syllabus evidence when fetched
 ├── investigation/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
@@ -42,9 +41,9 @@ work_dir/
 `spec.md` is the standardized Canvas/source exploration report.
 `investigation/explore_context.md` is the shared exploration summary.
 `references/` contains readable source materials; raw Canvas snapshots stay
-under `canvas/`. If syllabus was fetched and used or judged for relevance,
-`references/` should include a readable syllabus extract/text export so stage
-briefs do not need to pass raw `canvas/syllabus.json` as hidden background.
+under `canvas/`. For Canvas-native bodies such as assignment, syllabus, front
+page, and pages, raw Canvas JSON is the canonical evidence. derived readable
+artifacts are optional convenience copies, not required gates.
 The terminal agreement is usually `investigation/alignment_brief.md` for an
 initial assignment and may be `repair_plan.md` for a retained-artifact change.
 The execution plan is usually `pipeline_design.md` and may be
@@ -80,7 +79,6 @@ work_dir/
 ├── spec.md
 ├── problem.md
 ├── references/
-│   └── *syllabus*                  # readable syllabus evidence when fetched
 ├── investigation/
 │   ├── rubric.md
 │   ├── unreachable.txt
@@ -136,9 +134,14 @@ Before executing, check:
 - `references/` contains required reachable materials, or
   `investigation/unreachable.txt` explains missing resources.
 - If `investigation/review_a.json` says syllabus was available and checked,
-  `references/` contains a readable syllabus extract/text export, or
-  `investigation/unreachable.txt` / process concerns explains why it could not
-  be written.
+  `spec.md`, `investigation/rubric.md`, `review_a.json`, or
+  `source_body_audit.json` cites raw `canvas/syllabus.json` section pointers.
+- If `investigation/rubric.md`, `spec.md`, or `review_a.json` uses Canvas-native
+  assignment/page/syllabus body details, later stage briefs must explicitly
+  allow the relevant `canvas/*.json` reads; summary-only scout output must return
+  to `do-homework` for recovery.
+- If a stage depends on source details discovered by content scouts,
+  required/allowed reads must include the source files or raw `canvas/*.json` paths, not only `spec.md`, `source_body_audit.json`, or scout receipts.
 
 If these checks fail, return to `do-homework` with `status: failed`. Do not run
 tools against an ungrounded assignment.
@@ -188,7 +191,9 @@ investigation/review_a.json
 investigation/user_notes.md      # if present
 investigation/user_scope.md      # if present
 problem.md                       # compatibility only
-references/*syllabus*            # if syllabus was fetched and relevant or judged
+canvas/assignment.json           # if assignment shell details matter
+canvas/syllabus.json             # if syllabus details matter
+canvas/page-*.json               # if Canvas page bodies matter
 SKILLS_DIR/_index.md          # path discovered above
 ```
 
@@ -245,6 +250,10 @@ Before generating any stage brief, build a `hard_requirement_inventory` from
 constraints, and rubric-critical conditions. Then diff it against
 `required_spec_constraints` in the execution plan.
 Use this exact gate: diff it against `required_spec_constraints`.
+When a requirement came from a content scout, follow the scout pointer back to
+the original source body before adding it to the inventory. scout summaries are
+routing hints, not source evidence. Stage briefs must carry the same raw source
+paths or exact source windows forward.
 
 If a hard requirement appears in `hard_requirement_inventory` but is absent or
 weakened in `required_spec_constraints`, stop and record `FAIL | spec
@@ -270,6 +279,7 @@ Each executor brief must include:
 - concrete one-stage task;
 - required reads;
 - allowed reads;
+- required/allowed reads must include the source files or raw `canvas/*.json` paths for constraints that came from source-body audit or content scouts;
 - forbidden reads;
 - forbidden writes, including `stage_reviews/child_dispatch_ledger.json`,
   other stages' receipts, trajectory audit files, and archive evidence unless
@@ -713,9 +723,9 @@ Generic examples:
    brief, executor, reviewer, or verification tool runs.
 2. **Do not invent missing source material.** If `spec.md` or `references/` is
    incomplete, return to `do-homework`.
-3. **Do not pass raw syllabus as hidden background.** Use distilled constraints
-   from `spec.md` / `rubric.md` / `review_a.json` and readable
-   `references/*syllabus*` evidence when syllabus matters.
+3. **Do not pass raw Canvas JSON as hidden background.** If assignment,
+   syllabus, front-page, or page body details matter, list the relevant
+   `canvas/*.json` files in the stage brief's allowed reads. stage briefs must explicitly allow relevant `canvas/*.json` reads. summary-only scout output is not enough.
 4. **Do not use `assignment.description` as the prompt.**
 5. **Do not silently alter deliverables.** The approved execution plan controls
    the target artifacts.

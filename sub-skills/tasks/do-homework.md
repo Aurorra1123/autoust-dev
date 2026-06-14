@@ -31,10 +31,15 @@ prelaunch_startup_inventory.json
 -> investigation/explore_manifest.json
 -> investigation/scout_results/ (if scouts dispatched)
 -> investigation/explore_context.md
+-> investigation/source_candidates.json
+-> investigation/reading_plan.json
+-> investigation/source_body_audit_fragments/ (if content scouts dispatched)
+-> investigation/source_body_audit.json
+-> investigation/source_coverage_feedback.json
 -> spec.md
 -> investigation/rubric.md
 -> references/
-   -> readable syllabus extract/text export when syllabus is fetched
+   -> fetched external/PDF/PPTX/source files and optional convenience exports
 -> investigation/review_a.json
 -> investigation/alignment_brief.md
 -> pipeline_design.md
@@ -52,6 +57,13 @@ Actor rules:
   subagents belong to `task-orchestrator.md`, not `do-homework.md`.
 - Subagents do not own user alignment, final `spec.md` judgment, pipeline
   approval, or Canvas submission decisions.
+- The Main Agent reviews `source_candidates.json`, approves
+  `reading_plan.json`, dispatches content scouts, reads scout receipts, and
+  merges content-scout fragments into `source_body_audit.json`. The Main Agent
+  writes final `spec.md`, `review_a.json`, `explore_context.md`, and
+  `pipeline_design.md`.
+- Subagents must not write final `spec.md`, final `review_a.json`,
+  `pipeline_design.md`, or user alignment decisions.
 
 The two user-interaction phases in this planning workflow are:
 
@@ -137,6 +149,9 @@ Use these rules:
 | Situation | Required action |
 |---|---|
 | Canvas modules, linked files, PDFs, external specs, rubric search, or multiple possible sources must be inspected | Dispatch a read-only `source_spec` scout by default. |
+| Non-trivial source-heavy homework needs broad Canvas/source indexing | Dispatch `metadata_scout` to write `source_candidates.json`. |
+| Required or high-signal candidates need body reading | Dispatch scoped `content_scout` children from `reading_plan.json`. |
+| Proposal/research/open-ended or other multi-source tasks need coverage checking | Dispatch `coverage_reviewer` after content scout receipts exist. |
 | Retained user-visible draft, source code, package files, previous result, or current checks exist and affect planning | Enable only the matching artifact/codebase/process-history/verification scouts. |
 | A scout input does not exist or does not affect planning | Mark that scout `SKIPPED` with a reason in `explore_manifest.json`. |
 | The task is tiny and mechanically obvious, or child dispatch is unavailable/blocked | Main Agent may do inline exploration, but must record `delegation_mode: "inline_fallback"` or `executed_by: "main-agent"` with the concrete reason. |
@@ -147,9 +162,46 @@ current task facts. It writes a receipt under
 user, write the dispatch ledger, own `spec.md`, or read archive/prior-run
 evidence unless the Main Agent explicitly allowlists a process-history input.
 
-The Main Agent still owns final reconnaissance judgment: read sources and scout
-receipts, decide the main spec, write or revise `spec.md`, consolidate
-`investigation/explore_context.md`, and run `[B]`.
+Source/spec exploration uses three bounded scout roles when the task is not
+tiny:
+
+- `metadata_scout` indexes assignment, rubric, front page, syllabus, modules,
+  every module item, pages, file metadata, assignment files, and external URLs.
+  It writes `investigation/source_candidates.json` and may rank candidates as
+  `required`, `high_signal`, `supporting`, `low_signal`, `forbidden`, or
+  `blocked`. It must not mark a source as `precise_match` because it has not
+  read source bodies.
+- `content_scout` reads only the candidates assigned in
+  `investigation/reading_plan.json`. Typical scopes are
+  `spec_content_scout`, `methods_content_scout`, `theme_content_scout`, and
+  `policy_content_scout`. Content scouts extract source body evidence, preserve
+  source-adjacent companion artifacts, and write receipts plus fragments under
+  `investigation/source_body_audit_fragments/`. The Main Agent merges content-scout fragments
+  into `investigation/source_body_audit.json`; parallel content scouts must not
+  write the shared merged audit file directly.
+- `coverage_reviewer` cold-reads `source_candidates.json`,
+  `reading_plan.json`, `source_body_audit.json`, content receipts,
+  `references/`, and `unreachable.txt` to check for missed high-signal sources,
+  forbidden reads, metadata-only evidence, and open-ended assignment coverage.
+
+Content scouts narrow the read set; they do not replace Main Agent source reading.
+scout summaries are routing hints, not source evidence. The Main Agent still
+owns final reconnaissance judgment: after reading scout receipts, it must read
+the narrowed source bodies before writing or revising `spec.md`, decide the main
+spec, write or revise `spec.md`, consolidate `investigation/explore_context.md`,
+and run `[B]`.
+
+Before returning from reconnaissance, run a reconvergence gate. coverage
+feedback is not a terminal reconnaissance verdict: `source_coverage_feedback.json`
+may say the source set is covered, but the Main Agent still must write or verify
+`spec.md`, `investigation/rubric.md`, and `investigation/review_a.json`. If
+`source_body_audit.json` or `source_coverage_feedback.json` exists but any
+terminal reconnaissance artifact is missing, the coordinator must not silently
+stop or proceed to `[B]`; it must write a recover/blocking `review_a.json` or
+`stage_reviews/process_concerns.jsonl` entry that names the missing
+`spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` artifact
+and the next recovery action.
+Rule for automated checks: missing `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` must write a recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`.
 
 If any scout is dispatched, the Main Agent records it in
 `stage_reviews/child_dispatch_ledger.json` with role `explore_scout`, scout
@@ -178,6 +230,7 @@ run. It must summarize:
 - current Canvas/source requirements;
 - main spec candidates and final main-source judgment;
 - fetched references and blocked/unreachable materials;
+- source candidates, body-read audit coverage, and any reading budget concerns;
 - available user-visible artifacts, if any;
 - skipped scouts and reasons;
 - stale or forbidden context that must not be passed to later children;
@@ -286,8 +339,9 @@ All skill file paths resolve as `REPO_ROOT/sub-skills/tools/<name>.md`.
 Invoke `tools/assignment-recon.md` as the source/spec workflow. This can be
 supported by a `source_spec` scout, but it must not be replaced by a
 standalone spec-generation script. The Main Agent must read the current
-evidence, judge the main spec, write `spec.md`, and keep review evidence in the
-workbench.
+evidence, including the narrowed original source bodies or exact source windows
+identified by scouts, judge the main spec, write `spec.md`, and keep review
+evidence in the workbench.
 
 Follow the Canvas Generic stages:
 
@@ -298,9 +352,10 @@ Follow the Canvas Generic stages:
    afterthought: read it and record whether it adds grading criteria,
    assessment-family context, submission/late policy, academic-integrity rules,
    AI/tool policy, collaboration rules, or no relevant constraints. Save raw
-   JSON under `canvas/`, and also write a readable syllabus extract/text export
-   under `references/` so later agents can review syllabus evidence without
-   parsing raw Canvas JSON. Then write a standardized `spec.md` report with
+   JSON under `canvas/`. For Canvas-native bodies, raw Canvas JSON is the
+   canonical evidence; derived readable artifacts are optional convenience
+   copies, not required gates. summary-only scout output must never replace raw
+   Canvas JSON. Then write a standardized `spec.md` report with
    metadata, source trail, syllabus relevance, main spec judgment, deliverables,
    requirements, rubric placeholder, inputs, gaps, and evidence pointers.
 
@@ -308,22 +363,33 @@ Follow the Canvas Generic stages:
    Search Canvas rubric, `spec.md`, downloaded/fetched references, modules,
    syllabus, and external spec text. Write `investigation/rubric.md`. Do not
    mark rubric search complete until syllabus has either contributed criteria or
-   been explicitly judged irrelevant/unavailable.
+   been explicitly judged irrelevant/unavailable. If the syllabus contributes
+   criteria, `investigation/rubric.md` must cite `canvas/syllabus.json` raw
+   body-text section pointers; a scout summary alone is incomplete.
 
 3. **Stage 3 locate-inputs**
    Download or fetch necessary PDFs, Google Doc text, starter code, datasets, or
    external spec pages into `references/`. Record blocked resources in
-   `investigation/unreachable.txt`. When syllabus was fetched, ensure the
-   readable syllabus artifact is also present in `references/`. For every
-   fetched PDF that may affect the spec, save PDF link annotation manifests as
-   `references/*.pdf.links.json`; do not treat PDF text extraction as complete
+   `investigation/unreachable.txt`. For every fetched PDF that may affect the
+   spec, save PDF link annotation manifests as
+   `references/*.pdf.links.json` or nested
+   `references/**/*.pdf.links.json`; do not treat PDF text extraction as complete
    until the visible text and embedded link annotations have both been checked.
-   Revise `spec.md` if fetched inputs change the main spec judgment.
+   Write `investigation/source_candidates.json`,
+   `investigation/reading_plan.json`, and
+   `investigation/source_body_audit_fragments/`; then merge fragments into
+   `investigation/source_body_audit.json` and write
+   `investigation/source_coverage_feedback.json` so metadata discovery is
+   separated from body-read evidence. Revise `spec.md` if fetched inputs change
+   the main spec judgment.
 
 4. **Stage 4 review investigation**
-   Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`, and
-   `investigation/unreachable.txt`. Prefer a separate reviewer/sub-agent when
-   available. Write strict JSON to `investigation/review_a.json`.
+   Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`,
+   `investigation/unreachable.txt`, `investigation/source_candidates.json`,
+   `investigation/reading_plan.json`, `investigation/source_body_audit.json`,
+   `investigation/source_coverage_feedback.json`, and content scout receipts.
+   Prefer a separate reviewer/sub-agent when available. Write strict JSON to
+   `investigation/review_a.json`.
 
 5. **Stage 5 classify-output**
    Classify the output mode (`doc_prose`, `pdf_annotated`, `pdf_typed`, `code`,
@@ -335,8 +401,14 @@ After `[A3]`, immediately read:
 ```text
 investigation/explore_manifest.json
 investigation/explore_context.md  # required for non-trivial runs unless inline fallback is recorded
+investigation/source_candidates.json
+investigation/reading_plan.json
+investigation/source_body_audit_fragments/  # if content scouts dispatched
+investigation/source_body_audit.json
+investigation/source_coverage_feedback.json
+canvas/assignment.json
 canvas/syllabus.json
-references/*syllabus*
+canvas/page-*.json               # if present and relevant
 spec.md
 investigation/rubric.md
 investigation/unreachable.txt
@@ -351,18 +423,38 @@ Do not proceed to `[B]` until:
 - Non-trivial runs have `explore_context.md`, or a recorded inline-fallback
   reason.
 - Every dispatched scout has a ledger row and a receipt path.
+- Non-trivial source-heavy runs have `source_candidates.json`,
+  `reading_plan.json`, `source_body_audit.json`, and
+  `source_coverage_feedback.json`, or a recorded inline fallback reason.
+- The reconvergence gate has checked terminal reconnaissance artifacts:
+  `source_coverage_feedback.json` alone is insufficient, and missing `spec.md`,
+  `investigation/rubric.md`, or `investigation/review_a.json` must write a
+  recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`.
 - `spec.md` is grounded in Canvas snapshots and fetched references, not in the
   assignment title alone.
 - `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json`
   explicitly records syllabus relevance, including assignment requirements,
   grading criteria, submission policy, late policy, AI/tool policy,
   academic-integrity constraints, or a reasoned `not relevant` judgment.
-- If syllabus was fetched, `references/` contains a readable syllabus
-  extract/text export and `spec.md` points to it as evidence alongside
-  `canvas/syllabus.json`.
+- If syllabus was fetched and used, `spec.md`, `investigation/rubric.md`, or
+  `review_a.json` points to `canvas/syllabus.json` raw body sections. Do not
+  require `references/*syllabus*` as the evidence gate.
+- If Canvas-native assignment, syllabus, front-page, or page bodies are relevant,
+  source-body audit records raw `canvas/*.json` paths and section pointers;
+  summary-only scout output is incomplete and blocks progression.
+- If content scouts narrowed long PDFs, decks, Canvas bodies, or external text to
+  exact files/pages/slides/windows, the Main Agent has read those source bodies
+  or windows directly before finalizing `spec.md`; scout summaries alone are not
+  sufficient.
 - Any fetched PDF that was used as spec, rubric, input, or source-context
   evidence has a sibling PDF link annotation manifest under
-  `references/*.pdf.links.json`, even when the manifest is empty.
+  `references/*.pdf.links.json` or `references/**/*.pdf.links.json`, even when
+  the manifest is empty.
+- `proposal/research/open-ended` runs have body-read evidence for assignment/spec
+  sources and methods/topic-selection guidance, or `review_a.json` records why
+  such guidance is unavailable. They also record whether supporting topic context
+  was checked or explicitly judged unnecessary, and whether the reading budget
+  stayed bounded or required a justified overrun.
 
 #### [A4] Gate On Reconnaissance Quality
 
@@ -382,10 +474,9 @@ the workbench and `spec.md`, `investigation/review_a.json`, and
 If syllabus could not be fetched, record the failure in `investigation/unreachable.txt`
 or `stage_reviews/process_concerns.jsonl` before `[B]`. If syllabus was fetched
 but not reviewed for relevance, treat the reconnaissance as incomplete and do
-not proceed to `[B]`. If syllabus was fetched and reviewed but no readable
-syllabus artifact exists in `references/`, treat the reconnaissance as
-incomplete until the artifact is written or the omission is recorded as a
-process concern with a concrete reason.
+not proceed to `[B]`. If syllabus was fetched and reviewed but the only
+downstream evidence is a lossy scout summary without raw `canvas/syllabus.json`
+section pointers, treat the reconnaissance as incomplete.
 
 ### [B] Recon Summary + Alignment Loop
 
@@ -759,8 +850,9 @@ investigation/explore_context.md
 investigation/explore_manifest.json
 investigation/rubric.md
 investigation/review_a.json
-canvas/syllabus.json               # verify relevance already distilled; do not pass raw syllabus to children by default
-references/*syllabus*              # readable syllabus evidence when fetched
+canvas/assignment.json             # raw Canvas assignment evidence when assignment shell matters
+canvas/syllabus.json               # raw Canvas syllabus evidence when syllabus matters
+canvas/page-*.json                 # raw Canvas page evidence when page bodies matter
 investigation/alignment_brief.md  # required and confirmed at [B]
 investigation/user_notes.md       # if present
 investigation/user_scope.md       # if present
@@ -977,10 +1069,12 @@ directly.
 minimum, its constraints, stage goals, human blockers, delegated decisions, and
 final review items must reflect the confirmed alignment brief. If a planned
 stage cannot be justified from `spec.md`, `investigation/explore_context.md`,
-`investigation/rubric.md`, `investigation/review_a.json`, or
-`investigation/alignment_brief.md`, do not include that stage. Raw syllabus
-content should flow into pipeline constraints only through those distilled
-current-run artifacts, not as unstated background.
+`investigation/rubric.md`, `investigation/review_a.json`,
+`investigation/alignment_brief.md`, or explicitly allowed raw `canvas/*.json`
+body evidence, do not include that stage. Raw Canvas content is not hidden
+background when it is listed in the stage brief's allowed reads. Stage briefs
+must explicitly allow relevant `canvas/*.json` reads when Canvas-native details
+matter.
 
 `pipeline_design.md` is the task-level plan for the Main Agent and
 task-orchestrator. It is not handed directly to executor subagents. The
