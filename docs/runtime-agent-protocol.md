@@ -630,12 +630,17 @@ start the project without guessing the user's core direction or project
 skeleton. Simple assignments may need one confirmation. Open-ended assignments
 require as many focused rounds as needed before planning starts.
 
-The first user-facing message is a recon summary: a compact explanation of what
-`spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
+The first user-facing message is a recon summary: a depth-adaptive explanation
+of what `spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
 `investigation/unreachable.txt`, `references/`, `problem.md`, and the
 preliminary output-mode line in `pipeline_design.md` prove. It is not a second
 investigation and not a design proposal; it tells the user which facts are fixed
-by Canvas and which decisions still need alignment.
+by Canvas and which decisions still need alignment. The amount of detail should
+scale with the investigation: a tiny one-source task can be summarized briefly,
+while a multi-source run with content scouts, PDFs/decks, methods guidance,
+timeline/calendar evidence, conflicts, or non-blocking gaps must surface those
+findings in the user-facing summary. Important source bodies should not be
+collapsed into vague phrases such as "supporting context checked."
 
 Before each user question, the Main Agent performs an internal alignment audit:
 

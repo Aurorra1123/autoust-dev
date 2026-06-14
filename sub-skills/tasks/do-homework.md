@@ -89,7 +89,12 @@ must happen at runtime.
 5. Write `investigation/recon_summary.md` as the human-readable entrance to reconnaissance.
    JSON files are machine evidence, not the user-facing completion story. The
    user-facing recon summary must state the source trail, deliverables, missing
-   user decisions, skipped/recovered children, and the next question.
+   user decisions, skipped/recovered children, and the next question. Scale the
+   amount of user-facing detail with reconnaissance depth: a tiny one-source
+   task can have a short summary, but a multi-source run with several scouts,
+   PDFs, timelines, methods guidance, source conflicts, or non-blocking gaps
+   must expand the summary enough that the user can see the important findings
+   without opening audit JSON.
 6. Do not turn "simulate I am the user" into Main-Agent permission to choose the project direction.
    In normal runtime, ask the real user at `[B]`. In development validation,
    use the documented simulated-user bridge or a startup prompt that explicitly
@@ -294,15 +299,35 @@ summarize:
 - user decisions needed at `[B]`.
 
 Also write `investigation/recon_summary.md` before `[B]`. This is the
-human-readable entrance for the user and reviewer. It must be short and must
-include:
+human-readable entrance for the user and reviewer. It must be concise but
+depth-adaptive: summarize lightly when the investigation was light, and expand
+when the investigation read multiple source bodies, dispatched multiple scouts,
+downloaded PDFs/decks, found methods/timeline guidance, or identified conflicts
+and non-blocking gaps. It must include:
 
 - the source trail in plain language;
 - deliverables and grading/rubric status;
 - required child subagents dispatched, skipped, recovered inline, or blocked;
 - whether coverage was re-run after any reviewer `recover`;
+- the concrete high-signal findings from each important source body, not only
+  the file title;
+- source conflicts, timing differences, missing templates, blocked sources, and
+  other non-blocking gaps that may affect alignment;
 - user-owned decisions still needed before planning;
 - the exact next `[B]` question or stop reason.
+
+Depth scaling guidance:
+
+- For a one-source or mechanically obvious assignment, 4-6 lines may be enough.
+- For a non-trivial proposal/research/open-ended task, include separate bullets
+  for main spec, methods/topic guidance, timeline/calendar facts, rubric or
+  policy constraints, and gaps.
+- If a PDF, deck, syllabus, or page was important enough to send to a
+  `content_scout`, the recon summary must surface the source's key actionable
+  findings, such as required sections, method options, timeline, formatting, or
+  policy constraints. Do not collapse it into "supporting context checked."
+- If coverage feedback records downstream gaps, reflect those gaps in
+  `recon_summary.md` and in the chat summary at `[B]`.
 
 Do not make users read `source_candidates.json`, `source_body_audit.json`,
 `source_coverage_feedback.json`, or `review_a.json` to understand run status.
@@ -573,16 +598,27 @@ User-interaction phase #1.
 Read `spec.md` first, then `investigation/explore_context.md`,
 `investigation/recon_summary.md`, `investigation/review_a.json`, `investigation/rubric.md`,
 `investigation/unreachable.txt`, `pipeline_design.md`, and `problem.md`.
-Summarize in 4-6 lines:
+Summarize with depth-adaptive detail. Use 4-6 lines only when the investigation
+was genuinely simple. For non-trivial proposal/research/open-ended work, or any
+run with multiple high-signal source bodies, several content scouts, downloaded
+PDFs/decks, timelines, methods guidance, conflicts, or non-blocking gaps, give
+the user a fuller summary with enough substance to understand the investigation
+without opening the workbench:
 
 - Course + assignment name + due date + points.
 - Source trail and main spec judgment. Example: "assignment page was empty;
   a module item contained the project guidelines PDF."
+- Key findings from each high-signal source body read by content scouts,
+  including methods/topic guidance, timeline/calendar facts, required sections,
+  formatting, and policy constraints when present.
 - Syllabus relevance: constraints found there, or why it did not add
   assignment-specific requirements.
 - Concrete deliverables and tasks.
 - Rubric or grading criteria if found; say "Canvas rubric not found" if only
   spec-based criteria exist.
+- Conflicts and non-blocking gaps from `source_coverage_feedback.json` or
+  `review_a.json`, such as date conflicts, blocked pages, absent rubrics, or
+  sparse slide templates.
 - Output mode from `pipeline_design.md`.
 - The user-decision areas you may need to align before starting, such as group
   ID, partner names, dataset choice, project concept, argument, creative

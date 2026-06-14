@@ -178,3 +178,18 @@ def test_clean_start_proposal_checklist_blocks_self_certified_json_completion():
     assert "Do not turn \"simulate I am the user\" into Main-Agent permission to choose the project direction" in text
     assert "Write `investigation/recon_summary.md` as the human-readable entrance to reconnaissance" in text
     assert "JSON files are machine evidence, not the user-facing completion story" in text
+
+
+def test_recon_summary_scales_with_investigation_depth():
+    policy_text = "\n".join(
+        [
+            read("sub-skills/tasks/do-homework.md"),
+            read("docs/runtime-agent-protocol.md"),
+        ]
+    )
+
+    assert "depth-adaptive" in policy_text
+    assert "Scale the\n   amount of user-facing detail with reconnaissance depth" in policy_text
+    assert "methods/topic guidance, timeline/calendar facts" in policy_text
+    assert "Do not collapse it into \"supporting context checked.\"" in policy_text
+    assert "Important source bodies should not be\ncollapsed into vague phrases" in policy_text
