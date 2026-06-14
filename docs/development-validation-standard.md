@@ -363,6 +363,22 @@ prompts, each limited to one evidence class:
 - verification scout: lightweight current checks that reveal the planning
   surface, only when checks can run without doing the actual task.
 
+For clean-start proposal/research/open-ended homework, the `source/spec scout`
+evidence class is only the umbrella. It is not complete until B has exercised the
+source-body child layers required by the runtime contract:
+
+- `metadata_scout` as a child subagent writes `source_candidates.json` and its
+  receipt;
+- `content_scout` child subagent(s) read the Main-Agent-approved
+  `reading_plan.json` and write source-body fragments plus receipts;
+- `coverage_reviewer` as a child subagent cold-reads candidates, reading plan,
+  body audit, content receipts, references, and unreachable resources.
+
+If one of these children cannot be dispatched or times out, B may continue only
+as a recovery path. Main Agent inline recovery must be recorded as recovery
+evidence, not as a scout receipt, and the validation result is not clean
+child-isolation evidence.
+
 Scout children are runtime children, not informal helper notes. When B
 dispatches a scout, it must record the dispatch in
 `stage_reviews/child_dispatch_ledger.json` with role `explore_scout` and a

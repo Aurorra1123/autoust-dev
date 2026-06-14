@@ -36,6 +36,7 @@ prelaunch_startup_inventory.json
 -> investigation/source_body_audit_fragments/ (if content scouts dispatched)
 -> investigation/source_body_audit.json
 -> investigation/source_coverage_feedback.json
+-> investigation/recon_summary.md
 -> spec.md
 -> investigation/rubric.md
 -> references/
@@ -58,12 +59,42 @@ Actor rules:
 - Subagents do not own user alignment, final `spec.md` judgment, pipeline
   approval, or Canvas submission decisions.
 - The Main Agent reviews `source_candidates.json`, approves
-  `reading_plan.json`, dispatches content scouts, reads scout receipts, and
+  `reading_plan.json`, dispatches `content_scout` Subagents, reads Subagent receipts, and
   merges content-scout fragments into `source_body_audit.json`. The Main Agent
   writes final `spec.md`, `review_a.json`, `explore_context.md`, and
   `pipeline_design.md`.
 - Subagents must not write final `spec.md`, final `review_a.json`,
   `pipeline_design.md`, or user alignment decisions.
+
+## Clean-Start Proposal Runtime Checklist
+
+For clean-start proposal, research, or open-ended homework, read this checklist
+before the longer flow below. It is the shortest contract for the behavior that
+must happen at runtime.
+
+1. Dispatch real child subagents for the three required source Subagent roles:
+   `metadata_scout`, `content_scout`, and `coverage_reviewer`. Each required
+   child needs a real dispatch id in `stage_reviews/child_dispatch_ledger.json`
+   and a receipt path under `investigation/scout_results/`.
+2. STOP before `[B]` unless all three required child subagents have real dispatch ids.
+   Main-Agent source indexing, manual JSON writing, or a summary paragraph is
+   recovery evidence only; it is not a successful child dispatch.
+3. `metadata_scout` writes or returns the payload for
+   `investigation/source_candidates.json`; `content_scout` writes or returns
+   source-body fragment payloads; `coverage_reviewer` reviews after
+   `source_body_audit.json` and content receipts exist.
+4. A `recover` from `coverage_reviewer` is a gate failure until coverage is re-run by a child subagent.
+   The Main Agent may materialize missing artifacts named by the reviewer, but
+   it must not self-certify the final coverage verdict.
+5. Write `investigation/recon_summary.md` as the human-readable entrance to reconnaissance.
+   JSON files are machine evidence, not the user-facing completion story. The
+   user-facing recon summary must state the source trail, deliverables, missing
+   user decisions, skipped/recovered children, and the next question.
+6. Do not turn "simulate I am the user" into Main-Agent permission to choose the project direction.
+   In normal runtime, ask the real user at `[B]`. In development validation,
+   use the documented simulated-user bridge or a startup prompt that explicitly
+   supplies delegated choices. If the assignment direction is open and not
+   delegated, stop at `[B]` instead of writing `alignment_brief.md`.
 
 The two user-interaction phases in this planning workflow are:
 
@@ -148,21 +179,45 @@ Use these rules:
 
 | Situation | Required action |
 |---|---|
-| Canvas modules, linked files, PDFs, external specs, rubric search, or multiple possible sources must be inspected | Dispatch a read-only `source_spec` scout by default. |
+| Canvas modules, linked files, PDFs, external specs, rubric search, or multiple possible sources must be inspected | The Main Agent marks `source_spec` as the source/spec exploration domain. Do not dispatch or accept a `source_spec` Subagent as a completed child; use the concrete Subagent roles below. |
 | Non-trivial source-heavy homework needs broad Canvas/source indexing | Dispatch `metadata_scout` to write `source_candidates.json`. |
-| Required or high-signal candidates need body reading | Dispatch scoped `content_scout` children from `reading_plan.json`. |
-| Proposal/research/open-ended or other multi-source tasks need coverage checking | Dispatch `coverage_reviewer` after content scout receipts exist. |
+| Required or high-signal candidates need body reading | Dispatch `content_scout` Subagents with explicit `scope` values from `reading_plan.json`. |
+| Proposal/research/open-ended or other multi-source tasks need coverage checking | Dispatch `coverage_reviewer` after `content_scout` Subagent receipts exist. |
 | Retained user-visible draft, source code, package files, previous result, or current checks exist and affect planning | Enable only the matching artifact/codebase/process-history/verification scouts. |
 | A scout input does not exist or does not affect planning | Mark that scout `SKIPPED` with a reason in `explore_manifest.json`. |
 | The task is tiny and mechanically obvious, or child dispatch is unavailable/blocked | Main Agent may do inline exploration, but must record `delegation_mode: "inline_fallback"` or `executed_by: "main-agent"` with the concrete reason. |
 
-A read-only scout is a subagent that independently discovers or verifies
-current task facts. It writes a receipt under
+A read-only scout is a Subagent role that independently discovers or verifies
+current task facts for the Main Agent. It writes a receipt under
 `investigation/scout_results/<scout_type>_result.json`. It does not talk to the
 user, write the dispatch ledger, own `spec.md`, or read archive/prior-run
 evidence unless the Main Agent explicitly allowlists a process-history input.
 
-Source/spec exploration uses three bounded scout roles when the task is not
+Main Agent / Subagent naming rules:
+
+- `source_spec` is a Main Agent exploration domain, not a dispatchable Subagent
+  role and not a completed child result. It may appear in legacy manifests only
+  as a domain label; it must not have a successful dispatch id or receipt path.
+- A non-trivial source-heavy run must dispatch real child subagents with
+  `scout_type` values `metadata_scout`, `content_scout`, and
+  `coverage_reviewer`.
+- Main Agent inline recovery must be recorded as recovery evidence, not as a
+  Subagent receipt. If a child Subagent times out or cannot be dispatched, the Main
+  Agent may recover only by writing a process concern and marking the scout as
+  `RECOVERED_INLINE_AFTER_TIMEOUT`, `INLINE_FALLBACK`, or equivalent. Do not
+  call that a successful Subagent dispatch.
+- `content_scout` is the Subagent role. Content subdivisions are `scope` values,
+  not child identities: `spec_content`, `methods_content`, `theme_content`, and
+  `policy_content`. Do not create successful child identities named
+  `spec_content_scout`, `methods_content_scout`, `theme_content_scout`, or
+  `policy_content_scout`; if legacy names appear, normalize them to
+  `scout_type: content_scout` plus the matching `scope`.
+- Main Agent summary is not a Subagent receipt. The Main Agent approves
+  `reading_plan.json`, reads narrowed source bodies after children return,
+  merges fragments into `source_body_audit.json`, writes final `spec.md`,
+  `review_a.json`, `explore_context.md`, and asks the user at `[B]`.
+
+Source/spec exploration uses three bounded Subagent roles when the task is not
 tiny:
 
 - `metadata_scout` indexes assignment, rubric, front page, syllabus, modules,
@@ -172,9 +227,9 @@ tiny:
   `blocked`. It must not mark a source as `precise_match` because it has not
   read source bodies.
 - `content_scout` reads only the candidates assigned in
-  `investigation/reading_plan.json`. Typical scopes are
-  `spec_content_scout`, `methods_content_scout`, `theme_content_scout`, and
-  `policy_content_scout`. Content scouts extract source body evidence, preserve
+  `investigation/reading_plan.json`. Typical `scope` values are
+  `spec_content`, `methods_content`, `theme_content`, and
+  `policy_content`. Content scouts extract source body evidence, preserve
   source-adjacent companion artifacts, and write receipts plus fragments under
   `investigation/source_body_audit_fragments/`. The Main Agent merges content-scout fragments
   into `investigation/source_body_audit.json`; parallel content scouts must not
@@ -184,9 +239,9 @@ tiny:
   `references/`, and `unreachable.txt` to check for missed high-signal sources,
   forbidden reads, metadata-only evidence, and open-ended assignment coverage.
 
-Content scouts narrow the read set; they do not replace Main Agent source reading.
-scout summaries are routing hints, not source evidence. The Main Agent still
-owns final reconnaissance judgment: after reading scout receipts, it must read
+`content_scout` Subagents narrow the read set; they do not replace Main Agent source reading.
+Subagent summaries are routing hints, not source evidence. The Main Agent still
+owns final reconnaissance judgment: after reading Subagent receipts, it must read
 the narrowed source bodies before writing or revising `spec.md`, decide the main
 spec, write or revise `spec.md`, consolidate `investigation/explore_context.md`,
 and run `[B]`.
@@ -224,7 +279,8 @@ If inline fallback is used for a non-tiny task, state in
 #### Explore Context Minimum
 
 Before `[B]`, write `investigation/explore_context.md` for every non-trivial
-run. It must summarize:
+run. This file is the stable downstream context for later agents. It must
+summarize:
 
 - resolved course and assignment;
 - current Canvas/source requirements;
@@ -236,6 +292,21 @@ run. It must summarize:
 - stale or forbidden context that must not be passed to later children;
 - planning risks and verification risks;
 - user decisions needed at `[B]`.
+
+Also write `investigation/recon_summary.md` before `[B]`. This is the
+human-readable entrance for the user and reviewer. It must be short and must
+include:
+
+- the source trail in plain language;
+- deliverables and grading/rubric status;
+- required child subagents dispatched, skipped, recovered inline, or blocked;
+- whether coverage was re-run after any reviewer `recover`;
+- user-owned decisions still needed before planning;
+- the exact next `[B]` question or stop reason.
+
+Do not make users read `source_candidates.json`, `source_body_audit.json`,
+`source_coverage_feedback.json`, or `review_a.json` to understand run status.
+Those JSON files are audit evidence.
 
 Do not pass raw old logs, archive files, prior reviews, or prior pipeline files
 to executor/reviewer children just because a scout inspected them. Only distilled
@@ -303,6 +374,10 @@ data/homework/<COURSE>/<HWID>/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
 │   ├── scout_results/
+│   ├── source_body_audit_fragments/
+│   ├── source_body_audit.json
+│   ├── source_coverage_feedback.json
+│   ├── recon_summary.md
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -336,8 +411,10 @@ All skill file paths resolve as `REPO_ROOT/sub-skills/tools/<name>.md`.
 
 #### [A3] Canvas Generic Reconnaissance - Mandatory
 
-Invoke `tools/assignment-recon.md` as the source/spec workflow. This can be
-supported by a `source_spec` scout, but it must not be replaced by a
+Invoke `tools/assignment-recon.md` as the source/spec workflow. This is a Main
+Agent source/spec exploration domain and may be supported by the concrete
+Subagent roles `metadata_scout`, `content_scout`, and `coverage_reviewer`, but
+it must not be replaced by a
 standalone spec-generation script. The Main Agent must read the current
 evidence, including the narrowed original source bodies or exact source windows
 identified by scouts, judge the main spec, write `spec.md`, and keep review
@@ -387,7 +464,7 @@ Follow the Canvas Generic stages:
    Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`,
    `investigation/unreachable.txt`, `investigation/source_candidates.json`,
    `investigation/reading_plan.json`, `investigation/source_body_audit.json`,
-   `investigation/source_coverage_feedback.json`, and content scout receipts.
+   `investigation/source_coverage_feedback.json`, and `content_scout` Subagent receipts.
    Prefer a separate reviewer/sub-agent when available. Write strict JSON to
    `investigation/review_a.json`.
 
@@ -406,6 +483,7 @@ investigation/reading_plan.json
 investigation/source_body_audit_fragments/  # if content scouts dispatched
 investigation/source_body_audit.json
 investigation/source_coverage_feedback.json
+investigation/recon_summary.md
 canvas/assignment.json
 canvas/syllabus.json
 canvas/page-*.json               # if present and relevant
@@ -423,9 +501,19 @@ Do not proceed to `[B]` until:
 - Non-trivial runs have `explore_context.md`, or a recorded inline-fallback
   reason.
 - Every dispatched scout has a ledger row and a receipt path.
+- Clean-start proposal/research/open-ended source-heavy runs have real
+  dispatch ids for `metadata_scout`, `content_scout`, and
+  `coverage_reviewer`; if any role was done by the Main Agent, record a recovery
+  concern and do not call the run clean child-isolation evidence.
 - Non-trivial source-heavy runs have `source_candidates.json`,
   `reading_plan.json`, `source_body_audit.json`, and
   `source_coverage_feedback.json`, or a recorded inline fallback reason.
+- If `coverage_reviewer` returned `recover`, the missing artifacts were
+  materialized and a child `coverage_reviewer` was re-run to `proceed`; Main
+  Agent reconvergence cannot upgrade reviewer `recover` to final coverage
+  success by itself.
+- `investigation/recon_summary.md` exists and gives a user-readable status plus
+  the next `[B]` question or stop reason.
 - The reconvergence gate has checked terminal reconnaissance artifacts:
   `source_coverage_feedback.json` alone is insufficient, and missing `spec.md`,
   `investigation/rubric.md`, or `investigation/review_a.json` must write a
@@ -483,7 +571,7 @@ section pointers, treat the reconnaissance as incomplete.
 User-interaction phase #1.
 
 Read `spec.md` first, then `investigation/explore_context.md`,
-`investigation/review_a.json`, `investigation/rubric.md`,
+`investigation/recon_summary.md`, `investigation/review_a.json`, `investigation/rubric.md`,
 `investigation/unreachable.txt`, `pipeline_design.md`, and `problem.md`.
 Summarize in 4-6 lines:
 
@@ -512,6 +600,18 @@ to the user before planning.
 Even when `review_a.json.verdict == "proceed"`, this checkpoint is mandatory.
 `proceed` means the Canvas materials are sufficient to understand the assignment
 surface. It does not mean the user's intended direction is aligned.
+
+Runtime/user boundary:
+
+- In normal `do-homework` runtime, the Main Agent asks the real user at `[B]`.
+- In development validation, only `SIMULATED_USER_ANSWER_B_ROUND_<N>`,
+  `SIMULATED_USER_ALIGNMENT_CONFIRMATION`, or explicit startup-prompt
+  supplements count as simulated user input.
+- A request phrased as "simulate I am the user" means exercise the runtime path;
+  it does not let the Main Agent invent the user's topic choice, research
+  question, group facts, approval, or alignment confirmation.
+- If no valid user or simulated-user answer exists for an open assignment
+  direction, stop after the recon summary and ask the `[B]` question.
 
 The goal of `[B]` is not to classify the assignment into rigid "simple" or
 "open" categories. The Main Agent must keep asking only while the current

@@ -141,13 +141,28 @@ evidence.
 
 The explore stage is universal. The coordinator may perform a tiny exploration
 inline for a trivial request, but for non-trivial homework work it dispatches
-focused read-only explorer/scout subagents with curated context. Available scout
-capabilities are:
+focused read-only explorer/scout subagents with curated context.
 
-- source/spec scout: discover or refresh Canvas assignment facts, rubrics,
-  linked docs, references, and required deliverables. For non-trivial homework
-  reconnaissance, split this broad role into `metadata_scout`,
-  `content_scout`, and `coverage_reviewer`;
+Main Agent / Subagent taxonomy is explicit:
+
+- Main Agent exploration domains decide which broad surfaces matter:
+  `source_spec`, artifact, codebase, process history, and verification.
+- `source_spec` is a Main Agent exploration domain, not a dispatchable Subagent
+  role and not one completed child result.
+- Non-trivial source-heavy homework expands the `source_spec` domain into three
+  dispatchable Subagent roles: `metadata_scout`, `content_scout`, and
+  `coverage_reviewer`.
+- `content_scout` subdivisions are `scope` values, not child identities. Use
+  `scope: spec_content`, `methods_content`, `theme_content`, or
+  `policy_content` on a child whose `scout_type` is `content_scout`.
+
+Available Main Agent domains and dispatchable Subagent roles are:
+
+- source/spec exploration domain: the Main Agent owns source/spec
+  reconnaissance, final main-source judgment, `spec.md`, and user-facing
+  alignment. For non-trivial homework reconnaissance, this domain dispatches
+  Subagent roles `metadata_scout`, `content_scout`, and `coverage_reviewer`.
+  It must not dispatch or accept a successful child named `source_spec`;
 - metadata_scout: index assignment, rubric, front page, syllabus, every module
   item, pages, file metadata, assignment files, and external URLs, then write
   `investigation/source_candidates.json` without making final source-body
@@ -173,10 +188,15 @@ capabilities are:
 - verification scout: run or inspect lightweight current checks needed to
   understand the planning surface before execution.
 
-When a scout is dispatched as a child subagent, it is part of the same runtime
+When a source-reading Subagent is dispatched, it is part of the same runtime
 child evidence chain as executor and reviewer children. The coordinator records
-the scout dispatch in `stage_reviews/child_dispatch_ledger.json` with role
-`explore_scout`, scout type, prompt/brief path, receipt path, and timestamps.
+the dispatch in `stage_reviews/child_dispatch_ledger.json` with
+`role: explore_scout`, `scout_type`, optional `scope`, prompt/brief path,
+receipt path, and timestamps.
+For proposal/research/open-ended source-heavy work, the coordinator must
+dispatch real child subagents for `metadata_scout`, `content_scout`, and
+`coverage_reviewer` when the runtime can spawn children. Main Agent inline
+recovery must be recorded as recovery evidence, not as a Subagent receipt.
 Scout receipts are written under:
 
 ```text

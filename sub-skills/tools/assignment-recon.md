@@ -315,9 +315,9 @@ required | high_signal | supporting | low_signal | forbidden | blocked
 
 `reading_plan.json` is the bounded plan approved by the Main Agent before
 content scouts read bodies. It assigns `required` and `high_signal` candidates,
-plus selected `supporting` candidates, to scoped `content_scout` children such
-as `spec_content_scout`, `methods_content_scout`, `theme_content_scout`, or
-`policy_content_scout`.
+plus selected `supporting` candidates, to `content_scout` children with explicit
+`scope` values such as `spec_content`, `methods_content`, `theme_content`, or
+`policy_content`. These scope values are not separate Subagent roles.
 
 Content scouts narrow the read set; they do not replace Main Agent source reading.
 Their job is to identify the relevant source files, raw `canvas/*.json` bodies,
@@ -436,6 +436,23 @@ After Stage 3, revise `spec.md` if fetched materials changed the main spec
 judgment, deliverables, rubric summary, or gaps.
 
 ## Stage 4 - review investigation
+
+For proposal/research/open-ended assignments, run the coverage-review layer
+before the final investigation review:
+
+- `coverage_reviewer` is a real child subagent when child dispatch is available.
+  It cold-reads `source_candidates.json`, `reading_plan.json`,
+  `source_body_audit.json`, `content_scout` Subagent receipts,
+  `source_body_audit_fragments/`, `references/`, and `unreachable.txt`.
+- The coverage reviewer writes
+  `investigation/scout_results/coverage_reviewer_result.json` or an equivalent
+  receipt named in `explore_manifest.json`, plus
+  `investigation/source_coverage_feedback.json`.
+- If the Main Agent must recover inline because the child cannot be dispatched or
+  times out, record that as process recovery. Main Agent inline recovery must be
+  recorded as recovery evidence, not as a Subagent receipt.
+- The final `review_a.json` reviewer may use coverage feedback, but it does not
+  replace the coverage reviewer gate for proposal/research/open-ended work.
 
 Run a cold review of the investigation. Prefer a separate reviewer/sub-agent
 when the runtime supports it; otherwise reread the workbench from scratch and

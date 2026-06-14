@@ -50,10 +50,10 @@ def test_do_homework_stage_four_reviews_source_audit_inputs():
     assert "reading_plan.json" in stage_four
     assert "source_body_audit.json" in stage_four
     assert "source_coverage_feedback.json" in stage_four
-    assert "content scout receipts" in stage_four
+    assert "`content_scout` Subagent receipts" in stage_four
 
 
-def test_runtime_protocol_splits_source_spec_scout_roles():
+def test_runtime_protocol_splits_source_spec_domain_into_subagent_roles():
     text = read("docs/runtime-agent-protocol.md")
 
     assert "metadata_scout" in text
@@ -146,3 +146,35 @@ def test_acceptance_scenario_fails_on_main_agent_manual_rescue_or_missing_termin
     assert "Missing terminal reconnaissance artifacts are a failed acceptance run" in design_text
     assert "source_coverage_feedback.json alone is insufficient" in design_text
     assert "filesystem receipts without transcript evidence are recovery evidence, not clean child-isolation validation" in design_text
+
+
+def test_source_scout_taxonomy_requires_real_child_dispatch_not_simulated_scouts():
+    policy_text = "\n".join(
+        [
+            read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tools/assignment-recon.md"),
+            read("docs/runtime-agent-protocol.md"),
+            read("docs/development-validation-standard.md"),
+        ]
+    )
+
+    assert "`source_spec` is a Main Agent exploration domain, not a dispatchable Subagent" in policy_text
+    assert "must dispatch real child subagents with" in policy_text
+    assert "`scout_type` values `metadata_scout`, `content_scout`" in policy_text
+    assert "`coverage_reviewer`" in policy_text
+    assert "Main Agent inline recovery must be recorded as recovery evidence" in policy_text
+    assert "not as a\n  Subagent receipt" in policy_text
+    assert "`content_scout` is the Subagent role" in policy_text
+    assert "Content subdivisions are `scope` values" in policy_text
+    assert "Do not create successful child identities named" in policy_text
+
+
+def test_clean_start_proposal_checklist_blocks_self_certified_json_completion():
+    text = read("sub-skills/tasks/do-homework.md")
+
+    assert "Clean-Start Proposal Runtime Checklist" in text
+    assert "STOP before `[B]` unless all three required child subagents have real dispatch ids" in text
+    assert "A `recover` from `coverage_reviewer` is a gate failure until coverage is re-run by a child subagent" in text
+    assert "Do not turn \"simulate I am the user\" into Main-Agent permission to choose the project direction" in text
+    assert "Write `investigation/recon_summary.md` as the human-readable entrance to reconnaissance" in text
+    assert "JSON files are machine evidence, not the user-facing completion story" in text
