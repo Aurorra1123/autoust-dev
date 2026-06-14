@@ -4,7 +4,7 @@
 
 **Goal:** Strengthen homework reconnaissance so candidate source discovery, body reading, subagent responsibilities, reference organization, and real UCUG1808 validation are explicit and test-protected.
 
-**Architecture:** Add policy tests first, then update the runtime documents that drive `do-homework`: `assignment-recon.md`, `do-homework.md`, `runtime-agent-protocol.md`, and `PITFALLS.md`. The design keeps the Main Agent as coordinator/final judge, moves broad source body reading to content scouts, stores per-scout body evidence fragments, and has the Main Agent merge them into `investigation/source_body_audit.json`.
+**Architecture:** Add policy tests first, then update the runtime documents that drive `do-homework`: `assignment-recon.md`, `do-homework.md`, `runtime-agent-protocol.md`, and `PITFALLS.md`. The design keeps the Main Agent as coordinator/final judge, moves broad source body reading to content scouts, stores full source/body evidence in an appendix, and exposes only `reading_plan.compact.json` plus `source_findings.compact.md` as the normal parent interface before the Main Agent writes `review_a.json`.
 
 **Tech Stack:** Markdown runtime docs, pytest policy tests, Canvas workbench files under `data/homework/...`.
 
@@ -15,7 +15,7 @@
 - Create `tests/test_source_body_audit_policy.py`: policy assertions for source candidate ranking, source body audit, scout boundaries, long-document reading, reference organization, and UCUG1808 acceptance.
 - Modify `sub-skills/tools/assignment-recon.md`: workbench contract, Stage 3 body audit, content scout templates, reference organization, Stage 4 review fields, quality bar.
 - Modify `sub-skills/tasks/do-homework.md`: artifact chain, Main Agent/subagent boundary, scout dispatch rules, pre-alignment gates, UCUG1808 acceptance note.
-- Modify `docs/runtime-agent-protocol.md`: source/spec scout split into metadata/content/coverage roles and reference layout.
+- Modify `docs/runtime-agent-protocol.md`: source/spec scout split into metadata/content roles and reference layout.
 - Modify `docs/PITFALLS.md`: generic UCUG1808-style pitfall for proposal/research assignments.
 - Optionally modify `skill.md`: short source-of-truth chain update if needed after the detailed docs are stable.
 
@@ -42,12 +42,12 @@ def read(path: str) -> str:
 def test_assignment_recon_requires_source_body_audit_and_read_modes():
     text = read("sub-skills/tools/assignment-recon.md")
 
-    assert "source_body_audit.json" in text
-    assert "source_body_audit_fragments/" in text
-    assert "Main Agent merges" in text
-    assert "source_candidates.json" in text
-    assert "reading_plan.json" in text
-    assert "source_coverage_feedback.json" in text
+    assert "source_findings.compact.md" in text
+    assert "body_evidence_fragments/" in text
+    assert "source_findings.compact.md" in text
+    assert "source_index.json" in text
+    assert "reading_plan.compact.json" in text
+    assert "source_findings.compact.md" in text
     assert "metadata_only" in text
     assert "pdf_text_plus_links" in text
     assert "keyword windows" in text
@@ -60,13 +60,13 @@ def test_do_homework_defines_main_agent_and_scout_boundaries():
 
     assert "metadata_scout" in text
     assert "content_scout" in text
-    assert "coverage_reviewer" in text
-    assert "The Main Agent reviews `source_candidates.json`" in text
+    assert "parent self-check" in text
+    assert "The Main Agent approves `reading_plan.compact.json`" in text
     assert "Subagents must not write final `spec.md`" in text
     assert "proposal/research/open-ended" in text
-    assert "source_body_audit_fragments/" in text
-    assert "Main Agent merges content-scout fragments" in text
-    assert "source_coverage_feedback.json`, or a recorded inline" in text
+    assert "body_evidence_fragments/" in text
+    assert "The Main Agent must not normally read full appendix artifacts" in text
+    assert "source_findings.compact.md`, or a recorded inline" in text
     assert "supporting topic context" in text
     assert "reading budget" in text
 
@@ -77,10 +77,9 @@ def test_do_homework_stage_four_reviews_source_audit_inputs():
     stage_four = text.split("4. **Stage 4 review investigation**", 1)[1]
     stage_four = stage_four.split("5. **Stage 5 classify-output**", 1)[0]
 
-    assert "source_candidates.json" in stage_four
-    assert "reading_plan.json" in stage_four
-    assert "source_body_audit.json" in stage_four
-    assert "source_coverage_feedback.json" in stage_four
+    assert "reading_plan.compact.json" in stage_four
+    assert "source_findings.compact.md" in stage_four
+    assert "source_findings.compact.md" in stage_four
     assert "content scout receipts" in stage_four
 
 
@@ -89,9 +88,9 @@ def test_runtime_protocol_splits_source_spec_scout_roles():
 
     assert "metadata_scout" in text
     assert "content_scout" in text
-    assert "coverage_reviewer" in text
-    assert "source_body_audit.json" in text
-    assert "source_body_audit_fragments/" in text
+    assert "parent self-check" in text
+    assert "source_findings.compact.md" in text
+    assert "body_evidence_fragments/" in text
     assert "Main Agent remains the final reconnaissance judge" in text
     assert "references/syllabus/" not in text
 
@@ -101,7 +100,7 @@ def test_pitfalls_record_generic_proposal_methods_failure_mode():
 
     assert "proposal framework is not complete reconnaissance" in text
     assert "methods/topic-selection" in text
-    assert "source_body_audit.json" in text
+    assert "source_findings.compact.md" in text
 
 
 def test_source_body_policy_keeps_ucug1808_only_in_acceptance_context():
@@ -140,16 +139,17 @@ Expected: failures because the runtime docs do not yet mention the new audit con
 Update the workbench structure so `investigation/` includes:
 
 ```text
-│   ├── source_candidates.json
-│   ├── reading_plan.json
-│   ├── source_body_audit_fragments/
-│   ├── source_body_audit.json
-│   ├── source_coverage_feedback.json
+│   ├── reading_plan.compact.json
+│   ├── source_findings.compact.md
+│   ├── _appendix/
+│   │   ├── source_index.json
+│   │   ├── body_evidence_fragments/
+│   │   └── scout_receipts/
 ```
 
 - [ ] **Step 2: Add Stage 3 source body audit rules**
 
-Add a Stage 3 subsection requiring candidate ranking, bounded `reading_plan.json`, per-content-scout `source_body_audit_fragments/`, merged `source_body_audit.json`, `read_mode`, evidence windows, and these classifications:
+Add a Stage 3 subsection requiring candidate ranking, bounded `reading_plan.compact.json`, per-content-scout `_appendix/body_evidence_fragments/`, parent-readable `source_findings.compact.md`, `read_mode`, evidence windows, and these classifications:
 
 ```text
 required | high_signal | supporting | low_signal | forbidden | blocked
@@ -168,9 +168,11 @@ Add review fields:
 
 ```json
 {
-  "source_body_audit_checked": true,
-  "source_candidates_complete": true,
-  "unread_source_candidates": [],
+  "compact_reading_plan_approved": true,
+  "source_findings_checked": true,
+  "required_high_signal_body_evidence_checked": true,
+  "parent_self_check_complete": true,
+  "unread_required_or_high_signal_sources": [],
   "open_ended_coverage": {
     "assignment_spec_body_read": true,
     "methods_or_topic_guidance_body_read": true,
@@ -200,10 +202,10 @@ Expected: PASS.
 Add:
 
 ```text
--> investigation/source_candidates.json
--> investigation/reading_plan.json
--> investigation/source_body_audit.json
--> investigation/source_coverage_feedback.json
+-> investigation/_appendix/source_index.json
+-> investigation/reading_plan.compact.json
+-> investigation/_appendix/body_evidence_fragments/
+-> investigation/source_findings.compact.md
 ```
 
 - [ ] **Step 2: Define Main Agent and child scout boundaries**
@@ -211,8 +213,9 @@ Add:
 Document:
 
 ```text
-The Main Agent reviews `source_candidates.json`, approves `reading_plan.json`,
-dispatches content scouts, reads content receipts, and writes final `spec.md`.
+The Main Agent approves `reading_plan.compact.json`, dispatches content scouts,
+reads `source_findings.compact.md` and exact parent source windows, runs the
+parent self-check, and writes final `spec.md`.
 Subagents must not write final `spec.md`, `review_a.json`, `pipeline_design.md`,
 or user alignment decisions.
 ```
@@ -224,12 +227,12 @@ Document when to use:
 ```text
 metadata_scout: non-trivial source-heavy homework; full Canvas/source indexing.
 content_scout: required/high_signal body reading or selected supporting context.
-coverage_reviewer: proposal/research/open-ended tasks and other non-trivial multi-source runs.
+parent self-check: proposal/research/open-ended tasks and other non-trivial multi-source runs.
 ```
 
 - [ ] **Step 4: Add open-ended gate**
 
-Require proposal/research/open-ended runs to have assignment/spec body evidence plus methods/topic-selection coverage before `review_a.verdict: proceed`.
+Require proposal/research/open-ended runs to have assignment/spec body evidence plus methods/topic-selection evidence before `review_a.verdict: proceed`.
 
 - [ ] **Step 5: Run focused tests**
 
@@ -255,7 +258,7 @@ Replace the single broad source/spec scout description with a split model:
 ```text
 metadata_scout
 content_scout
-coverage_reviewer
+parent self-check
 ```
 
 Include the line:
@@ -266,7 +269,7 @@ Main Agent remains the final reconnaissance judge.
 
 - [ ] **Step 2: Update runtime workbench contract**
 
-Add `source_candidates.json`, `reading_plan.json`, `source_body_audit_fragments/`, `source_body_audit.json`, and organized `references/` guidance. Keep Canvas-native bodies canonical under `canvas/*.json`; any readable syllabus/page export is an optional derived convenience copy, not an evidence gate.
+Add `_appendix/source_index.json`, `reading_plan.compact.json`, `_appendix/body_evidence_fragments/`, `source_findings.compact.md`, and organized `references/` guidance. Keep Canvas-native bodies canonical under `canvas/*.json`; any readable syllabus/page export is an optional derived convenience copy, not an evidence gate.
 
 - [ ] **Step 3: Add a generic pitfall**
 
@@ -276,7 +279,7 @@ Add a pitfall section titled:
 proposal framework is not complete reconnaissance
 ```
 
-Explain that proposal/research assignments require methods/topic-selection and course-topic coverage when available.
+Explain that proposal/research assignments require methods/topic-selection and course-topic evidence when available.
 
 - [ ] **Step 4: Run focused tests**
 
@@ -326,7 +329,7 @@ Before deletion, verify no user-visible draft is needed for this test. Then arch
 
 - [ ] **Step 2: Dispatch a child agent for a reconnaissance-only do-homework run**
 
-Prompt the child to run `do-homework` for UCUG1808 Project Proposal through reconnaissance only. It must stop before draft production and report child scout dispatches, receipts, and coverage verdict.
+Prompt the child to run `do-homework` for UCUG1808 Project Proposal through reconnaissance only. It must stop before draft production and report child scout dispatches, receipts, and the parent self-check verdict.
 
 - [ ] **Step 3: Verify acceptance criteria**
 
@@ -336,9 +339,9 @@ Check:
 metadata_scout indexed all modules and module items
 content_scout read direct proposal/final-project files
 content_scout read Week 8 research-methods source
-coverage_reviewer blocked proceed if methods/topic-selection coverage was absent
-source_body_audit.json exists and contains read modes/evidence windows
-source_body_audit_fragments/ exists when content scouts ran
+parent self-check blocked proceed if methods/topic-selection evidence was absent
+source_findings.compact.md exists and contains task-relevant findings with exact pointers
+_appendix/body_evidence_fragments/ exists when content scouts ran
 prior submitted artifacts stayed forbidden and unread
 reading cost stayed bounded
 ```

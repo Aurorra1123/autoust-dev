@@ -31,11 +31,8 @@ prelaunch_startup_inventory.json
 -> investigation/explore_manifest.json
 -> investigation/scout_results/ (if scouts dispatched)
 -> investigation/explore_context.md
--> investigation/source_candidates.json
--> investigation/reading_plan.json
--> investigation/source_body_audit_fragments/ (if content scouts dispatched)
--> investigation/source_body_audit.json
--> investigation/source_coverage_feedback.json
+-> investigation/reading_plan.compact.json
+-> investigation/source_findings.compact.md
 -> investigation/recon_summary.md
 -> spec.md
 -> investigation/rubric.md
@@ -48,6 +45,15 @@ prelaunch_startup_inventory.json
 -> result.json
 ```
 
+Compatibility aliases may exist during migration, but they are not the normal
+parent interface: `investigation/source_candidates.json`,
+`investigation/reading_plan.json`, `investigation/source_body_audit_fragments/`,
+and `investigation/source_body_audit.json`.
+
+Appendix evidence such as `investigation/_appendix/source_index.json` and
+`investigation/_appendix/body_evidence_fragments/` is audit/recovery evidence,
+not the normal parent read interface.
+
 Actor rules:
 
 - The Main Agent owns the task lifecycle and is the only actor that talks to the
@@ -58,13 +64,30 @@ Actor rules:
   subagents belong to `task-orchestrator.md`, not `do-homework.md`.
 - Subagents do not own user alignment, final `spec.md` judgment, pipeline
   approval, or Canvas submission decisions.
-- The Main Agent reviews `source_candidates.json`, approves
-  `reading_plan.json`, dispatches `content_scout` Subagents, reads Subagent receipts, and
-  merges content-scout fragments into `source_body_audit.json`. The Main Agent
-  writes final `spec.md`, `review_a.json`, `explore_context.md`, and
-  `pipeline_design.md`.
+- The Main Agent approves `reading_plan.compact.json`, dispatches
+  `content_scout` Subagents, reads compact source findings, runs the parent
+  self-check, and writes final
+  `spec.md`, `review_a.json`, `explore_context.md`, and `pipeline_design.md`.
 - Subagents must not write final `spec.md`, final `review_a.json`,
   `pipeline_design.md`, or user alignment decisions.
+
+Hybrid Gate Report rule:
+
+- The Main Agent must fully read the syllabus body and any direct-spec strong
+  match source body. A direct-spec strong match satisfies at least two of: task
+  terms in the source name/title, assignment-linked or `required` source
+  placement, and opening-body evidence of deliverable, format, deadline,
+  sections, submission, grading, or prompt.
+- Supporting sources are delegated to content scouts. The Main Agent reads
+  `source_findings.compact.md` to learn which PDFs, Canvas pages, or external
+  sources contained task-relevant information and where that information came
+  from. The Main Agent must not
+  normally read full appendix artifacts such as `source_index.json`, body
+  fragments, full source-review artifacts, or scout receipts. It reads
+  `reading_plan.compact.json`, `source_findings.compact.md`,
+  `recon_summary.md`, terminal artifacts, and at most the exact windows listed
+  in `parent_source_read_requests`.
+- The Main Agent must not normally read full appendix artifacts.
 
 ## Clean-Start Proposal Runtime Checklist
 
@@ -72,26 +95,28 @@ For clean-start proposal, research, or open-ended homework, read this checklist
 before the longer flow below. It is the shortest contract for the behavior that
 must happen at runtime.
 
-1. Dispatch real child subagents for the three required source Subagent roles:
-   `metadata_scout`, `content_scout`, and `coverage_reviewer`. Each required
-   child needs a real dispatch id in `stage_reviews/child_dispatch_ledger.json`
-   and a receipt path under `investigation/scout_results/`.
+1. Dispatch real child subagents for the two required source Subagent roles:
+   `metadata_scout` and `content_scout`. Each required child needs a real
+   dispatch id in `stage_reviews/child_dispatch_ledger.json` and a receipt path
+   under `investigation/scout_results/`.
 2. Treat these source roles as strict sequential gates, not parallel phases:
-   `metadata_scout -> reading_plan.json -> content_scout -> source_body_audit.json -> coverage_reviewer`.
+   `metadata_scout -> reading_plan.compact.json -> content_scout -> source_findings.compact.md`.
    Do not dispatch `content_scout` until `metadata_scout` has produced
-   `source_candidates.json` and the Main Agent has approved
-   `reading_plan.json`. Do not dispatch `coverage_reviewer` until all required
-   `content_scout` receipts and the merged `source_body_audit.json` exist.
-3. STOP before `[B]` unless all three required child subagents have real dispatch ids.
+   source index evidence and the Main Agent has approved
+   `reading_plan.compact.json`.
+3. STOP before `[B]` unless metadata and content child evidence exists.
    Main-Agent source indexing, manual JSON writing, or a summary paragraph is
    recovery evidence only; it is not a successful child dispatch.
 4. `metadata_scout` writes or returns the payload for
-   `investigation/source_candidates.json`; `content_scout` writes or returns
-   source-body fragment payloads; `coverage_reviewer` reviews after
-   `source_body_audit.json` and content receipts exist.
-5. A `recover` from `coverage_reviewer` is a gate failure until coverage is re-run by a child subagent.
-   The Main Agent may materialize missing artifacts named by the reviewer, but
-   it must not self-certify the final coverage verdict.
+   `investigation/_appendix/source_index.json` and
+   `investigation/reading_plan.compact.json`; `content_scout` writes or returns
+   appendix body fragments and the parent-readable
+   `investigation/source_findings.compact.md`.
+5. The Main Agent self-checks `reading_plan.compact.json`,
+   `source_findings.compact.md`, syllabus, direct-spec strong matches, and any
+   requested parent source windows. It records the verdict in
+   `investigation/review_a.json` and the user-readable outcome in
+   `investigation/recon_summary.md`.
 6. Write `investigation/recon_summary.md` as the human-readable entrance to reconnaissance.
    JSON files are machine evidence, not the user-facing completion story. The
    user-facing recon summary must state the source trail, deliverables, missing
@@ -191,19 +216,16 @@ Use these rules:
 | Situation | Required action |
 |---|---|
 | Canvas modules, linked files, PDFs, external specs, rubric search, or multiple possible sources must be inspected | The Main Agent marks `source_spec` as the source/spec exploration domain. Do not dispatch or accept a `source_spec` Subagent as a completed child; use the concrete Subagent roles below. |
-| Non-trivial source-heavy homework needs broad Canvas/source indexing | Dispatch `metadata_scout` to write `source_candidates.json`. |
-| Required or high-signal candidates need body reading | Dispatch `content_scout` Subagents with explicit `scope` values from `reading_plan.json`. |
-| Proposal/research/open-ended or other multi-source tasks need coverage checking | Dispatch `coverage_reviewer` after `content_scout` Subagent receipts exist. |
+| Non-trivial source-heavy homework needs broad Canvas/source indexing | Dispatch `metadata_scout` to write `investigation/_appendix/source_index.json` and `reading_plan.compact.json`; legacy `source_candidates.json` may remain as a compatibility alias. |
+| Required or high-signal candidates need body reading | Dispatch `content_scout` Subagents with explicit `scope` values from `reading_plan.compact.json`. |
 | Retained user-visible draft, source code, package files, previous result, or current checks exist and affect planning | Enable only the matching artifact/codebase/process-history/verification scouts. |
 | A scout input does not exist or does not affect planning | Mark that scout `SKIPPED` with a reason in `explore_manifest.json`. |
 | The task is tiny and mechanically obvious, or child dispatch is unavailable/blocked | Main Agent may do inline exploration, but must record `delegation_mode: "inline_fallback"` or `executed_by: "main-agent"` with the concrete reason. |
 
 Source-reading scouts have strict sequential gates, not parallel phases. Do not
 dispatch `content_scout` until `metadata_scout` has produced
-`source_candidates.json` and the Main Agent has written or approved
-`reading_plan.json`. Do not dispatch `coverage_reviewer` until all required
-`content_scout` receipts, source-body fragments, and the merged
-`source_body_audit.json` exist. Parallelism is allowed inside the
+source index evidence and the Main Agent has written or approved
+`reading_plan.compact.json`. Parallelism is allowed inside the
 `content_scout` layer only after the reading plan assigns disjoint scopes.
 
 A read-only scout is a Subagent role that independently discovers or verifies
@@ -218,8 +240,7 @@ Main Agent / Subagent naming rules:
   role and not a completed child result. It may appear in legacy manifests only
   as a domain label; it must not have a successful dispatch id or receipt path.
 - A non-trivial source-heavy run must dispatch real child subagents with
-  `scout_type` values `metadata_scout`, `content_scout`, and
-  `coverage_reviewer`.
+  `scout_type` values `metadata_scout` and `content_scout`.
 - Main Agent inline recovery must be recorded as recovery evidence, not as a
   Subagent receipt. If a child Subagent times out or cannot be dispatched, the Main
   Agent may recover only by writing a process concern and marking the scout as
@@ -232,8 +253,8 @@ Main Agent / Subagent naming rules:
   `policy_content_scout`; if legacy names appear, normalize them to
   `scout_type: content_scout` plus the matching `scope`.
 - Main Agent summary is not a Subagent receipt. The Main Agent approves
-  `reading_plan.json`, reads narrowed source bodies after children return,
-  merges fragments into `source_body_audit.json`, writes final `spec.md`,
+  `reading_plan.compact.json`, fully reads syllabus and direct-spec strong
+  matches, reads `source_findings.compact.md`, writes final `spec.md`,
   `review_a.json`, `explore_context.md`, and asks the user at `[B]`.
 
 Source/spec exploration uses three bounded Subagent roles when the task is not
@@ -241,40 +262,41 @@ tiny:
 
 - `metadata_scout` indexes assignment, rubric, front page, syllabus, modules,
   every module item, pages, file metadata, assignment files, and external URLs.
-  It writes `investigation/source_candidates.json` and may rank candidates as
-  `required`, `high_signal`, `supporting`, `low_signal`, `forbidden`, or
-  `blocked`. It must not mark a source as `precise_match` because it has not
-  read source bodies.
+  It writes `investigation/_appendix/source_index.json` and
+  `investigation/reading_plan.compact.json`; legacy
+  `investigation/source_candidates.json` and `investigation/reading_plan.json`
+  may remain as compatibility aliases. It may rank candidates as `required`,
+  `high_signal`, `supporting`, `low_signal`, `forbidden`, or `blocked`. It must
+  not mark a source as `precise_match` because it has not read source bodies.
 - `content_scout` reads only the candidates assigned in
-  `investigation/reading_plan.json`. Typical `scope` values are
+  `investigation/reading_plan.compact.json`. Typical `scope` values are
   `spec_content`, `methods_content`, `theme_content`, and
   `policy_content`. Content scouts extract source body evidence, preserve
   source-adjacent companion artifacts, and write receipts plus fragments under
-  `investigation/source_body_audit_fragments/`. The Main Agent merges content-scout fragments
-  into `investigation/source_body_audit.json`; parallel content scouts must not
-  write the shared merged audit file directly.
-- `coverage_reviewer` cold-reads `source_candidates.json`,
-  `reading_plan.json`, `source_body_audit.json`, content receipts,
-  `references/`, and `unreachable.txt` to check for missed high-signal sources,
-  forbidden reads, metadata-only evidence, and open-ended assignment coverage.
+  `investigation/_appendix/body_evidence_fragments/`. They also write compact
+  findings to `investigation/source_findings.compact.md`. Legacy
+  `investigation/source_body_audit_fragments/`,
+  `investigation/source_body_audit.json` may remain as compatibility aliases.
 
-`content_scout` Subagents narrow the read set; they do not replace Main Agent source reading.
-Subagent summaries are routing hints, not source evidence. The Main Agent still
-owns final reconnaissance judgment: after reading Subagent receipts, it must read
-the narrowed source bodies before writing or revising `spec.md`, decide the main
-spec, write or revise `spec.md`, consolidate `investigation/explore_context.md`,
-and run `[B]`.
+Content scouts narrow the read set; they do not require the Main Agent to reread
+every narrowed source body. Scout summaries are routing hints, not source
+evidence, so supporting sources are delegated to content scouts with exact
+pointers and compact claims. The Main Agent still owns final reconnaissance
+judgment: it reads syllabus, direct-spec strong matches,
+`source_findings.compact.md`, and only the source windows named in
+`parent_source_read_requests` before writing or revising `spec.md`,
+consolidating `investigation/explore_context.md`, and running `[B]`.
 
-Before returning from reconnaissance, run a reconvergence gate. coverage
-feedback is not a terminal reconnaissance verdict: `source_coverage_feedback.json`
-may say the source set is covered, but the Main Agent still must write or verify
-`spec.md`, `investigation/rubric.md`, and `investigation/review_a.json`. If
-`source_body_audit.json` or `source_coverage_feedback.json` exists but any
-terminal reconnaissance artifact is missing, the coordinator must not silently
-stop or proceed to `[B]`; it must write a recover/blocking `review_a.json` or
-`stage_reviews/process_concerns.jsonl` entry that names the missing
-`spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` artifact
-and the next recovery action.
+Before returning from reconnaissance, run a parent self-check. Scout output is
+not a terminal reconnaissance verdict: `source_findings.compact.md` gives the
+Main Agent the source findings, but the Main Agent still must write or verify
+`spec.md`, `investigation/rubric.md`, `investigation/review_a.json`, and
+`investigation/recon_summary.md`. If source-body evidence exists but
+any terminal reconnaissance artifact is missing, the coordinator must not
+silently stop or proceed to `[B]`; it must write a recover/blocking
+`review_a.json` or `stage_reviews/process_concerns.jsonl` entry that names the
+missing `spec.md`, `investigation/rubric.md`, `investigation/review_a.json`, or
+`investigation/recon_summary.md` artifact and the next recovery action.
 Rule for automated checks: missing `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` must write a recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`.
 
 If any scout is dispatched, the Main Agent records it in
@@ -305,7 +327,7 @@ summarize:
 - current Canvas/source requirements;
 - main spec candidates and final main-source judgment;
 - fetched references and blocked/unreachable materials;
-- source candidates, body-read audit coverage, and any reading budget concerns;
+- source candidates, body-read audit status, and any reading budget concerns;
 - available user-visible artifacts, if any;
 - skipped scouts and reasons;
 - stale or forbidden context that must not be passed to later children;
@@ -322,7 +344,8 @@ and non-blocking gaps. It must include:
 - the source trail in plain language;
 - deliverables and grading/rubric status;
 - required child subagents dispatched, skipped, recovered inline, or blocked;
-- whether coverage was re-run after any reviewer `recover`;
+- whether source findings and the parent self-check were refreshed after any
+  reviewer `recover`;
 - the concrete high-signal findings from each important source body, not only
   the file title;
 - source conflicts, timing differences, missing templates, blocked sources, and
@@ -340,12 +363,12 @@ Depth scaling guidance:
   `content_scout`, the recon summary must surface the source's key actionable
   findings, such as required sections, method options, timeline, formatting, or
   policy constraints. Do not collapse it into "supporting context checked."
-- If coverage feedback records downstream gaps, reflect those gaps in
-  `recon_summary.md` and in the chat summary at `[B]`.
+- If `source_findings.compact.md` or `review_a.json` records downstream gaps,
+  reflect those gaps in `recon_summary.md` and in the chat summary at `[B]`.
 
 Do not make users read `source_candidates.json`, `source_body_audit.json`,
-`source_coverage_feedback.json`, or `review_a.json` to understand run status.
-Those JSON files are audit evidence.
+or `review_a.json` to understand run status. Those JSON files are audit or
+compatibility evidence; `recon_summary.md` is the user-facing status entry.
 
 Do not pass raw old logs, archive files, prior reviews, or prior pipeline files
 to executor/reviewer children just because a scout inspected them. Only distilled
@@ -413,9 +436,16 @@ data/homework/<COURSE>/<HWID>/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
 │   ├── scout_results/
-│   ├── source_body_audit_fragments/
-│   ├── source_body_audit.json
-│   ├── source_coverage_feedback.json
+│   ├── reading_plan.compact.json
+│   ├── source_findings.compact.md
+│   ├── _appendix/
+│   │   ├── source_index.json
+│   │   ├── body_evidence_fragments/
+│   │   └── scout_receipts/
+│   ├── source_candidates.json         # compatibility alias
+│   ├── reading_plan.json              # compatibility alias
+│   ├── source_body_audit_fragments/    # compatibility alias
+│   ├── source_body_audit.json          # compatibility alias
 │   ├── recon_summary.md
 │   ├── rubric.md
 │   ├── unreachable.txt
@@ -452,11 +482,11 @@ All skill file paths resolve as `REPO_ROOT/sub-skills/tools/<name>.md`.
 
 Invoke `tools/assignment-recon.md` as the source/spec workflow. This is a Main
 Agent source/spec exploration domain and may be supported by the concrete
-Subagent roles `metadata_scout`, `content_scout`, and `coverage_reviewer`, but
-it must not be replaced by a
-standalone spec-generation script. The Main Agent must read the current
-evidence, including the narrowed original source bodies or exact source windows
-identified by scouts, judge the main spec, write `spec.md`, and keep review
+Subagent roles `metadata_scout` and `content_scout`, but it must not be replaced by a
+standalone spec-generation script. The Main Agent must read the syllabus,
+direct-spec strong matches, compact gate evidence, and any exact source windows
+named in `parent_source_read_requests`; it must not load every appendix artifact
+as normal context. It judges the main spec, writes `spec.md`, and keeps review
 evidence in the workbench.
 
 Follow the Canvas Generic stages:
@@ -491,25 +521,31 @@ Follow the Canvas Generic stages:
    `references/*.pdf.links.json` or nested
    `references/**/*.pdf.links.json`; do not treat PDF text extraction as complete
    until the visible text and embedded link annotations have both been checked.
-   Write the source-reading chain in order:
-   `metadata_scout -> reading_plan.json -> content_scout -> source_body_audit.json -> coverage_reviewer`.
-   First write `investigation/source_candidates.json`. Then the Main Agent
-   approves `investigation/reading_plan.json`. Only after that, dispatch
-   `content_scout` children to write
-   `investigation/source_body_audit_fragments/`; then merge fragments into
-   `investigation/source_body_audit.json`. Do not write
-   `investigation/source_coverage_feedback.json` until a `coverage_reviewer`
-   has run after the merged audit exists. This keeps metadata discovery,
-   bounded body reading, and coverage review as separate ordered gates. Revise
-   `spec.md` if fetched inputs change the main spec judgment.
+	   Write the source-reading chain in order:
+	   `metadata_scout -> reading_plan.compact.json -> content_scout -> source_findings.compact.md`.
+	   First write `investigation/_appendix/source_index.json` and, if useful
+	   during migration, compatibility alias `investigation/source_candidates.json`.
+	   Then the Main Agent approves `investigation/reading_plan.compact.json`;
+	   `investigation/reading_plan.json` may remain as a compatibility alias. Only
+	   after that, dispatch `content_scout` children to write appendix body
+	   fragments and `investigation/source_findings.compact.md`. Do not run the
+	   parent self-check until `source_findings.compact.md` exists. This
+	   keeps metadata discovery, bounded body reading, and parent judgment separate
+	   while keeping the Main Agent on the compact interface. Revise `spec.md` if
+	   fetched inputs change the main spec judgment.
 
 4. **Stage 4 review investigation**
-   Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`,
-   `investigation/unreachable.txt`, `investigation/source_candidates.json`,
-   `investigation/reading_plan.json`, `investigation/source_body_audit.json`,
-   `investigation/source_coverage_feedback.json`, and `content_scout` Subagent receipts.
-   Prefer a separate reviewer/sub-agent when available. Write strict JSON to
-   `investigation/review_a.json`.
+	   Run a cold review of `spec.md`, `investigation/rubric.md`, `references/`,
+	   `investigation/unreachable.txt`, `investigation/reading_plan.compact.json`,
+	   `investigation/source_findings.compact.md`, terminal artifacts, and any
+	   exact source windows requested by content scouts. Appendix artifacts
+	   such as `investigation/_appendix/source_index.json`,
+	   `investigation/_appendix/body_evidence_fragments/`, and compatibility
+	   aliases such as `source_candidates.json` and `source_body_audit.json` are
+	   recovery/debug evidence, not default parent reads. The Main Agent reads
+	   `source_findings.compact.md` and any requested exact source windows, not the
+	   full appendix by default. It self-checks source sufficiency and writes strict JSON to
+	   `investigation/review_a.json`.
 
 5. **Stage 5 classify-output**
    Classify the output mode (`doc_prose`, `pdf_annotated`, `pdf_typed`, `code`,
@@ -521,15 +557,12 @@ After `[A3]`, immediately read:
 ```text
 investigation/explore_manifest.json
 investigation/explore_context.md  # required for non-trivial runs unless inline fallback is recorded
-investigation/source_candidates.json
-investigation/reading_plan.json
-investigation/source_body_audit_fragments/  # if content scouts dispatched
-investigation/source_body_audit.json
-investigation/source_coverage_feedback.json
+investigation/reading_plan.compact.json
+investigation/source_findings.compact.md
 investigation/recon_summary.md
-canvas/assignment.json
-canvas/syllabus.json
-canvas/page-*.json               # if present and relevant
+canvas/syllabus.json             # full parent read unless unreachable
+direct-spec strong match source bodies
+exact windows named in parent_source_read_requests
 spec.md
 investigation/rubric.md
 investigation/unreachable.txt
@@ -538,6 +571,18 @@ pipeline_design.md
 problem.md
 ```
 
+Do not normally read full appendix artifacts after `[A3]`:
+
+```text
+investigation/_appendix/source_index.json
+investigation/_appendix/body_evidence_fragments/
+investigation/scout_results/
+investigation/source_candidates.json
+investigation/source_body_audit.json
+```
+
+Read those only for recovery, audit, or test debugging.
+
 Do not proceed to `[B]` until:
 
 - `explore_manifest.json` accounts for every enabled, skipped, or inline scout.
@@ -545,22 +590,23 @@ Do not proceed to `[B]` until:
   reason.
 - Every dispatched scout has a ledger row and a receipt path.
 - Clean-start proposal/research/open-ended source-heavy runs have real
-  dispatch ids for `metadata_scout`, `content_scout`, and
-  `coverage_reviewer`; if any role was done by the Main Agent, record a recovery
-  concern and do not call the run clean child-isolation evidence.
-- Non-trivial source-heavy runs have `source_candidates.json`,
-  `reading_plan.json`, `source_body_audit.json`, and
-  `source_coverage_feedback.json`, or a recorded inline fallback reason.
-- If `coverage_reviewer` returned `recover`, the missing artifacts were
-  materialized and a child `coverage_reviewer` was re-run to `proceed`; Main
-  Agent reconvergence cannot upgrade reviewer `recover` to final coverage
-  success by itself.
+  dispatch ids for `metadata_scout` and `content_scout`; if either required role
+  was done by the Main Agent, record a recovery concern and do not call the run
+  clean child-isolation evidence.
+- Non-trivial source-heavy runs have `reading_plan.compact.json`,
+  `source_findings.compact.md`, and appendix source/body evidence, or a recorded
+  inline fallback reason. Legacy `source_candidates.json`, `reading_plan.json`,
+  and `source_body_audit.json` are compatibility aliases, not normal parent read
+  requirements.
 - `investigation/recon_summary.md` exists and gives a user-readable status plus
   the next `[B]` question or stop reason.
+- `review_a.json` records `syllabus_parent_read`, direct-spec parent reads,
+  required/high-signal source status, forbidden-context status, source findings
+  checked, gaps, appendix paths, and any `parent_source_read_requests`.
 - The reconvergence gate has checked terminal reconnaissance artifacts:
-  `source_coverage_feedback.json` alone is insufficient, and missing `spec.md`,
-  `investigation/rubric.md`, or `investigation/review_a.json` must write a
-  recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`.
+  missing `spec.md`, `investigation/rubric.md`, or
+  `investigation/review_a.json` must write a recover/blocking `review_a.json` or
+  `stage_reviews/process_concerns.jsonl`.
 - `spec.md` is grounded in Canvas snapshots and fetched references, not in the
   assignment title alone.
 - `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json`
@@ -571,12 +617,14 @@ Do not proceed to `[B]` until:
   `review_a.json` points to `canvas/syllabus.json` raw body sections. Do not
   require `references/*syllabus*` as the evidence gate.
 - If Canvas-native assignment, syllabus, front-page, or page bodies are relevant,
-  source-body audit records raw `canvas/*.json` paths and section pointers;
-  summary-only scout output is incomplete and blocks progression.
+  compact claims or appendix evidence records raw `canvas/*.json` paths and
+  section pointers; summary-only scout output without pointers is incomplete and
+  blocks progression.
 - If content scouts narrowed long PDFs, decks, Canvas bodies, or external text to
-  exact files/pages/slides/windows, the Main Agent has read those source bodies
-  or windows directly before finalizing `spec.md`; scout summaries alone are not
-  sufficient.
+  exact files/pages/slides/windows, `source_findings.compact.md` records them as
+  delegated supporting evidence or places high-risk windows in
+  `parent_source_read_requests`. The Main Agent reads only those requested
+  windows by default.
 - Any fetched PDF that was used as spec, rubric, input, or source-context
   evidence has a sibling PDF link annotation manifest under
   `references/*.pdf.links.json` or `references/**/*.pdf.links.json`, even when
@@ -634,7 +682,7 @@ without opening the workbench:
 - Concrete deliverables and tasks.
 - Rubric or grading criteria if found; say "Canvas rubric not found" if only
   spec-based criteria exist.
-- Conflicts and non-blocking gaps from `source_coverage_feedback.json` or
+- Conflicts and non-blocking gaps from `source_findings.compact.md` or
   `review_a.json`, such as date conflicts, blocked pages, absent rubrics, or
   sparse slide templates.
 - Output mode from `pipeline_design.md`.

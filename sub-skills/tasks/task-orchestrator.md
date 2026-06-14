@@ -135,13 +135,16 @@ Before executing, check:
   `investigation/unreachable.txt` explains missing resources.
 - If `investigation/review_a.json` says syllabus was available and checked,
   `spec.md`, `investigation/rubric.md`, `review_a.json`, or
-  `source_body_audit.json` cites raw `canvas/syllabus.json` section pointers.
+  `source_findings.compact.md` cites raw `canvas/syllabus.json` section
+  pointers.
 - If `investigation/rubric.md`, `spec.md`, or `review_a.json` uses Canvas-native
   assignment/page/syllabus body details, later stage briefs must explicitly
   allow the relevant `canvas/*.json` reads; summary-only scout output must return
   to `do-homework` for recovery.
 - If a stage depends on source details discovered by content scouts,
-  required/allowed reads must include the source files or raw `canvas/*.json` paths, not only `spec.md`, `source_body_audit.json`, or scout receipts.
+  required/allowed reads must include the source files, raw `canvas/*.json`
+  paths, or exact `parent_source_read_requests` windows, not only `spec.md`,
+  compatibility audit JSON, or scout receipts.
 
 If these checks fail, return to `do-homework` with `status: failed`. Do not run
 tools against an ungrounded assignment.

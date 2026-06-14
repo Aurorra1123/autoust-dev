@@ -320,7 +320,9 @@ Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
    `<work_dir>/problem.md` only as a compatibility summary for older tools.
 
 Do not use or recreate an `assignment-context` aggregate command. The mature
-pattern is atomic data access plus agent judgment after reading all sources.
+pattern is atomic data access plus `metadata_scout` source indexing,
+Main-Agent-approved compact reading plans, `content_scout` body evidence,
+compact source findings, and required Main Agent parent reads.
 Downstream tools should read `spec.md` and `pipeline_design.md` first;
 `problem.md` is temporary compatibility.
 

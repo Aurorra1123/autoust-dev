@@ -107,8 +107,15 @@ Current approved homework direction:
 - This reconnaissance is agent-led. AutoStudy no longer keeps a standalone
   script that writes the final assignment spec; mechanical helpers may only
   save snapshots or download specific sources.
-- `spec.md` is a standardized report written after reading all sources; full
-  source text belongs in `references/`, not in a raw context dump.
+- Source reading is layered: `metadata_scout` builds the source index, the Main
+  Agent approves `reading_plan.compact.json`, `content_scout` reads assigned
+  source bodies and writes `source_findings.compact.md`, then the Main Agent
+  reads compact findings plus required parent source windows before writing
+  `review_a.json`.
+- `spec.md` is a standardized report written after compact findings, syllabus
+  and direct-spec parent reads, and the parent self-check; full source text
+  belongs in `references/` or investigation appendix evidence, not in a raw
+  context dump.
 - `problem.md` is temporary compatibility for older tools.
 - After the post-recon alignment loop, `do-homework` writes a confirmed
   `investigation/alignment_brief.md`, then writes `pipeline_design.md`;

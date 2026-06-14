@@ -367,12 +367,13 @@ For clean-start proposal/research/open-ended homework, the `source/spec scout`
 evidence class is only the umbrella. It is not complete until B has exercised the
 source-body child layers required by the runtime contract:
 
-- `metadata_scout` as a child subagent writes `source_candidates.json` and its
-  receipt;
-- `content_scout` child subagent(s) read the Main-Agent-approved
-  `reading_plan.json` and write source-body fragments plus receipts;
-- `coverage_reviewer` as a child subagent cold-reads candidates, reading plan,
-  body audit, content receipts, references, and unreachable resources.
+- `metadata_scout` as a child subagent writes the source index, compact reading
+  plan, and receipt;
+- `content_scout` child subagent(s) read the Main-Agent-approved compact reading
+  plan and write source-body fragments, compact findings, and receipts;
+- the Main Agent then runs the parent self-check against compact findings,
+  syllabus, direct-spec strong matches, blocked resources, and terminal
+  reconnaissance artifacts.
 
 If one of these children cannot be dispatched or times out, B may continue only
 as a recovery path. Main Agent inline recovery must be recorded as recovery

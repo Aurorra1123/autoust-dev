@@ -150,7 +150,14 @@ data/homework/<COURSE>/<HWID>/
 ├── investigation/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
-│   ├── scout_results/
+│   ├── reading_plan.compact.json
+│   ├── source_findings.compact.md
+│   ├── recon_summary.md
+│   ├── _appendix/
+│   │   ├── source_index.json
+│   │   ├── body_evidence_fragments/
+│   │   └── scout_receipts/
+│   ├── scout_results/                 # compatibility receipts
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -199,8 +206,11 @@ The runtime branches on startup inventory, not hard-coded mode logic.
 
 ### 3. Canvas Generic Reconnaissance
 
-Official `do-homework` reconnaissance is agent-led. It inspects all likely
-Canvas sources through atomic `canvascli` commands:
+Official `do-homework` reconnaissance is agent-led. `metadata_scout` indexes all
+likely Canvas source surfaces through atomic `canvascli` commands, `content_scout`
+reads assigned source bodies from the compact plan, and the Main Agent keeps
+source-body reads bounded to syllabus, direct-spec strong matches,
+`source_findings.compact.md`, and exact parent source windows:
 
 - assignment page and attachments;
 - Canvas rubric;

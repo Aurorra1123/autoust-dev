@@ -152,10 +152,8 @@ The required source-of-truth chain is:
 prelaunch_startup_inventory.json
 -> investigation/explore_context.md
 -> investigation/explore_manifest.json
--> investigation/source_candidates.json
--> investigation/reading_plan.json
--> investigation/source_body_audit.json
--> investigation/source_coverage_feedback.json
+-> investigation/reading_plan.compact.json
+-> investigation/source_findings.compact.md
 -> spec.md
 -> investigation/rubric.md
 -> references/
@@ -170,6 +168,10 @@ prelaunch_startup_inventory.json
 -> verification.log
 -> result.json
 ```
+
+Appendix evidence such as `investigation/_appendix/source_index.json` and
+`investigation/_appendix/body_evidence_fragments/` is audit/recovery evidence,
+not the normal Main Agent read interface.
 
 Never draft from just the assignment title, Canvas description, or a single
 link. Canvas assignment descriptions are often empty or incomplete. The
