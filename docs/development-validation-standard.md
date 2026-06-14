@@ -387,7 +387,7 @@ scout type such as `source_spec`, `artifact`, `codebase`, `process_history`, or
 `verification`. Each completed scout writes a machine-readable receipt under:
 
 ```text
-investigation/scout_results/<scout_type>_result.json
+investigation/_appendix/scout_receipts/<scout_type>_result.json
 ```
 
 or an equivalent path listed in `investigation/explore_manifest.json`. A skipped
@@ -593,8 +593,9 @@ Every iteration must review the process, not just the artifact quality:
   `investigation/explore_manifest.json` before alignment?
 - Did every dispatched pre-alignment scout appear in
   `stage_reviews/child_dispatch_ledger.json`, have a receipt under
-  `investigation/scout_results/` or an equivalent manifest-listed path, and feed
-  only distilled findings into `investigation/explore_context.md`?
+  `investigation/_appendix/scout_receipts/` or an equivalent manifest-listed
+  appendix path, and feed only distilled findings into
+  `investigation/explore_context.md`?
 - Did any retained startup file leak previous conclusions or receipts?
 - Did child subagent trajectories match their declared stage and role?
 - Did any child write to coordinator-owned ledgers or other forbidden files?

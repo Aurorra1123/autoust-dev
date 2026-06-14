@@ -90,9 +90,10 @@ investigation/_appendix/source_index.json
 investigation/reading_plan.compact.json
 ```
 
-Legacy `investigation/source_candidates.json` and
-`investigation/reading_plan.json` may remain as compatibility aliases during
-migration, but they are not the normal parent interface.
+Legacy `source_candidates.json` and `reading_plan.json` may remain as
+compatibility aliases during migration, but only under
+`investigation/_appendix/compatibility_aliases/`. They are not the normal parent
+interface.
 
 It must not promote any source to `precise_match` because it has not read the
 source body. It may classify candidates as `required`, `high_signal`,
@@ -129,8 +130,10 @@ investigation/source_findings.compact.md
 Content scouts must record `read_mode`, evidence windows, and relevance
 classification in their own receipt or fragment. Legacy
 `source_body_audit_fragments/` and `source_body_audit.json` may remain as
-compatibility aliases. Content scouts must not write final `spec.md` or
-concurrently write shared parent verdict artifacts.
+compatibility aliases only under `investigation/_appendix/compatibility_aliases/`.
+Content scouts must not write final `spec.md` or concurrently write shared
+parent verdict artifacts. If they write `source_findings.compact.md`, they must
+append a scoped section with identity and must not overwrite existing sections.
 
 ### Parent Self-Check
 
@@ -205,8 +208,9 @@ Content scouts write full fragments under `_appendix/body_evidence_fragments/`.
 `source_findings.compact.md` is the normal parent-readable interface for
 relevant source-body findings and parent source read requests. Existing
 `source_candidates.json`, `reading_plan.json`, `source_body_audit_fragments/`,
-and `source_body_audit.json` may remain as compatibility aliases, but they are
-not normal Main Agent reads.
+and `source_body_audit.json` may remain as compatibility aliases under
+`investigation/_appendix/compatibility_aliases/`, but they are not normal Main
+Agent reads.
 
 ## Reference Organization
 

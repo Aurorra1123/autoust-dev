@@ -34,7 +34,12 @@ def test_do_homework_defines_main_agent_and_scout_boundaries():
     assert "investigation/_appendix/body_evidence_fragments/" in text
     assert "source_findings.compact.md" in text
     assert "The Main Agent must not normally read full appendix artifacts" in text
-    assert "`investigation/source_body_audit.json` may remain as compatibility aliases" in text
+    assert "`investigation/_appendix/compatibility_aliases/`" in text
+    assert "Multi-writer parent-interface rule" in text
+    assert "append-only scoped sections" in text
+    assert "Main Agent read boundary" in text
+    assert "Never load the whole appendix directory" in text
+    assert "as context" in text
     assert "supporting topic context" in text
     assert "reading budget" in text
 
@@ -91,6 +96,7 @@ def test_hybrid_gate_report_limits_main_agent_source_reads():
     assert "Hybrid Gate Report" in policy_text
     assert "direct-spec strong match" in policy_text
     assert "The Main Agent must not normally read full appendix artifacts" in policy_text
+    assert "standard reconnaissance must not read\n`investigation/_appendix/` as task context" in policy_text
     assert "source_findings.compact.md" in policy_text
     assert "parent_source_read_requests" in policy_text
     assert "Scout summaries are routing hints, not source" in policy_text

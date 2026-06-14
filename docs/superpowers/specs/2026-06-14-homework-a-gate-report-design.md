@@ -85,10 +85,12 @@ investigation/_appendix/scout_receipts/
 The appendix is durable evidence. The Main Agent does not normally read it in
 full. Recovery runs, audits, or test debugging may read it.
 
-Existing names such as `source_candidates.json`, `reading_plan.json`,
-`source_body_audit.json`, and `investigation/scout_results/` may remain as
-compatibility aliases during migration. The runtime contract must treat compact
-files as the normal parent interface and full JSON files as appendix evidence.
+Existing names such as `source_candidates.json`, `reading_plan.json`, and
+`source_body_audit.json` may remain as compatibility aliases during migration,
+but only under `investigation/_appendix/compatibility_aliases/`. Scout receipts
+belong under `investigation/_appendix/scout_receipts/`. The runtime contract
+must treat compact files as the normal parent interface and full JSON files as
+appendix evidence.
 
 ## Scout Data Flow
 

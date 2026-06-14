@@ -25,7 +25,8 @@ work_dir/
 ├── investigation/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
-│   ├── scout_results/    # optional receipts from pre-alignment explore scouts
+│   ├── _appendix/
+│   │   └── scout_receipts/    # optional receipts from pre-alignment explore scouts
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -107,9 +108,9 @@ Before executing, check:
   Agent explicitly recorded that the task was tiny enough for inline
   exploration. When present, read it before generating stage briefs.
 - If `investigation/explore_manifest.json` names dispatched scout children,
-  their scout receipt paths exist under `investigation/scout_results/` or the
-  manifest-listed equivalent. The orchestrator does not rerun scouts, but later
-  trajectory review depends on this evidence.
+  their scout receipt paths exist under `investigation/_appendix/scout_receipts/`
+  or another manifest-listed appendix path. The orchestrator does not rerun
+  scouts, but later trajectory review depends on this evidence.
 - `spec.md` exists and clearly states deliverables.
 - A terminal agreement exists and was confirmed by the user:
   `investigation/alignment_brief.md` for initial assignments, or `repair_plan.md`

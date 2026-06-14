@@ -66,11 +66,9 @@ The workflow writes this structure under `<work_dir>`:
 │   ├── _appendix/
 │   │   ├── source_index.json
 │   │   ├── body_evidence_fragments/
-│   │   └── scout_receipts/
-│   ├── source_candidates.json        # compatibility alias
-│   ├── reading_plan.json             # compatibility alias
-│   ├── source_body_audit_fragments/   # compatibility alias
-│   ├── source_body_audit.json         # compatibility alias
+│   │   ├── scout_briefs/
+│   │   ├── scout_receipts/
+│   │   └── compatibility_aliases/
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   └── review_a.json
@@ -107,6 +105,31 @@ that companion files stay beside their source. New policy text may refer to
 are still accepted. `investigation/` records candidate ranking, body-reading
 evidence, compact source findings, rubric findings, unreachable resources, and
 the investigation review.
+
+Directory boundary: the `investigation/` top level is the Main Agent's compact
+read interface. It may contain only `reading_plan.compact.json`,
+`source_findings.compact.md`, `rubric.md`, `unreachable.txt`, `review_a.json`,
+and do-homework terminal files such as `explore_manifest.json`,
+`explore_context.md`, `recon_summary.md`, `alignment_brief.md`,
+`user_notes.md`, and `user_scope.md`. Scout prompts, scout receipts, full
+candidate lists, body fragments, source-body audit JSON, transcripts, and
+compatibility aliases must live under `investigation/_appendix/`.
+
+Main Agent read boundary: standard reconnaissance must not read
+`investigation/_appendix/` as task context. The Main Agent reads
+`reading_plan.compact.json`, `source_findings.compact.md`, terminal
+reconnaissance files, syllabus/direct-spec source bodies, and exact source
+windows listed in `parent_source_read_requests`. Appendix reads are for
+recovery, audit, or debugging only; if needed, read the smallest named
+artifact/window and record the reason in `review_a.json` or
+`stage_reviews/process_concerns.jsonl`.
+
+`source_findings.compact.md` is the only multi-writer parent interface in this
+workflow. If content scouts write it directly, they must append only their own
+scoped section, include `scout_type`, `scope`, `dispatch_id`, source paths,
+fragment path, and receipt path, and must not rewrite or overwrite existing
+sections.
+
 For Canvas-native bodies, keep the raw `canvas/*.json` as the source of truth.
 Optional readable exports may exist for human convenience, but they must be
 marked as derived and point back to the raw JSON path and section pointer.
@@ -311,8 +334,9 @@ only after the compact reading plan assigns disjoint scopes.
 `investigation/_appendix/source_index.json` records all discovered sources from
 assignment, rubric, front page, syllabus, pages, module items, file metadata,
 assignment files, and external URLs. Existing `source_candidates.json` and
-`reading_plan.json` may remain as compatibility aliases, but the Main Agent's
-normal interface is `reading_plan.compact.json`. Classify each candidate as:
+`reading_plan.json` may remain only under
+`investigation/_appendix/compatibility_aliases/`, but the Main Agent's normal
+interface is `reading_plan.compact.json`. Classify each candidate as:
 
 ```text
 required | high_signal | supporting | low_signal | forbidden | blocked
@@ -360,17 +384,19 @@ After body reading, write:
 
 ```text
 investigation/_appendix/body_evidence_fragments/<scope>.json
+investigation/_appendix/scout_receipts/<scope>_content_result.json
 investigation/source_findings.compact.md
 ```
 
 Each content scout writes its own fragment under
-`investigation/_appendix/body_evidence_fragments/` or includes an equivalent
-fragment in its scout receipt. Legacy `source_body_audit_fragments/` and
-`source_body_audit.json` may remain as compatibility aliases. Content scouts
-also write parent-readable findings to `investigation/source_findings.compact.md`.
-Each finding records source path, relevance, what the source says, planning
-impact, exact pointer, minimal quote if needed, and whether the Main Agent must
-read a source window. Full appendix entries record `candidate_id`, `path_or_url`,
+`investigation/_appendix/body_evidence_fragments/`, writes a receipt under
+`investigation/_appendix/scout_receipts/`, and may append a scoped section to
+`investigation/source_findings.compact.md`. Legacy
+`source_body_audit_fragments/` and `source_body_audit.json` may remain only
+under `investigation/_appendix/compatibility_aliases/`. Each compact finding
+records source path, relevance, what the source says, planning impact, exact
+pointer, minimal quote if needed, and whether the Main Agent must read a source
+window. Full appendix entries record `candidate_id`, `path_or_url`,
 `origin`, `assigned_scout`, `read_mode`, `body_artifact_path`, `classification`,
 `evidence_pointers`, `reading_cost`, and `reason`. Allowed body-level
 classifications are:
@@ -497,11 +523,14 @@ Canvas assignment/page/file bodies, `references/`, module indexes, appendix
 evidence, and compatibility aliases are recovery/debug/audit reads unless they
 are syllabus, direct-spec strong matches, or exact parent source windows.
 
-Full candidate lists, body fragments, full source-review artifacts, and raw scout
-receipts live under `investigation/_appendix/`. The Main Agent must not normally
-read full appendix artifacts. Existing `source_candidates.json`,
-`reading_plan.json`, and `source_body_audit.json` are compatibility aliases, not
-the default parent read interface.
+Full candidate lists, body fragments, full source-review artifacts, raw scout
+receipts, scout briefs, and compatibility aliases live under
+`investigation/_appendix/`. The Main Agent must not read appendix artifacts in
+standard runs; it may inspect a specific appendix artifact only for recovery,
+audit, or debugging and must record why. Existing `source_candidates.json`, `reading_plan.json`, and
+`source_body_audit.json` are compatibility aliases under
+`investigation/_appendix/compatibility_aliases/`, not the default parent read
+interface.
 
 Write strict JSON to `<work_dir>/investigation/review_a.json`:
 

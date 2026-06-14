@@ -169,9 +169,25 @@ prelaunch_startup_inventory.json
 -> result.json
 ```
 
-Appendix evidence such as `investigation/_appendix/source_index.json` and
-`investigation/_appendix/body_evidence_fragments/` is audit/recovery evidence,
-not the normal Main Agent read interface.
+Appendix evidence such as `investigation/_appendix/source_index.json`,
+`investigation/_appendix/body_evidence_fragments/`,
+`investigation/_appendix/scout_receipts/`, scout briefs, and compatibility
+aliases is audit/recovery evidence, not the normal Main Agent read interface.
+The `investigation/` top level is reserved for compact parent-readable and
+terminal reconnaissance artifacts such as `reading_plan.compact.json`,
+`source_findings.compact.md`, `recon_summary.md`, `rubric.md`, and
+`review_a.json`. Child prompts, receipts, raw audit JSON, full fragments, and
+compatibility aliases belong under `investigation/_appendix/`.
+
+The Main Agent does not read `_appendix/` in standard homework runs. It reads
+compact/terminal files, syllabus and direct-spec source bodies, and exact source
+windows requested by compact findings. Appendix reads are recovery/audit/debug
+exceptions and must be narrowly scoped and recorded.
+
+`source_findings.compact.md` may be written by multiple content scouts only as
+append-only scoped sections that identify the scout type, scope, dispatch id,
+source paths, and appendix receipt/fragment paths; scouts must not overwrite
+each other's sections.
 
 Never draft from just the assignment title, Canvas description, or a single
 link. Canvas assignment descriptions are often empty or incomplete. The
