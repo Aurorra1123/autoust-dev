@@ -306,10 +306,11 @@ Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
 
 1. Calls atomic context commands above: `assignment`, `rubric`,
    `front-page`, `syllabus`, `modules`, `module-items`, `page`, `file`, and
-   `assignment-files`.
+   `assignment-files`, and `announcements`.
 2. Stores raw CLI JSON under `<work_dir>/canvas/`.
-3. Reads all likely sources before judging which one is the main spec.
-4. Writes `<work_dir>/spec.md` as a standardized reconnaissance report, not a
+3. Runs `reference_collector` to preserve task-relevant source evidence under
+   `<work_dir>/references/`.
+4. Writes `<work_dir>/spec.md` as the Main Agent reconnaissance report, not a
    raw dump.
 5. Finds grading criteria into `<work_dir>/investigation/rubric.md`.
 6. Downloads or fetches needed inputs into `<work_dir>/references/`, and logs
@@ -320,9 +321,10 @@ Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
    `<work_dir>/problem.md` only as a compatibility summary for older tools.
 
 Do not use or recreate an `assignment-context` aggregate command. The mature
-pattern is atomic data access plus `metadata_scout` source indexing,
-Main-Agent-approved compact reading plans, `content_scout` body evidence,
-compact source findings, and required Main Agent parent reads.
+pattern is atomic data access, raw CLI JSON stored under `<work_dir>/canvas/`,
+`reference_collector` preservation of task-relevant original evidence under
+`<work_dir>/references/`, and Main Agent source/spec judgment in
+`<work_dir>/spec.md`.
 Downstream tools should read `spec.md` and `pipeline_design.md` first;
 `problem.md` is temporary compatibility.
 

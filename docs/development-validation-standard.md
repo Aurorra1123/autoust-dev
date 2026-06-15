@@ -173,8 +173,8 @@ The structured inventory should include:
   "removed_stale_evidence": [],
   "forbidden_context": ["archive/", "old transcripts/", "old stage reviews/"],
   "allowlisted_history_files": [],
-  "explore_scout_inputs": {
-    "source_spec": true,
+  "reference_collector_required": true,
+  "non_source_scout_inputs": {
     "artifact": false,
     "codebase": false,
     "history": false,
@@ -349,11 +349,10 @@ exploration that writes `spec.md`, `problem.md`, references, and
 current-state exploration that may also write `repair_request.md` and
 `investigation/repair_recon.md`.
 
-For non-trivial runs, B should dispatch read-only scout children with isolated
-prompts, each limited to one evidence class:
+For non-trivial retained-artifact or verification runs, B may dispatch read-only
+non-source scout children with isolated prompts, each limited to one evidence
+class:
 
-- source/spec scout: Canvas assignment facts, linked specs, rubrics, references,
-  and required deliverables;
 - artifact scout: current user-visible artifacts and source/package state, only
   when retained artifacts exist;
 - codebase scout: repository layout, dependencies, scripts, tests, and local app
@@ -363,41 +362,44 @@ prompts, each limited to one evidence class:
 - verification scout: lightweight current checks that reveal the planning
   surface, only when checks can run without doing the actual task.
 
-For clean-start proposal/research/open-ended homework, the `source/spec scout`
-evidence class is only the umbrella. It is not complete until B has exercised the
-source-body child layers required by the runtime contract:
+For clean-start proposal/research/open-ended homework, source/spec evidence is
+complete only when:
 
-- `metadata_scout` as a child subagent writes the source index, compact reading
-  plan, and receipt;
-- `content_scout` child subagent(s) read the Main-Agent-approved compact reading
-  plan and write source-body fragments, compact findings, and receipts;
-- the Main Agent then runs the parent self-check against compact findings,
-  syllabus, direct-spec strong matches, blocked resources, and terminal
-  reconnaissance artifacts.
+- raw Canvas snapshots include assignment, rubric, syllabus, modules,
+  module-items, assignment files, pages when relevant, file metadata, and
+  announcements;
+- `reference_collector` has produced `references/REFERENCE_INDEX.md`;
+- task-relevant Canvas-native evidence is copied verbatim under
+  `references/canvas_native/`;
+- fetched PDFs include original file, extracted text, and link annotation
+  manifest;
+- Main Agent `review_a.json` records `reference_collector_used: true` and
+  `source_scout_pipeline_used: false`.
 
-If one of these children cannot be dispatched or times out, B may continue only
-as a recovery path. Main Agent inline recovery must be recorded as recovery
-evidence, not as a scout receipt, and the validation result is not clean
-child-isolation evidence.
+If `reference_collector` cannot preserve a reachable task-relevant source, B may
+continue only as a recovery path. Main Agent inline recovery must be recorded as
+recovery evidence, and the validation result is not clean child-isolation
+evidence.
 
-Scout children are runtime children, not informal helper notes. When B
-dispatches a scout, it must record the dispatch in
+Non-source scout children are runtime children, not informal helper notes. When
+B dispatches a non-source scout, it must record the dispatch in
 `stage_reviews/child_dispatch_ledger.json` with role `explore_scout` and a
-scout type such as `source_spec`, `artifact`, `codebase`, `process_history`, or
-`verification`. Each completed scout writes a machine-readable receipt under:
+scout type such as `artifact`, `codebase`, `process_history`, or
+`verification`. Each completed non-source scout writes a machine-readable
+receipt under:
 
 ```text
 investigation/_appendix/scout_receipts/<scout_type>_result.json
 ```
 
 or an equivalent path listed in `investigation/explore_manifest.json`. A skipped
-scout must be represented in the manifest with `status: "SKIPPED"` and a
-specific reason. Scout prompts follow the same identity, timestamp,
-transport-recovery, transcript-export, and scope-hygiene rules as executor and
-reviewer children. In particular, a process-history scout may read only the
-`allowlisted_history_files` named in the accepted startup inventory, and no
-scout may use `archive/`, old transcripts, old trajectory reviews, or prior
-diagnostics as hidden task evidence.
+non-source scout must be represented in the manifest with `status: "SKIPPED"`
+and a specific reason. Non-source scout prompts follow the same identity,
+timestamp, transport-recovery, transcript-export, and scope-hygiene rules as
+executor and reviewer children. In particular, a process-history scout may read
+only the `allowlisted_history_files` named in the accepted startup inventory,
+and no scout may use `archive/`, old transcripts, old trajectory reviews, or
+prior diagnostics as hidden task evidence.
 
 The coordinator consolidates scout outputs into
 `investigation/explore_context.md` and `investigation/explore_manifest.json`
@@ -588,10 +590,10 @@ preserving transcript-body evidence.
 Every iteration must review the process, not just the artifact quality:
 
 - Did the coordinator follow the declared entry preset and startup inventory?
-- Did the coordinator enable and skip explore scouts according to the startup
-  inventory, and did it record scout results or skip reasons in
+- Did the coordinator enable and skip non-source explore scouts according to the
+  startup inventory, and did it record scout results or skip reasons in
   `investigation/explore_manifest.json` before alignment?
-- Did every dispatched pre-alignment scout appear in
+- Did every dispatched non-source pre-alignment scout appear in
   `stage_reviews/child_dispatch_ledger.json`, have a receipt under
   `investigation/_appendix/scout_receipts/` or an equivalent manifest-listed
   appendix path, and feed only distilled findings into

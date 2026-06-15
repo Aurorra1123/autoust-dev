@@ -127,7 +127,13 @@ except RuntimeError as e:
 
 真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。后来又遇到 DSAA2011 Project：assignment description 是空的，真正项目说明在 module item PDF 里；UCUG1505 FINAL project 则是 assignment description 和 Week 4 module item 都指向同一个 Google Doc spec。
 
-**正确做法**：`do-homework.md [A3]` 必须调 agent-led `tools/assignment-recon.md`。按 Canvas Copilot `canvas-generic` Stage 1-5 把 assignment、rubric、front page、syllabus、modules、module-items、pages、files、external URLs 做完整 source discovery；再走 `metadata_scout -> reading_plan.compact.json -> content_scout -> source_findings.compact.md -> parent self-check`。产出 `spec.md` 作为标准化侦查报告，不是 raw dump；`references/` 保存外部/PDF/PPTX/数据等来源文本和文件；Canvas-native body 的原始事实源是 `canvas/*.json`，不是子代理摘要或派生 reference。`investigation/rubric.md` / `review_a.json` 必须记录 raw JSON 路径和 body section pointer；`pipeline_design.md` 记录输出模式。`problem.md` 只是旧工具兼容层。下游不准直接读 `assignment.description` 当题目，也不准让独立脚本代替 agent 判断主 spec 或写最终侦查报告；但当 assignment/syllabus/page body 细节会影响任务时，stage brief 必须显式允许子代理读取相应 `canvas/*.json`。
+**正确做法**：`do-homework.md [A3]` must call agent-led
+`tools/assignment-recon.md`. The flow fetches broad Canvas raw snapshots,
+including announcements, then always runs `reference_collector` to preserve
+task-relevant original source evidence under `references/`. The Main Agent
+reads complete preserved references and writes terminal reconnaissance artifacts.
+Do not revive `metadata_scout -> reading_plan.compact.json -> content_scout ->
+source_findings.compact.md`.
 
 **规则强化**（写进 `skill.md` Safety #7 + `do-homework.md` Safety #7）：deliverable 文件里**禁止出现** `[PROBLEM N]` / `[TODO: align...]` / `[此处由小组成员填入...]` 这种占位符。只允许 `[CITATION NEEDED: ...]` 和 `[CLARIFICATION NEEDED: ...]` 两种 marker，且都要在 do-homework `[E]` 一次性回流给用户。
 
@@ -144,16 +150,19 @@ assignment shell 定义提交物，proposal/final-project 文件定义框架，m
 topic-selection 课件定义如何选择课堂相关主题和研究路径，同周主题材料提供可选的
 supporting context。只读 proposal framework 会把“文件格式”误当成“作业理解”。
 
-**正确做法**：`assignment-recon` 需要先让 `metadata_scout` 写
-`investigation/_appendix/source_index.json` 和
-`investigation/reading_plan.compact.json`，再让 `content_scout` 按 compact
-plan 读取正文并产出 `investigation/source_findings.compact.md`。旧的
-`source_candidates.json`、`reading_plan.json`、`source_body_audit.json` 只能作为兼容
-alias 或 appendix 证据，不能成为主代理默认读取入口。proposal/research/open-ended
-任务在 `review_a.json.verdict == "proceed"` 前，必须有 assignment/spec body evidence，
-并且要有 methods/topic-selection evidence，或者明确记录课程没有可用方法指导。主代理
-完整读 syllabus 和 direct-spec strong match，读取 `source_findings.compact.md` 及其要求的
-精确 source window，然后自己写 `review_a.json` 做 parent self-check，不靠临时手动补读救场。
+**正确做法**：`assignment-recon` fetches broad Canvas raw snapshots, including
+announcements, then runs `reference_collector`. The collector preserves
+assignment/spec evidence, methods/topic-selection evidence, and any relevant
+syllabus, page, announcement, PDF, deck, or external source under `references/`
+with `references/REFERENCE_INDEX.md` as the source evidence interface.
+Canvas-native requirements must be copied verbatim under
+`references/canvas_native/` or pointed back to the raw `canvas/*.json` snapshot.
+proposal/research/open-ended 任务在 `review_a.json.verdict == "proceed"` 前，必须有
+assignment/spec body evidence，并且要有 methods/topic-selection evidence，或者明确记录课程
+没有可用方法指导。主代理完整读取 preserved references 和 direct-spec strong match，然后自己写
+`review_a.json` 做 parent self-check，不靠临时手动补读救场。Do not recreate
+`metadata_scout`, compact reading plans, `content_scout`, or compact source
+findings as the normal source interface.
 
 ### 6c. Notebook 有图、report 没图：这是工具接口断裂
 

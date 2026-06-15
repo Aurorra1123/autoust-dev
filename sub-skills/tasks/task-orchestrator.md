@@ -26,7 +26,7 @@ work_dir/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
 │   ├── _appendix/
-│   │   └── scout_receipts/    # optional receipts from pre-alignment explore scouts
+│   │   └── scout_receipts/    # optional receipts from non-source explore scouts
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -41,10 +41,12 @@ work_dir/
 
 `spec.md` is the standardized Canvas/source exploration report.
 `investigation/explore_context.md` is the shared exploration summary.
-`references/` contains readable source materials; raw Canvas snapshots stay
-under `canvas/`. For Canvas-native bodies such as assignment, syllabus, front
-page, and pages, raw Canvas JSON is the canonical evidence. derived readable
-artifacts are optional convenience copies, not required gates.
+`references/` contains the normal downstream source interface; raw Canvas
+snapshots stay under `canvas/` as durable backing evidence. For Canvas-native
+bodies such as assignment, syllabus, front page, announcements, and pages,
+stage briefs should read preserved `references/canvas_native/**/source.json` /
+`source.txt` paths first. Raw `canvas/*.json` reads are fallback exceptions that
+must be named and justified when no preserved copy exists.
 The terminal agreement is usually `investigation/alignment_brief.md` for an
 initial assignment and may be `repair_plan.md` for a retained-artifact change.
 The execution plan is usually `pipeline_design.md` and may be
@@ -107,10 +109,11 @@ Before executing, check:
 - `investigation/explore_context.md` exists for non-trivial runs, or the Main
   Agent explicitly recorded that the task was tiny enough for inline
   exploration. When present, read it before generating stage briefs.
-- If `investigation/explore_manifest.json` names dispatched scout children,
-  their scout receipt paths exist under `investigation/_appendix/scout_receipts/`
-  or another manifest-listed appendix path. The orchestrator does not rerun
-  scouts, but later trajectory review depends on this evidence.
+- If `investigation/explore_manifest.json` names dispatched non-source scout
+  children, their scout receipt paths exist under
+  `investigation/_appendix/scout_receipts/` or another manifest-listed appendix
+  path. The orchestrator does not rerun scouts, but later trajectory review
+  depends on this evidence.
 - `spec.md` exists and clearly states deliverables.
 - A terminal agreement exists and was confirmed by the user:
   `investigation/alignment_brief.md` for initial assignments, or `repair_plan.md`
@@ -136,16 +139,18 @@ Before executing, check:
   `investigation/unreachable.txt` explains missing resources.
 - If `investigation/review_a.json` says syllabus was available and checked,
   `spec.md`, `investigation/rubric.md`, `review_a.json`, or
-  `source_findings.compact.md` cites raw `canvas/syllabus.json` section
-  pointers.
+  `references/REFERENCE_INDEX.md` cites preserved
+  `references/canvas_native/**/source.json` / `source.txt` pointers, or records
+  why raw `canvas/syllabus.json` fallback was required.
 - If `investigation/rubric.md`, `spec.md`, or `review_a.json` uses Canvas-native
   assignment/page/syllabus body details, later stage briefs must explicitly
-  allow the relevant `canvas/*.json` reads; summary-only scout output must return
-  to `do-homework` for recovery.
-- If a stage depends on source details discovered by content scouts,
-  required/allowed reads must include the source files, raw `canvas/*.json`
-  paths, or exact `parent_source_read_requests` windows, not only `spec.md`,
-  compatibility audit JSON, or scout receipts.
+  allow the relevant preserved source or `canvas/*.json` reads; summary-only
+  helper output must return to `do-homework` for recovery.
+- If a stage depends on assignment source details, include the relevant
+  preserved reference paths from `references/REFERENCE_INDEX.md` in the stage
+  brief: `references/source_docs/**`, `references/slides/**`,
+  `references/external/**`, or `references/canvas_native/**/source.json`. Do not
+  rely on `source_findings.compact.md` or old source-scout appendix files.
 
 If these checks fail, return to `do-homework` with `status: failed`. Do not run
 tools against an ungrounded assignment.
@@ -254,10 +259,13 @@ Before generating any stage brief, build a `hard_requirement_inventory` from
 constraints, and rubric-critical conditions. Then diff it against
 `required_spec_constraints` in the execution plan.
 Use this exact gate: diff it against `required_spec_constraints`.
-When a requirement came from a content scout, follow the scout pointer back to
-the original source body before adding it to the inventory. scout summaries are
-routing hints, not source evidence. Stage briefs must carry the same raw source
-paths or exact source windows forward.
+When a requirement came from source context, follow
+`references/REFERENCE_INDEX.md` back to the preserved reference path before
+adding it to the inventory. Reference collector notes are routing hints, not
+source evidence. Stage briefs must carry the same preserved source paths forward,
+such as `references/source_docs/**`, `references/slides/**`,
+`references/external/**`, or `references/canvas_native/**/source.json`. Raw
+`canvas/*.json` fallback reads must be explicitly justified.
 
 If a hard requirement appears in `hard_requirement_inventory` but is absent or
 weakened in `required_spec_constraints`, stop and record `FAIL | spec
@@ -283,7 +291,9 @@ Each executor brief must include:
 - concrete one-stage task;
 - required reads;
 - allowed reads;
-- required/allowed reads must include the source files or raw `canvas/*.json` paths for constraints that came from source-body audit or content scouts;
+- required/allowed reads must include the preserved reference paths for
+  constraints indexed by `reference_collector`; raw `canvas/*.json` fallback
+  reads must be named and justified when no preserved copy exists;
 - forbidden reads;
 - forbidden writes, including `stage_reviews/child_dispatch_ledger.json`,
   other stages' receipts, trajectory audit files, and archive evidence unless
@@ -727,9 +737,12 @@ Generic examples:
    brief, executor, reviewer, or verification tool runs.
 2. **Do not invent missing source material.** If `spec.md` or `references/` is
    incomplete, return to `do-homework`.
-3. **Do not pass raw Canvas JSON as hidden background.** If assignment,
-   syllabus, front-page, or page body details matter, list the relevant
-   `canvas/*.json` files in the stage brief's allowed reads. stage briefs must explicitly allow relevant `canvas/*.json` reads. summary-only scout output is not enough.
+3. **Do not pass Canvas source bodies as hidden background.** If assignment,
+   syllabus, front-page, announcement, or page body details matter, list the
+   relevant preserved `references/canvas_native/**/source.json` paths in the
+   stage brief's allowed reads. Raw `canvas/*.json` fallback reads must be named
+   and justified when no preserved copy exists. Summary-only output is not
+   enough.
 4. **Do not use `assignment.description` as the prompt.**
 5. **Do not silently alter deliverables.** The approved execution plan controls
    the target artifacts.
