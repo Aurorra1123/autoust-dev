@@ -151,13 +151,16 @@ with the venv binary:
 .venv/bin/canvascli syllabus -c <course_id> > "<work_dir>/canvas/syllabus.json"
 .venv/bin/canvascli modules -c <course_id> > "<work_dir>/canvas/modules.json"
 .venv/bin/canvascli assignment-files <assignment_id> -c <course_id> > "<work_dir>/canvas/assignment-files.json"
-.venv/bin/canvascli announcements > "<work_dir>/canvas/announcements.json"
+.venv/bin/canvascli announcements --course-id <course_id> > "<work_dir>/canvas/announcements.json"
 ```
 
-Zero announcements is a valid checked state: keep `canvas/announcements.json`
-as the Stage 1 record. If the announcements command fails or is unavailable,
-record the failure in `investigation/unreachable.txt`; Stage 4 later records
-the `announcements_checked` review field and decides whether the failure blocks
+The fixed canvascli announcements default is the latest-active-term snapshot
+when Canvas exposes term dates; if term dates are unavailable, canvascli falls
+back to Canvas's default announcements window. Zero announcements is a valid
+checked state: keep `canvas/announcements.json` as the Stage 1 record. If the
+announcements command fails or is unavailable, record the concise CLI stderr in
+`investigation/unreachable.txt`; Stage 4 later records the
+`announcements_checked` review field and decides whether the failure blocks
 progress.
 
 Then read `modules.json` and fetch items for **every** module, not only the

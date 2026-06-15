@@ -2,6 +2,26 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-15 — canvascli announcement contract synced into AutoStudy
+
+Synchronized AutoStudy application-layer docs with fixed `canvascli` HEAD
+`fd7a9a8`, whose history includes `21a39a7` for the announcements default
+date-scope and concise CLI error behavior plus follow-up download/error/docs
+commits. AutoStudy now documents the CLI boundary instead of copying Canvas
+REST workarounds: announcements use `--course-id`, optional `--start-date` /
+`--end-date`, latest-active-term complete snapshots when Canvas exposes term
+dates, Canvas default-window fallback when it does not, and concise stderr /
+exit-code handling.
+
+Verification installed `/Users/deepwisdom/Desktop/project/canvascli` into the
+AutoStudy venv as editable. `.venv/bin/canvascli announcements --help` showed
+`--course-id`, `--start-date`, and `--end-date`; live Canvas
+`.venv/bin/canvascli announcements --course-id 2799` returned 23 items; forbidden
+course 2177 exited 2 with empty stdout, concise `403 Forbidden` stderr, and no
+Traceback. AutoStudy checks passed:
+`.venv/bin/python -m pytest tests/test_source_body_audit_policy.py tests/test_pipeline_ready_scan_flow.py -q`
+reported 13 passed, and `git diff --check` passed.
+
 ## 2026-06-14 — Generic Canvas instance support implemented
 
 Implemented the first generic Canvas instance slice across `canvascli` and

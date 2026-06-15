@@ -17,7 +17,9 @@
       "AutoStudy commit 90072ac",
       "canvascli commit 0385f54",
       "sub-skills/tools/canvascli-setup.md + canvascli-api.md",
-      "2026-06-01 login/session docs clarified: init is refresh, whoami is health check, remember-login is separate from state.json generation"
+      "2026-06-01 login/session docs clarified: init is refresh, whoami is health check, remember-login is separate from state.json generation",
+      "2026-06-15 canvascli HEAD fd7a9a8 includes announcement scope/error follow-ups; AutoStudy docs synced announcements --course-id, --start-date/--end-date, latest-active-term term-date snapshot fallback contract, stdout/stderr/exit-code contract, and concise no-Traceback failures",
+      "2026-06-15 AutoStudy venv editable canvascli verification: announcements --help exposed --course-id/--start-date/--end-date; course 2799 returned 23 announcements; forbidden 2177 exited 2 with empty stdout, concise 403 stderr, and no Traceback"
     ],
     "status": "passing"
   },
@@ -657,10 +659,11 @@
       "2026-06-04 commit b8493af registers sync-course in skill.md and _index.md",
       "2026-06-04 commit 34119c2 fixes DSAA2011 real Canvas classification issues (-L/_L patterns, name vs display_name)",
       "2026-06-04 DSAA2011 acceptance: 70 files synced (14 lectures, 8 readings, 48 other)",
-      "2026-06-11 AIAA2711 acceptance: Canvas course 2799 synced with 39 files downloaded (11 lectures, 1 reading, 27 other), 0 failed downloads; installed canvascli lacks modules command and this drift is recorded in modules.json"
+      "2026-06-11 AIAA2711 acceptance: Canvas course 2799 synced with 39 files downloaded (11 lectures, 1 reading, 27 other), 0 failed downloads; installed canvascli lacks modules command and this drift is recorded in modules.json",
+      "2026-06-15 sync-course docs now archive announcements via canvascli announcements --course-id \"$COURSE_ID\" and merge existing ids, avoiding global announcements plus Python course filtering"
     ],
     "status": "passing",
-    "notes": "This is course-level archive infrastructure, separate from sync-status homework planning."
+    "notes": "This is course-level archive infrastructure, separate from sync-status homework planning. Announcement scope is delegated to canvascli's course/date contract rather than reimplemented in AutoStudy."
   },
   {
     "id": "M4-WRITE-COURSE-NOTES",

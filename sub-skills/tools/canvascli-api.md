@@ -25,9 +25,9 @@ canvascli <command>
 
 ## Output contract
 
-- **stdout**: JSON (object or array). One line by default; `--pretty` indents.
+- **stdout**: JSON success payload only. One line by default; `--pretty` indents.
 - **stderr**: progress / status / errors. Safe to ignore when piping JSON.
-- **exit code**: `0` ok · `1` runtime error · `2` user error (missing args, no session)
+- **exit code**: `0` ok · `1` runtime / network / Canvas 5xx · `2` user / auth / permission / not found / argument error.
 
 So the agent's typical idiom is:
 
@@ -211,13 +211,25 @@ Generic reconnaissance patterns:
   duplicates as corroboration and still distinguish nearby supporting context.
 
 ### `announcements`
-List announcements across all courses in the latest active Canvas term.
+List announcements for a course or across all courses in the latest active
+Canvas term.
 ```bash
 .venv/bin/canvascli announcements
+.venv/bin/canvascli announcements --course-id 2151
+.venv/bin/canvascli announcements --course-id 2151 --start-date 2025-09-01 --end-date 2025-12-20
 .venv/bin/canvascli announcements --term "2025-26 Spring"
 ```
 
-Note: some Canvas instances rarely use announcements, so 0 results can be normal.
+Default scope is a latest-active-term complete snapshot when Canvas exposes
+`term.start_at` and `term.end_at`. If Canvas does not expose term dates,
+canvascli falls back to Canvas's default announcements window. Pass
+`--start-date` / `--end-date` only when the user explicitly asks for a custom
+date range.
+
+Users do not need to know Canvas internal course IDs. Agents should first run
+`courses`, match the user's course name/code, and then pass the resolved id as
+`--course-id <cid>`. Some Canvas instances rarely use announcements, so 0
+results can be a valid checked state.
 
 ### `files [--course-id <cid>]`
 List files (no download). Defaults to all courses in the latest active Canvas term, optionally scoped.
@@ -283,12 +295,21 @@ Submit a file to a Canvas assignment via `online_upload`.
 4. **Don't auto-download or auto-submit.** Always confirm scope with `AskUserQuestion`.
 5. **Don't auto-pick "the latest"** assignment / file / folder. The user picks explicitly.
 6. **Pipe JSON, not stdout text.** The text in `--pretty` mode is for humans, not parsing.
+7. **Request failures are concise.** Runtime/user failures write a short stderr
+   message and exit non-zero; do not expect or parse Python tracebacks.
 
 ## Common pitfalls
 
 - **Run via `.venv/bin/canvascli`, not bare `canvascli`** — system PATH might not have the venv binary.
 - **`state.json` and SSO remember-login are separate.** `state.json` is canvascli's saved Canvas API cookie. The SSO checkbox does not decide whether `state.json` is written; it decides whether the next browser login is fast or requires full credentials again.
 - **Term scope belongs in canvascli.** AutoStudy tasks should call `courses`, `assignments`, and `announcements` directly unless the user explicitly asks for a semester, in which case pass `--term`.
+- **Do not reimplement announcements REST windows in AutoStudy.** The
+  announcements default date scope, term-date fallback behavior, and
+  `--start-date` / `--end-date` contract belong in canvascli.
+- **Concise request failures are normal.** Auth, permission, not-found,
+  argument, network, and Canvas 5xx errors go to stderr without a traceback;
+  branch on the exit code and save the stderr text when an audit trail is
+  needed.
 - **HTTP 404 on quizzes/modules/discussions is normal** — that course turned the feature off. canvascli returns `[]` in those cases.
 - **Tuples of `(datetime, dict)`** aren't sortable in Python (dict isn't comparable) — when sorting by `due_at`, always use `key=lambda x: x["due_at"]`.
 - **Filenames with Chinese / spaces are common.** Always quote paths in shell calls.

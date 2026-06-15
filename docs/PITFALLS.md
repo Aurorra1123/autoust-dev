@@ -82,6 +82,25 @@ courses = [c for c in all_courses
            if c.get("workflow_state") == "available"]
 ```
 
+### 5b. Announcements 有隐式日期窗口，不要在 AutoStudy 里重写 REST
+
+**现象**：Canvas announcements API 默认会套一个日期窗口。AutoStudy 如果直接调
+REST 或先抓全局公告再在 Python 里按 course_id 过滤，可能只拿到 Canvas 默认窗口，
+漏掉当前学期早期公告。
+
+**根因**：公告范围需要结合 Canvas term dates。fixed `canvascli` 已把这件事收在
+CLI contract 里：当 Canvas 暴露 `term.start_at` / `term.end_at` 时，
+`announcements --course-id <cid>` 默认返回 latest active term 的完整 snapshot；
+如果 Canvas 不提供 term dates，才 fallback 到 Canvas 默认 announcements window。
+
+**规则**：
+- AutoStudy skill/task 文档只依赖 `canvascli announcements --course-id <cid>`、
+  `--start-date`、`--end-date`、`--term` 这些 CLI contract。
+- 不要在 AutoStudy 里复制 Canvas REST workaround、拼 date range、或恢复"全局
+  announcements 后 Python 过滤"的流程。
+- 用户不需要知道 Canvas internal course id；agent 先用 `courses` 解析课程名/代码，
+  再把解析出的 id 传给 `--course-id`。
+
 ### 6. 不能假设每门课都开了 Canvas 全部功能
 
 **现象**：拉 `/api/v1/courses/:id/quizzes` 时大部分课返回 **404**，不是空数组。
