@@ -159,14 +159,14 @@ skill 可以在 Post-processing 中引用其他 skill。但不是硬编码调用
 
 ```markdown
 ## Post-processing
-- 如果 pipeline_design.md 声明了 `post-process: humanize`，
-  或用户在 [B] 要求降低 AI 味道，则读取 humanizer.md 并执行
+- 如果当前 execution plan 声明了 `post-process: humanize`，
+  或用户在 assignment-workflow-planner.md [B] 要求降低 AI 味道，则读取 humanizer.md 并执行
 - 否则跳过
 ```
 
 调用决策基于三个信息源：
-1. `pipeline_design.md` 中当前 stage 的声明
-2. 用户在 do-homework [B] 的补充要求
+1. 当前 execution plan 中当前 stage 的声明
+2. 用户在 assignment-workflow-planner.md [B] 的补充要求
 3. skill 自身的判断（如检测到长文输出）
 
 ### 4.2 共享模式
@@ -174,11 +174,11 @@ skill 可以在 Post-processing 中引用其他 skill。但不是硬编码调用
 以下模式是跨 skill 通用的，在各自 skill 文件中以引用方式描述：
 
 **约束提取（生成前）**：从 spec.md 提取可量化约束，
-写入 `pipeline_design.md` 的 constraints 部分。
+写入当前 execution plan 的 constraints 部分。
 
 **自检（生成后）**：每个 skill 完成后按自检清单逐项验证。
 
-**Sub-agent 审查（可选）**：pipeline_design.md 中按需声明
+**Sub-agent 审查（可选）**：当前 execution plan 中按需声明
 "此 stage 后需要审查"。当 review 启用时，Main Agent 先运行 spec
 compliance review，对比 artifact、`spec.md`、rubric、user notes 和 stage
 brief；spec compliance 通过后，才运行 artifact-specific quality review。
@@ -205,8 +205,8 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ## 5. Pipeline Design 格式
 
-`pipeline_design.md` 由 do-homework [C] 在侦查 + 用户确认
-`alignment_brief.md` 后写。
+`pipeline_design.md` 或 `repair_pipeline_design.md` 由
+assignment-workflow-planner.md [C] 在侦查/当前状态摄取 + 用户确认终端协议后写。
 格式示例：
 
 ```markdown
@@ -391,14 +391,14 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 | 层级 | 来源 | 存储位置 | 状态 |
 |---|---|---|---|
-| **任务级** | do-homework [B] 对齐循环 | `investigation/alignment_brief.md` -> `pipeline_design.md` stage 声明 | ✅ 当前实现方式 |
+| **任务级** | assignment-workflow-planner.md [B] 对齐循环 | `investigation/alignment_brief.md` 或 `repair_plan.md` -> 当前 execution plan stage 声明 | ✅ 当前实现方式 |
 | **课程级** | 跨作业积累的课程偏好 | `data/course-overrides/<COURSE>.md` | 🔲 待实现 |
 | **用户级** | 用户主动声明或推断 | Claude Code 项目 memory | 🔲 待实现 |
 
 ### 6.1 任务级偏好（当前实现）
 
-agent 在写 `pipeline_design.md` 时，根据侦查结果和 [B] 结束时确认的
-`investigation/alignment_brief.md`，在每个 stage 中声明具体参数：
+agent 在写当前 execution plan 时，根据侦查/当前状态结果和 [B] 结束时确认的
+`investigation/alignment_brief.md` 或 `repair_plan.md`，在每个 stage 中声明具体参数：
 
 ```
 Stage 1: primary_tool: code-writer, tools: [code-writer, test-runner], lang: python

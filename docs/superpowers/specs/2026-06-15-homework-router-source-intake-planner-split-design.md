@@ -309,7 +309,8 @@ investigation/rubric.md
 investigation/review_a.json
 investigation/unreachable.txt
 problem.md
-pipeline_design.md                 # preliminary output-mode line only, if present
+investigation/recon_summary.md     # includes preliminary output-mode note
+investigation/explore_context.md   # includes preliminary output-mode note
 ```
 
 For retained-artifact planning, `current-state-intake.md` reads only current

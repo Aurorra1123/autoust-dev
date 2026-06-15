@@ -5,8 +5,8 @@ description: Agent-led Canvas Generic assignment reconnaissance. Inspect Canvas 
 
 # assignment-recon
 
-Use this tool workflow inside `do-homework [A]` to turn Canvas evidence into a
-standardized assignment workbench. Its job is to answer:
+Use this tool workflow inside `assignment-source-intake.md` to turn Canvas
+evidence into a standardized assignment workbench. Its job is to answer:
 
 1. Which Canvas/source materials define the assignment?
 2. What must the student produce?
@@ -577,7 +577,7 @@ Allowed verdicts:
   sources.
 
 If `verdict != "proceed"`, do not proceed silently. Surface the gap in
-`do-homework [B]`.
+`assignment-workflow-planner.md [B]`.
 
 For proposal/research/open-ended assignments, `verdict` must not be `proceed`
 unless the Main Agent has read the preserved direct-spec source and any
@@ -606,8 +606,9 @@ Use Canvas Generic modes:
 | `slides` | presentation deck, PPT, PDF slides |
 | `mixed` | multiple deliverable shapes |
 
-Write the preliminary classification at the top of
-`<work_dir>/pipeline_design.md`:
+Write the preliminary classification in
+`<work_dir>/investigation/recon_summary.md` and
+`<work_dir>/investigation/explore_context.md`:
 
 ```text
 Output mode: mixed (code + doc_prose + slides)
@@ -618,9 +619,9 @@ Reason:
 - references include ...
 ```
 
-Full pipeline stages are designed later by `do-homework [C]` after the user
-supplement checkpoint. This post-review classification only identifies the
-shape.
+Full pipeline stages are designed later by
+`assignment-workflow-planner.md [C]` after the user supplement checkpoint. This
+post-review classification only identifies the shape.
 
 ## Thin problem.md compatibility
 
@@ -631,7 +632,7 @@ entire PDFs or replace `spec.md` as the source of truth.
 
 ## Quality Bar
 
-Before returning to `do-homework [B]`:
+Before returning to `assignment-workflow-planner.md [B]`:
 
 1. `spec.md` is a standardized report with concrete deliverables and source
    trail.
@@ -660,13 +661,14 @@ Before returning to `do-homework [B]`:
    `source_scout_pipeline_used: false`, `reference_index_checked`,
    `canvas_native_sources`, `downloaded_references`, and
    `pdf_link_manifests_checked`.
-9. `pipeline_design.md` starts with the preliminary output mode.
+9. `investigation/recon_summary.md` or `investigation/explore_context.md`
+   records the preliminary output mode.
 10. The parent self-check has confirmed that missing `spec.md`,
     `investigation/rubric.md`, or `investigation/review_a.json` forces a
     recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`
     record instead of a silent stop.
 11. Terminal reconnaissance artifacts contain enough user-facing substance for a
-    conclusion-first briefing at `do-homework [B]`: the main assignment
+    conclusion-first briefing at `assignment-workflow-planner.md [B]`: the main assignment
     conclusion, controlling source, actionable source-body findings,
     deliverables, grading criteria, conflicts/gaps, and next alignment question.
     A passed artifact gate only proves the files exist; artifact existence/status alone is insufficient.

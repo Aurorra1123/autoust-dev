@@ -20,7 +20,7 @@ Reference mapping:
 
 | Superpowers practice | AutoStudy runtime translation |
 |---|---|
-| `brainstorming` | post-recon alignment loop with the user at `do-homework [B]` |
+| `brainstorming` | post-recon alignment loop with the user in `assignment-workflow-planner.md [B]` |
 | spec document | assignment `spec.md` grounded in Canvas sources |
 | `writing-plans` | `pipeline_design.md` as the task-level execution plan |
 | implementer subagent | stage executor subagent with a precise `stage_brief.md` |
@@ -112,6 +112,15 @@ coordinator records that scout as `SKIPPED` with a reason instead of inventing a
 flow-specific substitute. A first run with no draft naturally skips artifact,
 codebase, history, and current-verification scouts. A retained-draft run enables
 only the scouts whose inputs are present and planning-relevant.
+
+Runtime homework files map to that flow as:
+
+```text
+do-homework.md = router/preflight/route selection
+assignment-source-intake.md = clean-start source/spec intake
+assignment-workflow-planner.md = alignment/planning/retained planner
+current-state-intake.md = retained current-state exploration tool
+```
 
 ### Archive And Startup Inventory
 
@@ -298,8 +307,8 @@ but it does not validate true scout/executor/reviewer isolation.
 
 This exception creates a second, development-only line around the normal runtime
 line. In real user-facing work there is only the Main Agent and its subagents:
-the Main Agent talks to the user during `do-homework [B]` and writes the
-confirmed `alignment_brief.md`. In development validation, the current session
+the Main Agent talks to the user during `assignment-workflow-planner.md [B]` and
+writes the confirmed terminal agreement. In development validation, the current session
 is outer Main Agent A, which launches coordinator B to simulate that real Main
 Agent. A may prepare clean startup evidence, inject B's stable id, bridge live
 simulated-user answers during `[B]`, export transcripts, and dispatch trajectory
@@ -634,8 +643,9 @@ read; a paraphrase-only note is not enough.
 
 Superpowers reference: `brainstorming`.
 
-AutoStudy translation: after reconnaissance, the Main Agent runs the
-`do-homework [B]` alignment loop.
+AutoStudy translation: after clean-start source intake or retained current-state
+intake, the Main Agent runs the `assignment-workflow-planner.md [B]` alignment
+loop.
 
 The purpose is not generic conversation and not rigid task classification. It is
 to decide whether the current Canvas facts plus user intent are sufficient to
@@ -646,9 +656,10 @@ require as many focused rounds as needed before planning starts.
 The first user-facing message is a recon summary: a depth-adaptive explanation
 of what `spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
 `investigation/unreachable.txt`, `references/`, `problem.md`, and the
-preliminary output-mode line in `pipeline_design.md` prove. It is not a second
-investigation and not a design proposal; it tells the user which facts are fixed
-by Canvas and which decisions still need alignment. Scale the
+preliminary output-mode note in `investigation/recon_summary.md` or
+`investigation/explore_context.md` prove. It is not a second investigation and
+not a design proposal; it tells the user which facts are fixed by Canvas and
+which decisions still need alignment. Scale the
    amount of user-facing detail with reconnaissance depth: a tiny one-source
 task can be summarized briefly, while a multi-source run with preserved
 references, PDFs/decks, methods guidance, timeline/calendar evidence, conflicts,
@@ -711,10 +722,10 @@ also new dimensions introduced, approach implications, and skeleton gaps still
 open. This makes the loop extend from the user's answer rather than walking a
 fixed checklist.
 
-Before the terminal brief for an open-ended task, the Main Agent must present
+Before the terminal agreement for an open-ended task, the Main Agent must present
 2-3 viable approaches with trade-offs and a recommendation when meaningful, then
 preview the design skeleton. The user approves or corrects that skeleton before
-the terminal `alignment_brief.md` is written.
+the terminal agreement is written.
 
 Process notes from each round go to:
 
@@ -730,14 +741,16 @@ coordinator records a delegated decision rather than treating it as a user-state
 fact.
 
 When the Main Agent has no necessary alignment question left, it writes the
-terminal brief:
+terminal agreement:
 
 ```text
-investigation/alignment_brief.md
+investigation/alignment_brief.md  # clean-start assignment
+repair_plan.md                    # retained-artifact change request
 ```
 
-`alignment_brief.md` is the stable post-recon agreement for the task. It is
-written only at the terminal alignment step, not after every round. It records:
+The terminal agreement is the stable post-recon or retained-artifact agreement
+for the task. It is written only at the terminal alignment step, not after every
+round. It records:
 
 - assignment understanding;
 - user intent;
@@ -755,33 +768,34 @@ stage design.
 
 The Main Agent then summarizes the brief and asks the user to confirm. If the
 user corrects it, the Main Agent appends another `user_notes.md` round, replaces
-`alignment_brief.md`, and asks again. Planning cannot start until the user has
-confirmed `alignment_brief.md`.
+the terminal agreement, and asks again. Planning cannot start until the user has
+confirmed `investigation/alignment_brief.md` or `repair_plan.md`.
 
 ### Phase 4: Task-Level Planning
 
 Superpowers reference: `writing-plans`.
 
-AutoStudy translation: `pipeline_design.md`.
+AutoStudy translation: the current execution plan.
 
-`pipeline_design.md` is the total plan for the current task. It is written by
-the Main Agent after reading:
+The current execution plan is `pipeline_design.md` for clean-start assignments
+or `repair_pipeline_design.md` for retained-artifact repair/change entries. It
+is written by the Main Agent after reading:
 
 - `spec.md`
 - `investigation/rubric.md`
-- `investigation/alignment_brief.md`
+- `investigation/alignment_brief.md` or `repair_plan.md`
 - `investigation/user_notes.md`
 - `investigation/user_scope.md`, if present
 - `sub-skills/tools/_index.md`
 - relevant top-level tool contracts
 
-No confirmed `investigation/alignment_brief.md` means no final
-`pipeline_design.md`. A final `pipeline_design.md` still does not authorize
+No confirmed terminal agreement means no final execution plan. A final
+`pipeline_design.md` or `repair_pipeline_design.md` still does not authorize
 execution until the user reviews it and `Pipeline Review Status.status` becomes
 `approved_for_orchestration`.
 
-`pipeline_design.md` is for the Main Agent and Stage Coordinator phase. It is
-not the executor subagent's direct instruction file.
+The execution plan is for the Main Agent and Stage Coordinator phase. It is not
+the executor subagent's direct instruction file.
 
 Required responsibilities:
 
@@ -799,14 +813,15 @@ Required responsibilities:
 - include `Pipeline Review Status`, initially `awaiting_user_review`, with
   approval fields that must be populated before `task-orchestrator.md` runs.
 
-After writing `pipeline_design.md`, the planner stops for user review. Stage
-brief generation is a separate `task-orchestrator.md` phase.
+After writing `pipeline_design.md` or `repair_pipeline_design.md`, the planner
+stops for user review. Stage brief generation is a separate
+`task-orchestrator.md` phase.
 
 ### Phase 5: Stage Brief Generation
 
 Superpowers reference: subagent implementer prompt with curated context.
 
-AutoStudy translation: the Main Agent converts each `pipeline_design.md` stage
+AutoStudy translation: the Main Agent converts each current execution-plan stage
 into precise executor and reviewer stage briefs.
 
 Recommended structure:
@@ -1104,7 +1119,9 @@ data/homework/<COURSE>/<HWID>/
 │   ├── alignment_brief.md
 │   ├── user_notes.md
 │   └── user_scope.md
+├── repair_plan.md                 # retained-artifact agreement, optional
 ├── pipeline_design.md
+├── repair_pipeline_design.md      # retained-artifact execution plan, optional
 ├── stage_briefs/
 ├── stage_results/
 ├── stage_reviews/
@@ -1120,7 +1137,7 @@ data/homework/<COURSE>/<HWID>/
 For course-level tasks, `data/courses/<COURSE>/` has a different shape, but the
 same principle applies: persistent source archive first, then derived outputs.
 
-### `pipeline_design.md`
+### `pipeline_design.md` / `repair_pipeline_design.md`
 
 Task-level plan owned by the Main Agent.
 

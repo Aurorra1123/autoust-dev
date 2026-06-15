@@ -1,6 +1,6 @@
 ---
 name: task-orchestrator
-description: Execute an approved per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and a user-approved execution plan. Use after do-homework has produced and the user has approved pipeline_design.md.
+description: Execute an approved per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and a user-approved execution plan. Use after assignment-workflow-planner has produced and the user has approved pipeline_design.md or repair_pipeline_design.md.
 ---
 
 # task-orchestrator
@@ -168,8 +168,8 @@ runs. Each stage declares `id`, `primary_tool`, `tools`, `tool_roles`,
 `primary_tool: <path>` plus `tools: [<path>]`; normalize it before generating
 stage briefs.
 
-The format is written by `do-homework [C]` — the orchestrator reads and executes it.
-Do not redesign the format here.
+The format is written by `assignment-workflow-planner.md [C]` — the
+orchestrator reads and executes it. Do not redesign the format here.
 
 ## Execution Flow
 
@@ -756,7 +756,8 @@ Generic examples:
 ## Pitfalls
 
 1. **Don't make this a free-form classifier again.** Classification happens in
-   assignment-recon Stage 5 and is finalized by `do-homework [C]`.
+   assignment-recon Stage 5 and is finalized by
+   `assignment-workflow-planner.md [C]`.
 2. **Don't resurrect `task_profile.yaml`.** It was a transitional idea; the
    workbench plus current execution plan is the contract.
 3. **Don't bake course-specific logic here.** Course quirks belong in `spec.md`,

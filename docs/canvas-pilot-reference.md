@@ -70,9 +70,16 @@ AutoStudy MVP 时的 `assignment-recon` 主要看 `assignment.json.description`
 - 不保留脚本化 spec 生成路径；原子 CLI 只提供来源读取能力，主 spec 判断、`spec.md`、`review_a.json` 和 output mode 必须由 agent 逐源阅读后写入。
 - `spec.md` 是标准化侦查报告，不是 source dump。
 - `problem.md` 只是旧工具兼容层，长期会继续缩薄。
-- `do-homework [B]` 必须向用户汇报侦查结果并运行 alignment loop，即使 `review_a.json.verdict == "proceed"`。简单作业少问几轮，开放性作业持续追问，直到 Main Agent 能不靠脑补开始执行。
-- `do-homework [B]` 的多轮过程写入 `investigation/user_notes.md`；只有当 Main Agent 判断没有必须继续问的问题时，才写 `investigation/alignment_brief.md` 并请求用户确认。
-- `do-homework [C]` 在确认后的 `alignment_brief.md` 基础上完成 `pipeline_design.md`，然后 `task-orchestrator` 按这个文件执行。
+- `do-homework.md` 现在是 public router / preflight / route selection；clean
+  start 进入 `assignment-source-intake.md`，retained draft / feedback 进入
+  `assignment-workflow-planner.md`，后者按需调用 `current-state-intake.md`。
+- `assignment-workflow-planner.md [B]` 必须向用户汇报侦查结果并运行
+  alignment loop，即使 `review_a.json.verdict == "proceed"`。简单作业少问几轮，开放性作业持续追问，直到 Main Agent 能不靠脑补开始执行。
+- `assignment-workflow-planner.md [B]` 的多轮过程写入
+  `investigation/user_notes.md`；只有当 Main Agent 判断没有必须继续问的问题时，才写 `investigation/alignment_brief.md` 或 `repair_plan.md` 并请求用户确认。
+- `assignment-workflow-planner.md [C]` 在确认后的终端协议基础上完成
+  `pipeline_design.md` 或 `repair_pipeline_design.md`，然后
+  `task-orchestrator` 按这个文件执行。
 
 #### 真实例子：DSAA2011 和 UCUG1505
 
@@ -206,9 +213,9 @@ lab    → write_code → run_tests → write_essay → render_pdf
 列表启动。当前方向是：
 
 ```text
-spec.md + rubric.md + references/ + confirmed alignment_brief.md
-  -> do-homework [C] writes pipeline_design.md
-  -> task-orchestrator executes pipeline_design.md
+spec.md + rubric.md + references/ + confirmed terminal agreement
+  -> assignment-workflow-planner.md [C] writes the execution plan
+  -> task-orchestrator executes pipeline_design.md or repair_pipeline_design.md
   -> tools read the workbench and write draft/ + verification artifacts
 ```
 
@@ -528,8 +535,8 @@ Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3
 | 2 | find-rubric | 4 层搜索 → `investigation/rubric.md` | ✅ 已验证 |  |
 | 3 | locate-inputs | 下载文件 → `references/` + `unreachable.txt` | ✅ 已验证 |  |
 | 4 | Sub-agent A: review investigation | 完整性审查 → `review_a.json` | ⚠️ 已做但仅 cold self-review | 后续升级为独立 sub-agent |
-| 5 | classify-output | 判断输出模式 → 写 `pipeline_design.md` 第一行 | ✅ 已验证 | AutoStudy 后续将输出模式 skills 化 |
-| **6** | **design-pipeline** | 根据输出模式设计管线阶段 | ⚠️ 在 do-homework [C] 完成 | AutoStudy 的管线设计强调动态 skills 组合，不绑固定 pipeline |
+| 5 | classify-output | 判断输出模式 → 写入 `recon_summary.md` / `explore_context.md` | ✅ 已验证 | AutoStudy 后续将输出模式 skills 化 |
+| **6** | **design-pipeline** | 根据输出模式设计管线阶段 | ⚠️ 在 `assignment-workflow-planner.md [C]` 完成 | AutoStudy 的管线设计强调动态 skills 组合，不绑固定 pipeline |
 | **7** | **generate** | 执行管线，产出 `draft/` | ❌ 待开发 | AutoStudy 强调多轮迭代：单次做不好可以继续打磨 |
 | **8** | **Sub-agent B: design verification checklist** | 从 rubric 设计可量化验证清单 | ❌ 待开发 | 后续加入 |
 | **9** | **verify + retry loop** | 运行验证，失败则重回 Stage 7（最多 3 次） | ❌ 待开发 | AutoStudy 的迭代不限于 3 次，支持跨轮次持续优化 |
@@ -551,7 +558,7 @@ Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3
 
 - **固定 pipeline 模板**：Copilot 为每种输出模式定义了固定阶段序列。AutoStudy 选择更灵活的动态组合，因为 Claude Code 的 agent 能力足够强，不需要预先枚举所有可能。
 - **单次 batch execute**：Copilot 的 `canvas-execute` 一次性分发所有审批项。AutoStudy 的 `do-homework` 只处理用户选择的单项，保留助手式的节奏控制。
-- **Humanizer（硬编码强制）**：Copilot 在 essay/doc_prose 模式中硬编码调用 humanizer。AutoStudy 保留 humanizer 作为可选后处理 skill（用户在 [B] 要求或 pipeline_design.md 声明时才调用），不作为默认行为。
+- **Humanizer（硬编码强制）**：Copilot 在 essay/doc_prose 模式中硬编码调用 humanizer。AutoStudy 保留 humanizer 作为可选后处理 skill（用户在 `assignment-workflow-planner.md [B]` 要求或 execution plan 声明时才调用），不作为默认行为。
 - **Stop hook 强锁**：Copilot 用 Stop hook 阻止 session 在未完成所有作业时结束。AutoStudy 是助手，不应该阻止用户随时离开。
 - **重 overlay 体系**：Copilot 每种 skill 配套 100-300 行 overlay。AutoStudy 用三层偏好体系替代（渐进实现），不需要用户手动编写 overlay。
 
@@ -590,7 +597,8 @@ Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3
 
 4. **Overlay 加载**：每个 skill 第一步读 overlay 获取课程级知识。
    AutoStudy 的实现：三层偏好系统（当前只实现了任务级，通过
-   `alignment_brief.md` 和 `pipeline_design.md` stage 声明传递）。
+   `alignment_brief.md` / `repair_plan.md` 和 execution plan stage 声明传递）。
 
 5. **Stage-by-stage 校准**：首次运行逐阶段审查。AutoStudy 的实现：
-   do-homework [B] 的 alignment brief + pipeline_design.md 的 review 声明。
+   `assignment-workflow-planner.md [B]` 的 terminal agreement + execution plan
+   review 声明。

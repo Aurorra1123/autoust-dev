@@ -369,7 +369,8 @@ def test_b_checkpoint_response_is_conclusion_first_not_artifact_inventory():
     assert "stale/forbidden context in user terms" in text
     assert "Ask the smallest next alignment question needed to avoid guessing" in text
 
-    assert "For `do-homework [B]`, do not use the generic artifact handoff shape" in skill_text
+    assert "For the homework workflow-planner `[B]` alignment checkpoint" in skill_text
+    assert "sub-skills/tasks/assignment-workflow-planner.md" in skill_text
     assert "conclusion-first assignment briefing" in skill_text
 
     assert "artifact existence/status alone is insufficient" in recon_text

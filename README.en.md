@@ -153,6 +153,13 @@ AutoStudy does not generate from the assignment title. The current homework
 contract is:
 
 ```text
+do-homework.md router/preflight/route selection
+├── clean start -> assignment-source-intake.md
+│   -> Canvas/source/spec intake
+└── retained draft or feedback -> assignment-workflow-planner.md
+    -> current-state-intake.md
+    -> repair_plan.md / repair_pipeline_design.md
+
 Canvas raw snapshots, including canvas/announcements.json
 -> references/REFERENCE_INDEX.md
 -> references/source_docs/ and references/canvas_native/
@@ -168,32 +175,43 @@ Canvas raw snapshots, including canvas/announcements.json
 -> result.json
 ```
 
+The public user-facing task remains `do-homework`. `assignment-source-intake.md`,
+`assignment-workflow-planner.md`, and `current-state-intake.md` are internal
+routing files, not separate commands users need to call directly.
+
 In plain language:
 
-1. **Explore**: inspect assignment page, rubric, course front page, syllabus,
-   modules, module items, announcements, files, pages, and external links through
+1. **Route and preflight**: `do-homework.md` creates the workbench, records
+   startup inventory, and selects either clean-start source intake or
+   retained-artifact planning.
+2. **Explore**: clean starts go through `assignment-source-intake.md`, which
+   inspects assignment page, rubric, course front page, syllabus, modules,
+   module items, announcements, files, pages, and external links through
    `canvascli`.
-2. **Preserve references**: `reference_collector` saves task-relevant original
+3. **Preserve references**: `reference_collector` saves task-relevant original
    evidence under `references/`, including PDF companions and screened
    per-announcement
    `references/canvas_native/announcement-<id-or-slug>/source.json` objects. It
    must not copy the full `canvas/announcements.json` array into
    `references/canvas_native/`.
-3. **Write the spec**: the Main Agent reads `references/REFERENCE_INDEX.md` and
+4. **Write the spec**: the Main Agent reads `references/REFERENCE_INDEX.md` and
    preserved original evidence, then summarizes the real assignment requirements
    in `spec.md` and writes `investigation/review_a.json`.
-4. **Align with you**: ask only the questions needed to avoid guessing your
-   topic, group info, dataset, architecture, style, or scope.
-5. **Confirm the agreement**: write final task intent to
-   `investigation/alignment_brief.md` for a new assignment, or `repair_plan.md`
-   when improving an existing draft.
-6. **Design the pipeline**: write a custom `pipeline_design.md` from the spec
-   and confirmed intent. There is no fixed "paper pipeline" or "lab pipeline";
-   tools are composed per assignment.
-7. **Execute and review**: generate stage briefs, dispatch executors/reviewers
+5. **Align with you**: `assignment-workflow-planner.md` asks only the questions
+   needed to avoid guessing your topic, group info, dataset, architecture, style,
+   or scope.
+6. **Confirm the agreement**: write final task intent to
+   `investigation/alignment_brief.md` for a new assignment. For an existing
+   draft or feedback, `assignment-workflow-planner.md` invokes
+   `current-state-intake.md` before writing the current `repair_plan.md`.
+7. **Design the pipeline**: write a custom `pipeline_design.md` from the spec
+   and confirmed intent; retained flows write `repair_pipeline_design.md` when
+   appropriate. There is no fixed "paper pipeline" or "lab pipeline"; tools are
+   composed per assignment.
+8. **Execute and review**: generate stage briefs, dispatch executors/reviewers
    when useful, record receipts, run checks, and collect artifacts under
    `draft/`.
-8. **Ask before submission**: Canvas submission is never automatic.
+9. **Ask before submission**: Canvas submission is never automatic.
 
 This is why a complex project can produce a notebook, report PDF, slides,
 requirements file, source zip, verification log, and human review items in the
@@ -247,7 +265,9 @@ AutoStudy/
 ├── sub-skills/
 │   ├── tasks/
 │   │   ├── sync-status.md
-│   │   ├── do-homework.md
+│   │   ├── do-homework.md             # router / preflight / route selection
+│   │   ├── assignment-source-intake.md # clean-start source/spec intake
+│   │   ├── assignment-workflow-planner.md # alignment / planning / retained flow
 │   │   ├── task-orchestrator.md
 │   │   ├── sync-course.md
 │   │   └── write-course-notes.md
@@ -255,6 +275,7 @@ AutoStudy/
 │       ├── canvascli-setup.md
 │       ├── canvascli-api.md
 │       ├── assignment-recon.md
+│       ├── current-state-intake.md    # retained current-state exploration
 │       ├── code-writer.md
 │       ├── writing-helper.md
 │       ├── pdf-renderer.md
@@ -285,8 +306,9 @@ Passing and usable:
 
 - Canvas data layer via `canvascli`.
 - `sync-status` scan-plan flow.
-- `do-homework` workbench, reconnaissance, alignment, and dynamic pipeline
-  planning.
+- `do-homework` as the public homework entrypoint; internally it routes through
+  preflight, clean-start source intake, alignment/planning, retained current-state
+  exploration, and dynamic pipeline planning.
 - `task-orchestrator` local draft execution from an approved pipeline.
 - M3 tools: prose, code, figures, tests, slides, PDF rendering, humanizer.
 - Course material sync and course-note generation.

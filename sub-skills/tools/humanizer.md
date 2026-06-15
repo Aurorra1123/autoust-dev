@@ -11,7 +11,7 @@ it's a structured review pass that reduces template-like and predictable pattern
 
 **When to load:**
 - `pipeline_design.md` declares `post-process: humanize` for the stage
-- User requests at do-homework [B]: "降低一下 AI 味道" or similar
+- User requests at `assignment-workflow-planner.md [B]`: "降低一下 AI 味道" or similar
 
 **When NOT to load:**
 - Code files (code-writer output) — only applies to prose

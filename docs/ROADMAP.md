@@ -31,6 +31,7 @@ patterns into local runtime artifacts:
 | Workflow Need | AutoStudy Artifact |
 |---|---|
 | understand the real assignment | `spec.md`, `references/`, `investigation/rubric.md` |
+| route homework startup state | `do-homework.md`, `prelaunch_startup_inventory.json` |
 | clarify user intent | `investigation/user_notes.md`, `investigation/alignment_brief.md` |
 | plan execution | `pipeline_design.md` or `repair_pipeline_design.md` |
 | isolate work | `stage_briefs/`, executor receipts, reviewer receipts |
@@ -192,9 +193,12 @@ only, not normal workbench outputs.
 The current runtime model is:
 
 ```text
-archive/preflight
+do-homework.md router/preflight/route selection
 -> startup inventory
--> explore stage
+-> clean start: assignment-source-intake.md source/spec intake
+-> retained artifact: assignment-workflow-planner.md
+   -> current-state-intake.md
+   -> repair_plan.md / repair_pipeline_design.md
 -> alignment contract
 -> execution plan
 -> executor/reviewer runtime
@@ -210,14 +214,22 @@ archive/preflight
 
 The runtime branches on startup inventory, not hard-coded mode logic.
 
+`do-homework` remains the public homework command. The split files are internal
+runtime contracts:
+
+- `do-homework.md`: router, preflight, and route selection.
+- `assignment-source-intake.md`: clean-start source/spec intake.
+- `assignment-workflow-planner.md`: alignment, planning, and retained artifact flow.
+- `current-state-intake.md`: retained current-state exploration tool.
+
 ### 3. Canvas Generic Reconnaissance
 
-Official `do-homework` reconnaissance is agent-led. Stage 1 fetches likely
-Canvas source surfaces through atomic `canvascli` commands. Then the always-on
-`reference_collector` child preserves task-relevant original evidence under
-`references/`, and the Main Agent reads `references/REFERENCE_INDEX.md`,
-preserved source files, and Canvas-native source copies before writing terminal
-reconnaissance artifacts:
+For clean starts, `do-homework.md` routes to `assignment-source-intake.md` for
+agent-led reconnaissance. Stage 1 fetches likely Canvas source surfaces through
+atomic `canvascli` commands. Then the always-on `reference_collector` child
+preserves task-relevant original evidence under `references/`, and the Main
+Agent reads `references/REFERENCE_INDEX.md`, preserved source files, and
+Canvas-native source copies before writing terminal reconnaissance artifacts:
 
 - assignment page and attachments;
 - Canvas rubric;
@@ -244,7 +256,8 @@ The output is not a raw dump. It is a structured judgment:
 
 ### 4. User Alignment
 
-After reconnaissance, the agent must align with the user before execution.
+After reconnaissance, `assignment-workflow-planner.md` aligns with the user
+before execution.
 
 For simple tasks this can be one confirmation. For open-ended assignments, the
 agent asks one drift-reducing question at a time, compares approaches when
@@ -260,11 +273,16 @@ For retained-artifact repairs, the equivalent terminal agreement is usually:
 repair_plan.md
 ```
 
+That retained route is `do-homework.md` router ->
+`assignment-workflow-planner.md` -> `current-state-intake.md` ->
+`repair_plan.md` / `repair_pipeline_design.md`.
+
 No confirmed terminal agreement means no final execution plan and no draft run.
 
 ### 5. Dynamic Pipeline And Review
 
-`pipeline_design.md` is written after the confirmed agreement. It declares:
+`pipeline_design.md` or `repair_pipeline_design.md` is written after the
+confirmed agreement. It declares:
 
 - output mode and deliverables;
 - constraints from spec/rubric/user intent;

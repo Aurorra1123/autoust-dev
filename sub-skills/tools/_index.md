@@ -10,7 +10,7 @@ available tools and their contracts. Each tool's full guidance lives in
 `sub-skills/tools/<name>.md`.
 
 **For pipeline design guidance** (common pipeline shapes, tool chaining),
-see `sub-skills/tasks/do-homework.md [C]`.
+see `sub-skills/tasks/assignment-workflow-planner.md [C]`.
 
 ## Tool registry
 
@@ -19,12 +19,12 @@ see `sub-skills/tasks/do-homework.md [C]`.
 | **assignment-recon** | [assignment-recon.md](./assignment-recon.md) | Canvas Generic Stage 1-5 reconnaissance → spec.md + rubric + references | course_id, assignment_id, work_dir | spec.md, investigation/, references/, problem.md |
 | **current-state-intake** | [current-state-intake.md](./current-state-intake.md) | Retained-artifact current-state intake -> explore context + repair recon | work_dir, current_request | investigation/explore_manifest.json, investigation/explore_context.md, optional investigation/repair_recon.md, optional repair_request.md |
 | **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | Markdown → PDF (Chinese, LaTeX math, code, callouts) | markdown file, options | PDF file |
-| **writing-helper** | [writing-helper.md](./writing-helper.md) | Structured academic prose (essay/report/reflection) | spec.md, pipeline_design.md, rubric, references | draft.md |
+| **writing-helper** | [writing-helper.md](./writing-helper.md) | Structured academic prose (essay/report/reflection) | spec.md, execution plan, rubric, references | draft.md |
 | **paper-search** | [paper-search.md](./paper-search.md) | Literature search via arxiv → bib + json | keywords, max_results | references.bib, references.json |
 | **figure-maker** | [figure-maker.md](./figure-maker.md) | Charts/plots via matplotlib | figure_spec dict | fig_N.pdf/png |
-| **code-writer** | [code-writer.md](./code-writer.md) | Source code from spec (Python/C++/etc.) | spec.md, pipeline_design.md, references | src/*.py + tests |
+| **code-writer** | [code-writer.md](./code-writer.md) | Source code from spec (Python/C++/etc.) | spec.md, execution plan, references | src/*.py + tests |
 | **test-runner** | [test-runner.md](./test-runner.md) | pytest execution + report | work_dir/src/ | test_report.md/json |
-| **slide-maker** | [slide-maker.md](./slide-maker.md) | Presentation slides (guizang HTML or beamer) | spec.md, pipeline_design.md | slides.pdf |
+| **slide-maker** | [slide-maker.md](./slide-maker.md) | Presentation slides (guizang HTML or beamer) | spec.md, execution plan | slides.pdf |
 | **humanizer** | [humanizer.md](./humanizer.md) | Post-processing: reduce AI-detectable patterns | draft text | revised text |
 
 > Loading order: read this file first → read every matched top-level tool's .md

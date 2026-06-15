@@ -99,14 +99,17 @@ Important login model:
 skill.md
 ├── sub-skills/tasks/
 │   ├── sync-status.md          # Canvas snapshot -> assistant plan
-│   ├── do-homework.md          # Assignment workbench + alignment + draft flow
-│   ├── task-orchestrator.md    # Stage execution/review from pipeline_design.md
+│   ├── do-homework.md          # Router / preflight / route selection
+│   ├── assignment-source-intake.md     # Clean-start source/spec recon
+│   ├── assignment-workflow-planner.md  # Alignment, planning, retained artifact flow
+│   ├── task-orchestrator.md    # Stage execution/review from approved execution plan
 │   ├── sync-course.md          # Persistent course material archive
 │   └── write-course-notes.md   # Notes from synced lecture PDFs
 ├── sub-skills/tools/
 │   ├── canvascli-setup.md
 │   ├── canvascli-api.md
 │   ├── assignment-recon.md
+│   ├── current-state-intake.md
 │   ├── _index.md
 │   ├── code-writer.md
 │   ├── writing-helper.md
@@ -210,10 +213,11 @@ For open-ended or creative work, keep the alignment loop alive until you can
 write a concrete `alignment_brief.md` with selected approach, design skeleton,
 constraints, delegated decisions, human review items, and stop conditions.
 
-For retained drafts or user feedback, treat the run as a retained-artifact
-start: preserve only user-visible artifacts declared in startup inventory,
-write a current `repair_plan.md`, then plan through
-`repair_pipeline_design.md` when appropriate.
+For retained drafts or user feedback, `do-homework.md` routes directly to
+`assignment-workflow-planner.md`, which invokes
+`sub-skills/tools/current-state-intake.md`. Preserve only user-visible artifacts
+declared in startup inventory, write a current `repair_plan.md`, then plan
+through `repair_pipeline_design.md` when appropriate.
 
 ## Safety Rules
 
@@ -253,8 +257,9 @@ When finishing a task, keep the handoff compact:
 - what remains for the user, if anything;
 - whether Canvas submission happened.
 
-For `do-homework [B]`, do not use the generic artifact handoff shape. Use the
-conclusion-first assignment briefing required by `sub-skills/tasks/do-homework.md`:
+For the homework workflow-planner `[B]` alignment checkpoint, do not use the
+generic artifact handoff shape. Use the conclusion-first assignment briefing
+required by `sub-skills/tasks/assignment-workflow-planner.md`:
 lead with the investigation conclusions, source findings, deliverables, grading
 signals, conflicts or gaps, and the next alignment question. File paths are only
 a short optional audit appendix after the assignment briefing.
