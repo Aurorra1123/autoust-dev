@@ -1,6 +1,6 @@
 # Homework Router Source Intake Planner Split Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Split `do-homework.md` into a router, clean-start source intake, workflow planner, and retained current-state intake tool without changing the already-debugged runtime behavior.
 
@@ -29,7 +29,7 @@
 - Create: `tests/test_homework_router_split_policy.py`
 - Modify: existing tests only when they still assume all contracts live in `sub-skills/tasks/do-homework.md`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `tests/test_homework_router_split_policy.py` with this content:
 
@@ -113,7 +113,7 @@ def test_tools_index_registers_current_state_intake():
     assert "retained" in index
 ```
 
-- [ ] **Step 2: Run tests and confirm they fail**
+- [x] **Step 2: Run tests and confirm they fail**
 
 Run:
 
@@ -123,7 +123,7 @@ Run:
 
 Expected: tests fail because `assignment-source-intake.md`, `assignment-workflow-planner.md`, and `current-state-intake.md` do not exist yet.
 
-- [ ] **Step 3: Commit tests**
+- [x] **Step 3: Commit tests**
 
 ```bash
 git add tests/test_homework_router_split_policy.py
@@ -138,7 +138,7 @@ Expected: one test-only commit.
 - Create: `sub-skills/tools/current-state-intake.md`
 - Modify: `sub-skills/tools/_index.md`
 
-- [ ] **Step 1: Create the tool workflow file**
+- [x] **Step 1: Create the tool workflow file**
 
 Create `sub-skills/tools/current-state-intake.md` with this structure and wording:
 
@@ -292,7 +292,7 @@ Before returning to the planner, verify:
 - No final planning artifact was written by this tool.
 ````
 
-- [ ] **Step 2: Register the tool**
+- [x] **Step 2: Register the tool**
 
 Add this row to `sub-skills/tools/_index.md` after `assignment-recon`:
 
@@ -306,7 +306,7 @@ Add this capability vocabulary row:
 | `current_state_intake` | Retained-artifact current state -> explore context |
 ````
 
-- [ ] **Step 3: Run boundary tests**
+- [x] **Step 3: Run boundary tests**
 
 ```bash
 .venv/bin/python -m pytest tests/test_homework_router_split_policy.py -q
@@ -314,7 +314,7 @@ Add this capability vocabulary row:
 
 Expected: tests still fail for missing task files, but `test_current_state_intake_tool_boundary` and `test_tools_index_registers_current_state_intake` pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add sub-skills/tools/current-state-intake.md sub-skills/tools/_index.md
@@ -327,7 +327,7 @@ git commit -m "docs: add current-state intake tool"
 - Create: `sub-skills/tasks/assignment-source-intake.md`
 - Source sections: `sub-skills/tasks/do-homework.md` current clean-start intro, required artifact chain, `[A] Build The Assignment Workbench`, `[A3] Canvas Generic Reconnaissance - Mandatory`, `[A4] Gate On Reconnaissance Quality`
 
-- [ ] **Step 1: Create the task header and scope**
+- [x] **Step 1: Create the task header and scope**
 
 Create `sub-skills/tasks/assignment-source-intake.md` with:
 
@@ -348,7 +348,7 @@ Do not use this task for retained drafts, prior outputs, `review_or_submit`,
 identified missing or stale source evidence as a blocker.
 ````
 
-- [ ] **Step 2: Move the clean-start source contract**
+- [x] **Step 2: Move the clean-start source contract**
 
 Move the existing clean-start source sections from `do-homework.md` into this
 file with only cross-reference edits:
@@ -385,7 +385,7 @@ required_spec_constraints
 fallback_allowed_for_final: false
 ```
 
-- [ ] **Step 3: Add terminal handoff**
+- [x] **Step 3: Add terminal handoff**
 
 At the end of `assignment-source-intake.md`, add:
 
@@ -403,7 +403,7 @@ has produced the terminal reconnaissance artifacts and the next action is
 planner alignment or recovery.
 ````
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 ```bash
 .venv/bin/python -m pytest tests/test_homework_router_split_policy.py tests/test_source_body_audit_policy.py tests/test_pdf_link_annotation_policy.py tests/test_spec_hard_requirement_policy.py -q
@@ -411,7 +411,7 @@ planner alignment or recovery.
 
 Expected: split tests still fail until planner/router are created; old policy tests may fail where they still read only `do-homework.md`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sub-skills/tasks/assignment-source-intake.md
@@ -424,7 +424,7 @@ git commit -m "docs: add assignment source intake task"
 - Create: `sub-skills/tasks/assignment-workflow-planner.md`
 - Source sections: `sub-skills/tasks/do-homework.md` current `[B]`, `[C]`, output/pipeline review sections, retained/review/continue action guidance
 
-- [ ] **Step 1: Create the task header and entry modes**
+- [x] **Step 1: Create the task header and entry modes**
 
 Create `sub-skills/tasks/assignment-workflow-planner.md` with:
 
@@ -452,13 +452,13 @@ artifacts, first invoke `../tools/current-state-intake.md`.
 | recovery | previous `result.json` plus allowlisted history | use current-state intake unless source evidence is explicitly missing/stale |
 ````
 
-- [ ] **Step 2: Move `[B]` alignment**
+- [x] **Step 2: Move `[B]` alignment**
 
 Move the current `### [B] Recon Summary + Alignment Loop` section from
 `do-homework.md` into this file. Keep the conclusion-first briefing rule and the
 runtime/user boundary intact.
 
-- [ ] **Step 3: Move `[C]` pipeline planning**
+- [x] **Step 3: Move `[C]` pipeline planning**
 
 Move the current `### [C] Design Pipeline`, output format, pipeline review
 status, and handoff-to-orchestrator guidance from `do-homework.md` into this
@@ -473,7 +473,7 @@ result.json
 Pipeline Review Status: awaiting_user_review
 ```
 
-- [ ] **Step 4: Add retained current-state invocation**
+- [x] **Step 4: Add retained current-state invocation**
 
 Before the retained-artifact alignment path, add:
 
@@ -501,7 +501,7 @@ Do not read raw archived process evidence unless `prelaunch_startup_inventory.js
 allowlists exact paths for process-history exploration.
 ````
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 ```bash
 .venv/bin/python -m pytest tests/test_homework_router_split_policy.py -q
@@ -509,7 +509,7 @@ allowlists exact paths for process-history exploration.
 
 Expected: planner tests pass except router-specific assertions that still depend on shrinking `do-homework.md`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sub-skills/tasks/assignment-workflow-planner.md
@@ -521,7 +521,7 @@ git commit -m "docs: add assignment workflow planner task"
 **Files:**
 - Modify: `sub-skills/tasks/do-homework.md`
 
-- [ ] **Step 1: Replace body with router contract**
+- [x] **Step 1: Replace body with router contract**
 
 Rewrite `do-homework.md` as a concise router. Preserve the front matter name and description, then include:
 
@@ -601,7 +601,7 @@ After routing, follow the downstream file. Draft execution happens only through
 `pipeline_design.md` or `repair_pipeline_design.md`.
 ````
 
-- [ ] **Step 2: Preserve tested policy phrases in router or move tests**
+- [x] **Step 2: Preserve tested policy phrases in router or move tests**
 
 If existing tests require policy phrases that now belong in source intake, update
 the tests to read both files instead of duplicating all text in the router.
@@ -621,7 +621,7 @@ policy_text = "\n".join(
 )
 ```
 
-- [ ] **Step 3: Run focused tests**
+- [x] **Step 3: Run focused tests**
 
 ```bash
 .venv/bin/python -m pytest tests/test_homework_router_split_policy.py tests/test_source_body_audit_policy.py tests/test_pdf_link_annotation_policy.py tests/test_spec_hard_requirement_policy.py -q
@@ -629,7 +629,7 @@ policy_text = "\n".join(
 
 Expected: all focused tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add sub-skills/tasks/do-homework.md tests
@@ -649,7 +649,7 @@ git commit -m "docs: make do-homework route split flows"
 - Modify: `docs/development-validation-standard.md`
 - Modify: `docs/superpowers/specs/2026-06-15-homework-router-source-intake-planner-split-design.md` if implementation wording changed
 
-- [ ] **Step 1: Update skill architecture tree**
+- [x] **Step 1: Update skill architecture tree**
 
 In `skill.md`, update the runtime architecture tree so tasks include:
 
@@ -665,7 +665,7 @@ and tools include:
 current-state-intake.md
 ```
 
-- [ ] **Step 2: Update user flow wording**
+- [x] **Step 2: Update user flow wording**
 
 In `skill.md`, keep `do-homework.md` as the user route, but change the retained draft paragraph to:
 
@@ -677,7 +677,7 @@ declared in startup inventory, write a current `repair_plan.md`, then plan
 through `repair_pipeline_design.md` when appropriate.
 ```
 
-- [ ] **Step 3: Update README files**
+- [x] **Step 3: Update README files**
 
 In `README.md`, `README.en.md`, and `README.quick.md`, update the repository
 structure and status language to mention:
@@ -691,7 +691,7 @@ current-state-intake.md
 Keep the public task name as `do-homework`; do not present the new internal
 files as separate user commands.
 
-- [ ] **Step 4: Update runtime protocol**
+- [x] **Step 4: Update runtime protocol**
 
 In `docs/runtime-agent-protocol.md`, add or adjust the homework file mapping so:
 
@@ -705,7 +705,7 @@ current-state-intake.md = retained current-state exploration tool
 Also update retained-artifact sections to say the planner invokes the tool and
 then reads `explore_context.md` / `repair_recon.md`.
 
-- [ ] **Step 5: Update validation standard**
+- [x] **Step 5: Update validation standard**
 
 In `docs/development-validation-standard.md`, replace references that imply
 `do-homework.md [B]` owns retained current-state exploration with:
@@ -717,7 +717,7 @@ do-homework router -> assignment-workflow-planner.md -> current-state-intake.md 
 Keep existing startup inventory, no-leak cleanup, scout ledger, and allowlisted
 history rules intact.
 
-- [ ] **Step 6: Run documentation search**
+- [x] **Step 6: Run documentation search**
 
 ```bash
 rg -n "do-homework \\[A\\]|do-homework \\[B\\]|do-homework \\[C\\]|assignment-source-intake|assignment-workflow-planner|current-state-intake|source_findings.compact|reading_plan.compact" skill.md README*.md docs sub-skills tests
@@ -729,7 +729,7 @@ Expected:
 - `source_findings.compact` and `reading_plan.compact` appear only in forbidden/stale contexts.
 - new files are referenced in entry docs and runtime docs.
 
-- [ ] **Step 7: Run tests and commit**
+- [x] **Step 7: Run tests and commit**
 
 ```bash
 .venv/bin/python -m pytest tests -q
@@ -745,7 +745,7 @@ Expected: full policy test suite passes.
 - Runtime output only under `data/homework/UCUG1808-L01/` or a fresh test workbench
 - Do not commit `data/homework/**` unless the repo already tracks a required fixture
 
-- [ ] **Step 1: Clean the target workbench if needed**
+- [x] **Step 1: Clean the target workbench if needed**
 
 Before validation, inspect:
 
@@ -762,7 +762,7 @@ rm -rf data/homework/UCUG1808-L01
 
 Do not remove tracked or user-edited files without checking `git status`.
 
-- [ ] **Step 2: Dispatch an independent coordinator worker**
+- [x] **Step 2: Dispatch an independent coordinator worker**
 
 Use a fresh subagent/worker as the do-homework coordinator. The main agent must
 not act as the coordinator for this validation.
@@ -795,7 +795,7 @@ Return:
 - any blockers.
 ```
 
-- [ ] **Step 3: Main-agent audit**
+- [x] **Step 3: Main-agent audit**
 
 After the worker returns, inspect:
 
@@ -814,7 +814,7 @@ Expected:
 - task-relevant Canvas-native announcements are individual preserved objects when relevant, not full `announcements/source.json`;
 - planner boundary is reached without draft execution.
 
-- [ ] **Step 4: Record validation note**
+- [x] **Step 4: Record validation note**
 
 Create a short tracked validation note only if this repo already keeps such notes
 for development runs. Preferred path:
@@ -827,7 +827,7 @@ If there is no validation notes directory or local policy says not to track runt
 validation notes, summarize the validation only in the final response and do not
 commit runtime `data/` output.
 
-- [ ] **Step 5: Commit validation docs if created**
+- [x] **Step 5: Commit validation docs if created**
 
 ```bash
 git add docs/superpowers/validation/2026-06-15-homework-router-split-ucug1808.md

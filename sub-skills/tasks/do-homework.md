@@ -42,6 +42,7 @@ and record the accepted route:
 
 ```json
 {
+  "work_dir": "data/homework/<COURSE>/<assignment>",
   "entry_preset": "clean_start | retained_artifact_start",
   "route": "assignment-source-intake.md | assignment-workflow-planner.md",
   "recommended_action": "recon | review_or_execute | review_or_submit | continue",

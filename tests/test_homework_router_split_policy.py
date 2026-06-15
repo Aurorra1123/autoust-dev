@@ -69,6 +69,18 @@ def test_current_state_intake_tool_boundary():
     assert "must not run clean-start Canvas/source recon" in text
 
 
+def test_startup_inventory_records_workbench_path():
+    router = read("sub-skills/tasks/do-homework.md")
+    source = read("sub-skills/tasks/assignment-source-intake.md")
+    current_state = read("sub-skills/tools/current-state-intake.md")
+
+    assert '"work_dir": "data/homework/<COURSE>/<assignment>"' in router
+    assert "work_dir is missing" in source
+    assert "does not match the active workbench" in source
+    assert "work_dir is missing" in current_state
+    assert "does not match the active workbench" in current_state
+
+
 def test_tools_index_registers_current_state_intake():
     index = read("sub-skills/tools/_index.md")
 

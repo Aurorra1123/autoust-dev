@@ -89,14 +89,15 @@ workbench shape, retained terminal artifacts, candidate generated outputs,
 existing source trees, verification files, retained startup files, and exact
 allowlisted process-history files.
 
-If the startup inventory is missing or stale, inspect only the active workbench
-root at shallow depth to identify obvious current user-visible artifacts such as
-`draft/`, rendered PDFs, packages, notebooks, source directories, tests, and
-verification files. Do not inspect `archive/`, `transcripts/`, old
-`stage_results/`, old `stage_reviews/`, old reviews, or old diagnostics while
-reconstructing this minimal inventory. Record the missing/stale inventory as a
-blocker in `investigation/explore_manifest.json`; do not switch to clean-start
-Canvas recon.
+If the startup inventory is missing or stale, including when
+`work_dir is missing` or when `work_dir does not match the active workbench`, inspect only
+the active workbench root at shallow depth to identify obvious current
+user-visible artifacts such as `draft/`, rendered PDFs, packages, notebooks,
+source directories, tests, and verification files. Do not inspect `archive/`,
+`transcripts/`, old `stage_results/`, old `stage_reviews/`, old reviews, or old
+diagnostics while reconstructing this minimal inventory. Record the
+missing/stale inventory as a blocker in `investigation/explore_manifest.json`;
+do not switch to clean-start Canvas recon.
 
 ## Stage 2 - evidence-map
 

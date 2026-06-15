@@ -149,10 +149,12 @@ prelaunch_startup_inventory.json
 Do not resolve assignments, choose `work_dir`, create the initial workbench, run
 preflight archive, or write the startup inventory here. If
 `prelaunch_startup_inventory.json` is missing or stale, return to the
-router/preflight step instead of continuing source intake. The inventory must
-either be accepted for `entry_preset: clean_start` or explicitly route a narrow
-`source_evidence_recovery` from a retained/review/repair/continue flow because
-source evidence is missing, stale, or blocking.
+router/preflight step instead of continuing source intake. Treat the inventory
+as stale when `work_dir is missing` or when
+`work_dir does not match the active workbench`. The inventory must either be accepted for `entry_preset: clean_start`
+or explicitly route a narrow `source_evidence_recovery` from a
+retained/review/repair/continue flow because source evidence is missing, stale,
+or blocking.
 
 The accepted inventory must state:
 
