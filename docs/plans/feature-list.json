@@ -7,7 +7,7 @@
     "acceptance": [
       "canvascli 是独立 git 仓库（~/workspace/canvascli/）",
       "提供 11 个 typer 顶层命令（init/version/whoami/courses/assignments/assignment/announcements/files/folders/download/submit）",
-      "默认 JSON 输出，--pretty 切换人类可读",
+      "data-returning commands 默认 JSON 输出，--pretty 切换人类可读；version/init 是非 JSON 例外",
       "Playwright 一次性 SSO 登录 + cookie 持久化，不存明文密码",
       "AutoStudy .venv pip install -e canvascli 后命令可用",
       "AutoStudy 删除自带 scraper/，所有 sub-skills 引用 canvascli 命令",
@@ -18,7 +18,7 @@
       "canvascli commit 0385f54",
       "sub-skills/tools/canvascli-setup.md + canvascli-api.md",
       "2026-06-01 login/session docs clarified: init is refresh, whoami is health check, remember-login is separate from state.json generation",
-      "2026-06-15 canvascli HEAD fd7a9a8 includes announcement scope/error follow-ups; AutoStudy docs synced announcements --course-id, --start-date/--end-date, latest-active-term term-date snapshot fallback contract, stdout/stderr/exit-code contract, and concise no-Traceback failures",
+      "2026-06-15 canvascli HEAD fd7a9a8 includes announcement scope/error follow-ups; AutoStudy docs synced announcements --course-id, --start-date/--end-date, latest-active-term term-date snapshot with course-date fallback, Canvas default window only when both date sources are incomplete, stdout/stderr/exit-code contract, and concise no-Traceback failures",
       "2026-06-15 AutoStudy venv editable canvascli verification: announcements --help exposed --course-id/--start-date/--end-date; course 2799 returned 23 announcements; forbidden 2177 exited 2 with empty stdout, concise 403 stderr, and no Traceback"
     ],
     "status": "passing"

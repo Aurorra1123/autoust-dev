@@ -9,9 +9,9 @@ Synchronized AutoStudy application-layer docs with fixed `canvascli` HEAD
 date-scope and concise CLI error behavior plus follow-up download/error/docs
 commits. AutoStudy now documents the CLI boundary instead of copying Canvas
 REST workarounds: announcements use `--course-id`, optional `--start-date` /
-`--end-date`, latest-active-term complete snapshots when Canvas exposes term
-dates, Canvas default-window fallback when it does not, and concise stderr /
-exit-code handling.
+`--end-date`, latest-active-term complete snapshots from term dates first,
+course dates second, Canvas default-window fallback only when both are
+incomplete, and concise stderr / exit-code handling.
 
 Verification installed `/Users/deepwisdom/Desktop/project/canvascli` into the
 AutoStudy venv as editable. `.venv/bin/canvascli announcements --help` showed

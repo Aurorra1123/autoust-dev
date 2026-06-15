@@ -155,10 +155,12 @@ with the venv binary:
 ```
 
 The fixed canvascli announcements default is the latest-active-term snapshot
-when Canvas exposes term dates; if term dates are unavailable, canvascli falls
-back to Canvas's default announcements window. Zero announcements is a valid
-checked state: keep `canvas/announcements.json` as the Stage 1 record. If the
-announcements command fails or is unavailable, record the concise CLI stderr in
+when canvascli can derive a date range: first from term `start_at` / `end_at`,
+then from course `start_at` / `end_at` when term dates are incomplete. Only
+when both term and course dates are incomplete does canvascli let Canvas use its
+default announcements window. Zero announcements is a valid checked state: keep
+`canvas/announcements.json` as the Stage 1 record. If the announcements command
+fails or is unavailable, record the concise CLI stderr in
 `investigation/unreachable.txt`; Stage 4 later records the
 `announcements_checked` review field and decides whether the failure blocks
 progress.

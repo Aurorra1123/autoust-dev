@@ -88,10 +88,11 @@ courses = [c for c in all_courses
 REST 或先抓全局公告再在 Python 里按 course_id 过滤，可能只拿到 Canvas 默认窗口，
 漏掉当前学期早期公告。
 
-**根因**：公告范围需要结合 Canvas term dates。fixed `canvascli` 已把这件事收在
-CLI contract 里：当 Canvas 暴露 `term.start_at` / `term.end_at` 时，
-`announcements --course-id <cid>` 默认返回 latest active term 的完整 snapshot；
-如果 Canvas 不提供 term dates，才 fallback 到 Canvas 默认 announcements window。
+**根因**：公告范围需要结合 Canvas term/course dates。fixed `canvascli` 已把这件事
+收在 CLI contract 里：`announcements --course-id <cid>` 默认先用
+`term.start_at` / `term.end_at` 推导 latest active term 的完整 snapshot；term dates
+不完整时再 fallback 到 course `start_at` / `end_at`；只有 term 和 course dates 都不完整时，
+才让 Canvas 使用默认 announcements window。
 
 **规则**：
 - AutoStudy skill/task 文档只依赖 `canvascli announcements --course-id <cid>`、
