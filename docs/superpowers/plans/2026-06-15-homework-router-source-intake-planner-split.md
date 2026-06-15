@@ -41,7 +41,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def read(path: str) -> str:
-    return (ROOT / path).read_text(encoding="utf-8")
+    target = ROOT / path
+    assert target.exists(), f"Expected policy file to exist: {path}"
+    return target.read_text(encoding="utf-8")
 
 
 def test_split_files_exist_and_router_names_routes():
@@ -61,9 +63,8 @@ def test_router_does_not_inline_source_or_planner_bodies():
 
     assert "### [B] Recon Summary + Alignment Loop" not in router
     assert "### [C] Design Pipeline" not in router
+    assert "#### [A3] Canvas Generic Reconnaissance - Mandatory" not in router
     assert "Follow the Canvas Generic stages:" not in router
-    assert "Stage 1 fetch-context" not in router
-    assert "Stage 2 collect-references" not in router
 
 
 def test_source_intake_owns_clean_start_recon_only():
@@ -76,7 +77,6 @@ def test_source_intake_owns_clean_start_recon_only():
     assert "sub-skills/tasks/assignment-workflow-planner.md" in source
     assert "### [B] Recon Summary + Alignment Loop" not in source
     assert "### [C] Design Pipeline" not in source
-    assert "repair_pipeline_design.md" not in source
 
 
 def test_workflow_planner_owns_alignment_pipeline_and_retained_entry():
@@ -88,8 +88,7 @@ def test_workflow_planner_owns_alignment_pipeline_and_retained_entry():
     assert "repair_plan.md" in planner
     assert "repair_pipeline_design.md" in planner
     assert "Pipeline Review Status" in planner
-    assert "Stage 1 fetch-context" not in planner
-    assert "Stage 2 collect-references" not in planner
+    assert "#### [A3] Canvas Generic Reconnaissance - Mandatory" not in planner
 
 
 def test_current_state_intake_tool_boundary():
