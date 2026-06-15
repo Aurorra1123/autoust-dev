@@ -639,7 +639,7 @@ Do not proceed to `[B]` until:
   `source.txt`, and provenance `ORIGIN.md`; summary-only output without
   preserved source copies is incomplete and blocks progression.
 - Any fetched PDF that was used as spec, rubric, input, or source-context
-  evidence has a sibling PDF link annotation manifest under
+  evidence has sibling PDF link annotation manifests under
   `references/*.pdf.links.json` or `references/**/*.pdf.links.json`, even when
   the manifest is empty.
 - `proposal/research/open-ended` runs have body-read evidence for assignment/spec
