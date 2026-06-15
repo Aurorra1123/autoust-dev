@@ -263,3 +263,53 @@ def test_recon_summary_scales_with_investigation_depth():
     assert "methods/topic guidance, timeline/calendar facts" in policy_text
     assert "Do not collapse it into \"supporting context checked.\"" in policy_text
     assert "Important source bodies should not be\ncollapsed into vague phrases" in policy_text
+
+
+def test_b_checkpoint_response_is_conclusion_first_not_artifact_inventory():
+    text = read("sub-skills/tasks/do-homework.md")
+    skill_text = read("skill.md")
+    recon_text = read("sub-skills/tools/assignment-recon.md")
+
+    assert "Conclusion-first `[B]` response rule" in text
+    assert "Do not lead the user-facing `[B]` message with workbench paths" in text
+    assert "artifact inventory" in text
+    assert "process verification details" in text
+    assert "source findings before file links" in text
+    assert "file links may appear only after the investigation conclusions" in text
+    assert "not a completion checklist" in text
+    assert "State the main assignment conclusion" in text
+    assert "what the student must produce and which" in text
+    assert "source controls that conclusion" in text
+    assert "each with the actionable facts discovered from the body" in text
+    assert "grading criteria, due-date or source conflicts" in text
+    assert "stale/forbidden context in user terms" in text
+    assert "Ask the smallest next alignment question needed to avoid guessing" in text
+
+    assert "For `do-homework [B]`, do not use the generic artifact handoff shape" in skill_text
+    assert "conclusion-first assignment briefing" in skill_text
+
+    assert "artifact existence/status alone is insufficient" in recon_text
+    assert "conclusion-first briefing" in recon_text
+
+
+def test_b_checkpoint_briefing_maps_findings_to_reference_categories():
+    text = read("sub-skills/tasks/do-homework.md")
+    recon_text = read("sub-skills/tools/assignment-recon.md")
+
+    assert "source-category evidence map" in text
+    assert "`references/source_docs/`" in text
+    assert "`references/slides/`" in text
+    assert "`references/external/`" in text
+    assert "`references/canvas_native/`" in text
+    assert "assignment shell" in text
+    assert "syllabus" in text
+    assert "announcements" in text
+    assert "modules/pages" in text
+    assert "rubric status" in text
+    assert "group findings by source category" in text
+    assert "for each category, say what was learned from that category" in text
+    assert "Do not collapse all evidence into `references/` or `Canvas sources`" in text
+    assert "specific Canvas-native body such as the assignment shell, syllabus, announcement, module/page, or rubric status" in text
+
+    assert "source-category evidence map for `[B]`" in recon_text
+    assert "user-facing briefing should explain what was learned from each source category" in recon_text

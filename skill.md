@@ -248,6 +248,12 @@ When finishing a task, keep the handoff compact:
 - what remains for the user, if anything;
 - whether Canvas submission happened.
 
+For `do-homework [B]`, do not use the generic artifact handoff shape. Use the
+conclusion-first assignment briefing required by `sub-skills/tasks/do-homework.md`:
+lead with the investigation conclusions, source findings, deliverables, grading
+signals, conflicts or gaps, and the next alignment question. File paths are only
+a short optional audit appendix after the assignment briefing.
+
 Examples:
 
 ```text

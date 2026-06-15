@@ -641,6 +641,16 @@ Before returning to `do-homework [B]`:
     `investigation/rubric.md`, or `investigation/review_a.json` forces a
     recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`
     record instead of a silent stop.
+11. Terminal reconnaissance artifacts contain enough user-facing substance for a
+    conclusion-first briefing at `do-homework [B]`: the main assignment
+    conclusion, controlling source, actionable source-body findings,
+    deliverables, grading criteria, conflicts/gaps, and next alignment question.
+    A passed artifact gate only proves the files exist; artifact existence/status alone is insufficient.
+12. Terminal artifacts support a source-category evidence map for `[B]`: each
+    important finding is traceable to a source category such as
+    `references/source_docs/`, `references/slides/`, `references/external/`, or
+    `references/canvas_native/` assignment shell, syllabus, announcements,
+    modules/pages, rubric status, assignment files, or file metadata. The user-facing briefing should explain what was learned from each source category that materially shaped the assignment understanding.
 
 ## Source Selection Philosophy
 

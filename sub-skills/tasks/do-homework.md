@@ -713,6 +713,54 @@ preliminary output-mode line in `pipeline_design.md`. Its job is to tell the
 user what Canvas fixed, what the sources prove, and which decisions still belong
 to the user before planning.
 
+#### Conclusion-first `[B]` response rule
+
+The user-facing `[B]` message must be investigation-conclusion first. It should
+read like an assignment briefing, not an artifact inventory, process receipt, or
+completion checklist. The `[B]` chat reply is not a completion checklist even
+when all quality gates pass. Do not lead the user-facing `[B]` message with workbench paths, generated file lists, JSON field names, validation script results, child transport details, or process verification details. Those details may be mentioned only after the investigation conclusions, and only when they change the user's decision, explain a blocker, or provide a compact optional audit trail.
+
+Required order for the chat message at `[B]`:
+
+1. State the main assignment conclusion: what the student must produce and which
+   source controls that conclusion.
+2. Give source findings before file links: assignment page, spec PDF/page,
+   syllabus, rubric, announcements, modules, required inputs, and supporting
+   sources, each with the actionable facts discovered from the body.
+3. State grading criteria, due-date or source conflicts, missing/blocked
+   materials, and stale/forbidden context in user terms.
+4. Ask the smallest next alignment question needed to avoid guessing.
+5. Add file links only as a short audit appendix. In other words, file links may appear only after the investigation conclusions, never as the main answer.
+
+The briefing must include a source-category evidence map when more than one
+source category contributed to the investigation. Group findings by source
+category. For each category, say what was learned from that category, not only
+that the category was checked. In short: for each category, say what was learned from that category. Put another way: group findings by source category.
+
+- `references/source_docs/`: PDFs or document exports, with requirements,
+  sections, formatting, timelines, inputs, methods guidance, or grading language
+  found in the document body.
+- `references/slides/`: slide decks, with methods guidance, examples,
+  presentation constraints, timelines, or topic-selection guidance found in the
+  slide text.
+- `references/external/`: Google Docs, external pages, GitHub links, datasets,
+  or starter-code pages, with the concrete facts those sources add.
+- `references/canvas_native/`: Canvas-native assignment shell, rubric status,
+  syllabus, announcements, modules/pages, front page, assignment files, and file
+  metadata. Name the relevant Canvas-native category, such as assignment shell,
+  syllabus, announcements, modules/pages, rubric status, or assignment files,
+  and state what was learned from that body.
+
+Do not collapse all evidence into `references/` or `Canvas sources`. Users
+should be able to tell whether a requirement came from a source doc, a slide
+deck, an external page, or a specific Canvas-native body such as the assignment shell, syllabus, announcement, module/page, or rubric status.
+
+Bad shape: "I finished `[A]`; here are `spec.md`, `review_a.json`,
+`recon_summary.md`, and validation passed." Good shape: "The proposal requires
+a 1200-1500 word APA7 document plus slides; the proposal PDF is the main spec;
+the syllabus adds AI-transparency and assessment-weight constraints; Canvas has
+no rubric; Canvas and PDF due dates conflict; now I need your research topic."
+
 Even when `review_a.json.verdict == "proceed"`, this checkpoint is mandatory.
 `proceed` means the Canvas materials are sufficient to understand the assignment
 surface. It does not mean the user's intended direction is aligned.
