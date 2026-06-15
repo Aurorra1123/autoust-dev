@@ -150,15 +150,15 @@ The required source-of-truth chain is:
 
 ```text
 prelaunch_startup_inventory.json
--> investigation/explore_context.md
 -> investigation/explore_manifest.json
--> investigation/reading_plan.compact.json
--> investigation/source_findings.compact.md
+-> references/REFERENCE_INDEX.md
+-> references/source_docs/, references/slides/, references/external/
+-> references/canvas_native/
 -> spec.md
 -> investigation/rubric.md
--> references/
-   -> fetched external/PDF/PPTX/source files and optional convenience exports
 -> investigation/review_a.json
+-> investigation/recon_summary.md
+-> investigation/explore_context.md
 -> investigation/alignment_brief.md or repair_plan.md
 -> pipeline_design.md or repair_pipeline_design.md
 -> stage_briefs/
@@ -169,35 +169,31 @@ prelaunch_startup_inventory.json
 -> result.json
 ```
 
-Appendix evidence such as `investigation/_appendix/source_index.json`,
-`investigation/_appendix/body_evidence_fragments/`,
-`investigation/_appendix/scout_receipts/`, scout briefs, and compatibility
-aliases is audit/recovery evidence, not the normal Main Agent read interface.
-The `investigation/` top level is reserved for compact parent-readable and
-terminal reconnaissance artifacts such as `reading_plan.compact.json`,
-`source_findings.compact.md`, `recon_summary.md`, `rubric.md`, and
-`review_a.json`. Child prompts, receipts, raw audit JSON, full fragments, and
-compatibility aliases belong under `investigation/_appendix/`.
+Standard homework reconnaissance always uses `reference_collector` after the
+Canvas raw snapshot. The collector narrows task-relevant sources and preserves
+complete original evidence under `references/`. It may download files, extract
+PDF text, preserve PDF link annotations, and copy Canvas-native source JSON
+blocks verbatim into `references/canvas_native/`.
 
-The Main Agent does not read `_appendix/` in standard homework runs. It reads
-compact/terminal files, syllabus and direct-spec source bodies, and exact source
-windows requested by compact findings. Appendix reads are recovery/audit/debug
-exceptions and must be narrowly scoped and recorded.
+The collector must not interpret the assignment, summarize requirements as the
+only evidence path, or write final reconnaissance artifacts. The Main Agent
+reads `references/REFERENCE_INDEX.md`, preserved reference files, and
+Canvas-native `source.json` / `source.txt` copies before writing `spec.md`,
+`rubric.md`, `review_a.json`, `recon_summary.md`, and `explore_context.md`.
 
-`source_findings.compact.md` may be written by multiple content scouts only as
-append-only scoped sections that identify the scout type, scope, dispatch id,
-source paths, and appendix receipt/fragment paths; scouts must not overwrite
-each other's sections.
+Do not create `reading_plan.compact.json`, `reading_plan.compact.approved.json`,
+`source_findings.compact.md`, source index appendix files, source body fragments,
+or source scout receipts in standard runs.
 
 Never draft from just the assignment title, Canvas description, or a single
 link. Canvas assignment descriptions are often empty or incomplete. The
 `problem.md` file is compatibility only; it is not the primary source.
 For Canvas-native bodies such as assignment, syllabus, front page, and pages,
-raw Canvas JSON is the canonical evidence. derived readable artifacts are
-optional convenience copies, not required gates and not authoritative sources.
-summary-only scout output must never replace raw Canvas JSON; downstream stages
-that need Canvas-native constraints must be explicitly allowed to read the
-relevant `canvas/*.json` files and cite raw JSON pointers.
+raw Canvas JSON remains durable backing evidence, but the normal Main Agent
+read interface is the verbatim preserved copy under `references/canvas_native/`.
+Derived summaries are not authoritative sources. Downstream stages that need
+Canvas-native constraints should read the preserved `source.json` / `source.txt`
+copies; raw `canvas/*.json` reads are recovery or explicit fallback exceptions.
 
 The user-facing checkpoints are:
 
