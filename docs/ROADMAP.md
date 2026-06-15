@@ -147,17 +147,19 @@ data/homework/<COURSE>/<HWID>/
 ├── spec.md
 ├── problem.md
 ├── references/
+│   ├── REFERENCE_INDEX.md
+│   ├── source_docs/
+│   ├── slides/
+│   ├── external/
+│   └── canvas_native/
+│       └── announcement-<id-or-slug>/
+│           ├── source.json
+│           ├── source.txt
+│           └── ORIGIN.md
 ├── investigation/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
-│   ├── reading_plan.compact.json
-│   ├── source_findings.compact.md
 │   ├── recon_summary.md
-│   ├── _appendix/
-│   │   ├── source_index.json
-│   │   ├── body_evidence_fragments/
-│   │   └── scout_receipts/
-│   ├── scout_results/                 # compatibility receipts
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -180,6 +182,10 @@ data/homework/<COURSE>/<HWID>/
 
 `spec.md` is the source-grounded assignment report. `problem.md` remains only
 for compatibility with older tools.
+Legacy source-scout artifacts such as `reading_plan.compact.json`,
+`source_findings.compact.md`, `investigation/_appendix/source_index.json`,
+`body_evidence_fragments/`, and source-scout receipts are stale/recovery/debug
+only, not normal workbench outputs.
 
 ### 2. Unified Runtime Flow
 
@@ -206,20 +212,26 @@ The runtime branches on startup inventory, not hard-coded mode logic.
 
 ### 3. Canvas Generic Reconnaissance
 
-Official `do-homework` reconnaissance is agent-led. `metadata_scout` indexes all
-likely Canvas source surfaces through atomic `canvascli` commands, `content_scout`
-reads assigned source bodies from the compact plan, and the Main Agent keeps
-source-body reads bounded to syllabus, direct-spec strong matches,
-`source_findings.compact.md`, and exact parent source windows:
+Official `do-homework` reconnaissance is agent-led. Stage 1 fetches likely
+Canvas source surfaces through atomic `canvascli` commands. Then the always-on
+`reference_collector` child preserves task-relevant original evidence under
+`references/`, and the Main Agent reads `references/REFERENCE_INDEX.md`,
+preserved source files, and Canvas-native source copies before writing terminal
+reconnaissance artifacts:
 
 - assignment page and attachments;
 - Canvas rubric;
 - course front page;
 - syllabus;
 - modules and every module item;
+- announcements as a raw `canvas/announcements.json` collection snapshot;
 - Canvas pages;
 - files;
 - external URLs such as Google Docs.
+
+For announcements, `references/canvas_native/` stores only screened relevant
+objects, one per `announcement-<id-or-slug>/source.json`; it must not mirror the
+full `canvas/announcements.json` array.
 
 The output is not a raw dump. It is a structured judgment:
 

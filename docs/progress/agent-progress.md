@@ -2,6 +2,20 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-15 — reference_collector announcement boundary tightened
+
+Tightened the homework reconnaissance contract after a UCUG1808 replay showed
+`references/canvas_native/announcements/source.json` mirroring the full
+`canvas/announcements.json` collection. The corrected contract is: Stage 1 keeps
+the complete raw announcement snapshot; Stage 2 preserves only screened
+task-relevant announcement objects under
+`references/canvas_native/announcement-<id-or-slug>/source.json`, with
+`REFERENCE_INDEX.md` origins such as `canvas/announcements.json#id=...`.
+
+Also clarified that `reference_collector_used: true` must be backed by a real
+`stage_reviews/child_dispatch_ledger.json` row, not a handwritten alias or an
+empty ledger. Policy tests now cover both boundaries.
+
 ## 2026-06-15 — canvascli announcement contract synced into AutoStudy
 
 Synchronized AutoStudy application-layer docs with fixed `canvascli` HEAD

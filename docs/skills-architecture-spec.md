@@ -253,7 +253,9 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
   - spec.md
   - investigation/rubric.md
   - investigation/alignment_brief.md
-  - references/project_announce.pdf
+  - references/REFERENCE_INDEX.md
+  - references/source_docs/project-brief/project-brief.pdf
+  - references/canvas_native/announcement-deadline-update/source.json
 - writes:
   - draft/notebook.ipynb
   - draft/requirements.txt

@@ -153,8 +153,11 @@ AutoStudy does not generate from the assignment title. The current homework
 contract is:
 
 ```text
-Canvas sources
+Canvas raw snapshots, including canvas/announcements.json
+-> references/REFERENCE_INDEX.md
+-> references/source_docs/ and references/canvas_native/
 -> spec.md
+-> investigation/rubric.md and investigation/review_a.json
 -> investigation/explore_context.md
 -> investigation/alignment_brief.md or repair_plan.md
 -> pipeline_design.md or repair_pipeline_design.md
@@ -168,22 +171,29 @@ Canvas sources
 In plain language:
 
 1. **Explore**: inspect assignment page, rubric, course front page, syllabus,
-   modules, module items, files, pages, and external links through `canvascli`.
-2. **Write the spec**: summarize the real assignment requirements in `spec.md`;
-   put fetched PDFs, Google Docs, starter code, datasets, and other source
-   material under `references/`.
-3. **Align with you**: ask only the questions needed to avoid guessing your
+   modules, module items, announcements, files, pages, and external links through
+   `canvascli`.
+2. **Preserve references**: `reference_collector` saves task-relevant original
+   evidence under `references/`, including PDF companions and screened
+   per-announcement
+   `references/canvas_native/announcement-<id-or-slug>/source.json` objects. It
+   must not copy the full `canvas/announcements.json` array into
+   `references/canvas_native/`.
+3. **Write the spec**: the Main Agent reads `references/REFERENCE_INDEX.md` and
+   preserved original evidence, then summarizes the real assignment requirements
+   in `spec.md` and writes `investigation/review_a.json`.
+4. **Align with you**: ask only the questions needed to avoid guessing your
    topic, group info, dataset, architecture, style, or scope.
-4. **Confirm the agreement**: write final task intent to
+5. **Confirm the agreement**: write final task intent to
    `investigation/alignment_brief.md` for a new assignment, or `repair_plan.md`
    when improving an existing draft.
-5. **Design the pipeline**: write a custom `pipeline_design.md` from the spec
+6. **Design the pipeline**: write a custom `pipeline_design.md` from the spec
    and confirmed intent. There is no fixed "paper pipeline" or "lab pipeline";
    tools are composed per assignment.
-6. **Execute and review**: generate stage briefs, dispatch executors/reviewers
+7. **Execute and review**: generate stage briefs, dispatch executors/reviewers
    when useful, record receipts, run checks, and collect artifacts under
    `draft/`.
-7. **Ask before submission**: Canvas submission is never automatic.
+8. **Ask before submission**: Canvas submission is never automatic.
 
 This is why a complex project can produce a notebook, report PDF, slides,
 requirements file, source zip, verification log, and human review items in the

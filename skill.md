@@ -174,6 +174,11 @@ Canvas raw snapshot. The collector narrows task-relevant sources and preserves
 complete original evidence under `references/`. It may download files, extract
 PDF text, preserve PDF link annotations, and copy Canvas-native source JSON
 blocks verbatim into `references/canvas_native/`.
+Announcement arrays are collection snapshots, not source objects. Do not copy the
+full `canvas/announcements.json` array into `references/canvas_native/`; preserve
+only task-relevant announcement objects, one object per
+`references/canvas_native/announcement-<id-or-slug>/source.json`, with
+`REFERENCE_INDEX.md` raw origins such as `canvas/announcements.json#id=26545`.
 
 The collector must not interpret the assignment, summarize requirements as the
 only evidence path, or write final reconnaissance artifacts. The Main Agent

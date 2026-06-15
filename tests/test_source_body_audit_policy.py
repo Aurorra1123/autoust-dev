@@ -8,6 +8,10 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
+def normalize_ws(text: str) -> str:
+    return " ".join(text.split())
+
+
 def assert_artifact_only_appears_in_forbidden_creation_context(
     policy_text: str, artifact: str
 ) -> None:
@@ -112,6 +116,73 @@ def test_reference_collector_preserves_canvas_native_sources_verbatim():
     assert "ORIGIN.md" in policy_text
     assert "verbatim" in policy_text
     assert "must not summarize" in policy_text or "must not paraphrase" in policy_text
+
+
+def test_reference_collector_preserves_announcements_per_relevant_object():
+    policy_text = "\n".join(
+        [
+            read("skill.md"),
+            read("sub-skills/tools/assignment-recon.md"),
+            read("sub-skills/tasks/do-homework.md"),
+            read("docs/runtime-agent-protocol.md"),
+        ]
+    )
+    normalized_policy_text = normalize_ws(policy_text)
+
+    assert "Announcement arrays are collection snapshots, not source objects." in policy_text
+    assert "Do not copy the full `canvas/announcements.json` array" in normalized_policy_text
+    assert "references/canvas_native/announcement-<id-or-slug>/source.json" in policy_text
+    assert "canvas/announcements.json#id=" in policy_text
+    assert (
+        "Non-empty `review_a.json.relevant_announcements` entries must all be "
+        "preserved `references/canvas_native/announcement-<id-or-slug>/source.json` paths"
+    ) in normalized_policy_text
+    assert "When no announcement is relevant, `relevant_announcements` must be `[]`" in normalized_policy_text
+    assert "entire announcements array" not in policy_text
+    assert "entire announcements JSON array" not in policy_text
+
+
+def test_reference_collector_dispatch_is_auditable():
+    policy_text = "\n".join(
+        [
+            read("sub-skills/tasks/do-homework.md"),
+            read("docs/runtime-agent-protocol.md"),
+            read("docs/development-validation-standard.md"),
+        ]
+    )
+    normalized_policy_text = normalize_ws(policy_text)
+
+    assert (
+        "The `reference_collector` dispatch must be recorded in "
+        "`stage_reviews/child_dispatch_ledger.json`"
+    ) in normalized_policy_text
+    assert "handwritten alias such as `reference_collector_<course>_<assignment>`" in policy_text
+    assert "An empty dispatch ledger cannot prove `reference_collector_used: true`" in normalized_policy_text
+    assert '"role": "reference_collector"' in policy_text
+    assert '"agent_id"' in policy_text
+    assert '"transcript_handle"' in policy_text
+
+
+def test_entry_docs_describe_reference_collector_not_old_source_scout_chain():
+    entry_text = "\n".join(
+        [
+            read("README.md"),
+            read("README.en.md"),
+            read("README.quick.md"),
+            read("docs/COLLABORATION.md"),
+            read("docs/ROADMAP.md"),
+            read("sub-skills/tools/canvascli-api.md"),
+        ]
+    )
+    normalized_entry_text = normalize_ws(entry_text)
+
+    assert "reference_collector" in entry_text
+    assert "references/REFERENCE_INDEX.md" in entry_text
+    assert "references/canvas_native/announcement-<id-or-slug>/source.json" in entry_text
+    assert "canvas/announcements.json#id=" in entry_text
+    assert "metadata_scout builds the source index" not in normalized_entry_text
+    assert "content_scout reads assigned source bodies" not in normalized_entry_text
+    assert "source_findings.compact.md` as normal" not in normalized_entry_text
 
 
 def test_main_agent_reads_references_not_old_source_findings():

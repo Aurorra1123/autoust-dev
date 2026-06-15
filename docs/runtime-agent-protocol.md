@@ -154,6 +154,13 @@ Main Agent / Subagent taxonomy is explicit:
   reconnaissance. It reads raw Canvas snapshots, narrows task-relevant source
   evidence, downloads files, copies Canvas-native JSON verbatim, and writes
   `references/REFERENCE_INDEX.md`.
+- The `reference_collector` dispatch must be recorded in
+  `stage_reviews/child_dispatch_ledger.json` with a real child identity. A
+  handwritten alias such as `reference_collector_<course>_<assignment>` is not
+  clean dispatch evidence. An empty dispatch ledger cannot prove
+  `reference_collector_used: true`.
+  The ledger row must include `"role": "reference_collector"` and either an
+  `"agent_id"` or `"transcript_handle"`.
 - `reference_collector` must not write terminal reconnaissance artifacts or
   summarize source requirements as the evidence path. The Main Agent reads the
   preserved references and terminal Canvas shells before writing terminal
@@ -586,6 +593,14 @@ Canvas-native source objects are also copied verbatim under
 when available. `references/` is the source evidence interface for downstream
 source reads; `canvas/` remains the durable raw snapshot store. Announcement
 snapshots live at `canvas/announcements.json`.
+
+Announcement arrays are collection snapshots, not source objects. Do not copy the
+full `canvas/announcements.json` array into
+`references/canvas_native/announcements/source.json`. Each retained announcement
+must be a screened, task-relevant object copied verbatim to
+`references/canvas_native/announcement-<id-or-slug>/source.json`, and
+`references/REFERENCE_INDEX.md` must point to `canvas/announcements.json#id=...`
+for that object.
 
 Fetched PDFs are rich source objects, not just text files. The visible text layer
 does not necessarily contain URLs behind linked words. Reconnaissance must

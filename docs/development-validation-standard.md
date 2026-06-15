@@ -371,8 +371,15 @@ complete only when:
 - `reference_collector` has produced `references/REFERENCE_INDEX.md`;
 - task-relevant Canvas-native evidence is copied verbatim under
   `references/canvas_native/`;
+- announcement evidence is not a full `canvas/announcements.json` mirror:
+  relevant announcements are screened and preserved one object per
+  `references/canvas_native/announcement-<id-or-slug>/source.json`, with
+  `REFERENCE_INDEX.md` origins such as `canvas/announcements.json#id=26545`;
 - fetched PDFs include original file, extracted text, and link annotation
   manifest;
+- the `reference_collector` dispatch has a
+  `stage_reviews/child_dispatch_ledger.json` row with `"role":
+  "reference_collector"` and either `"agent_id"` or `"transcript_handle"`;
 - Main Agent `review_a.json` records `reference_collector_used: true` and
   `source_scout_pipeline_used: false`.
 
@@ -600,6 +607,11 @@ Every iteration must review the process, not just the artifact quality:
   `investigation/explore_context.md`?
 - Did any retained startup file leak previous conclusions or receipts?
 - Did child subagent trajectories match their declared stage and role?
+- Was the `reference_collector` dispatch recorded in
+  `stage_reviews/child_dispatch_ledger.json` with a real child identity? A
+  handwritten alias such as `reference_collector_<course>_<assignment>` is not
+  clean evidence. An empty dispatch ledger cannot prove
+  `reference_collector_used: true`.
 - Did any child write to coordinator-owned ledgers or other forbidden files?
 - Did any transport recovery occur, and if so was it justified by receipt plus
   transcript evidence rather than accepted from a final message alone?

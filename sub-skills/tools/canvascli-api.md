@@ -345,6 +345,11 @@ Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
 2. Stores raw CLI JSON under `<work_dir>/canvas/`.
 3. Runs `reference_collector` to preserve task-relevant source evidence under
    `<work_dir>/references/`.
+   `canvas/announcements.json` is a Stage 1 collection snapshot; Stage 2 must not
+   copy the full announcements array into
+   `references/canvas_native/announcements/source.json`. Relevant announcements
+   are saved one object per
+   `references/canvas_native/announcement-<id-or-slug>/source.json`.
 4. Writes `<work_dir>/spec.md` as the Main Agent reconnaissance report, not a
    raw dump.
 5. Finds grading criteria into `<work_dir>/investigation/rubric.md`.

@@ -2,6 +2,24 @@
 
 Date: 2026-06-15
 
+## Superseding Contract Note
+
+This report records the validation contract used at the time it was written. It
+is now a historical note, not the current complete acceptance checklist.
+
+Current clean `reference_collector` acceptance also requires:
+
+- a real `reference_collector` row in `stage_reviews/child_dispatch_ledger.json`
+  with child identity or transcript handle; `explore_manifest.json` and
+  `review_a.json` are summaries, not identity authority;
+- relevant announcements preserved one object per
+  `references/canvas_native/announcement-<id-or-slug>/source.json`, with
+  `REFERENCE_INDEX.md` raw origins such as `canvas/announcements.json#id=...`;
+- no `references/canvas_native/announcements/source.json` mirror of the full
+  `canvas/announcements.json` collection;
+- `review_a.json.relevant_announcements` entries that name preserved
+  announcement paths or an empty list when no announcement is relevant.
+
 ## Scope
 
 This was an independent `do-homework` coordinator execution for UCUG1808-L01 / Project Proposal Files through `[A]` only.

@@ -277,12 +277,13 @@ missing `spec.md`, `investigation/rubric.md`, `investigation/review_a.json`, or
 `investigation/recon_summary.md` artifact and the next recovery action.
 Rule for automated checks: missing `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` must write a recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`.
 
-If any non-source scout is dispatched, the Main Agent records it in
-`stage_reviews/child_dispatch_ledger.json` with role `explore_scout`, scout
-type, prompt/brief path, receipt path, dispatch id, and timestamps.
-`reference_collector` is recorded in `explore_manifest.json` and
-`review_a.json`; it writes `references/REFERENCE_INDEX.md` rather than a scout
-receipt path.
+If any child is dispatched before alignment, the Main Agent records it in
+`stage_reviews/child_dispatch_ledger.json` with role, prompt/brief path, receipt
+or output path, dispatch id, and timestamps. For `reference_collector`,
+`explore_manifest.json` and `review_a.json` are status summaries only; they do
+not replace the ledger row with a real child `agent_id` or transcript handle.
+`reference_collector` writes `references/REFERENCE_INDEX.md` rather than a scout
+receipt path, but its dispatch identity remains ledger-backed.
 
 Scout evidence must satisfy the same child-evidence contract used later for
 executor/reviewer children:
@@ -490,9 +491,10 @@ Follow the Canvas Generic stages:
 
 1. **Stage 1 fetch-context**
    Read assignment, rubric, front page, syllabus, modules, every module's items,
-   relevant pages, attached files, and external URLs through atomic
-   `canvascli` commands. Syllabus is a first-class source, not an optional
-   afterthought. Save raw JSON under `canvas/`, but do not treat broad raw
+   announcements, relevant pages, attached files, and external URLs through
+   atomic `canvascli` commands. Syllabus is a first-class source, not an optional
+   afterthought. Save raw JSON under `canvas/`, including the complete
+   `canvas/announcements.json` collection snapshot, but do not treat broad raw
    snapshots as the Main Agent's task context. Stage 1 may record preliminary
    source notes in `investigation/explore_manifest.json`; it does not write
    terminal `spec.md`.
@@ -510,6 +512,14 @@ Follow the Canvas Generic stages:
    content verbatim under `references/canvas_native/<slug>/source.json` with
    readable `source.txt` and provenance `ORIGIN.md`. Wait for
    `references/REFERENCE_INDEX.md`.
+
+   Announcement arrays are collection snapshots, not source objects. Do not copy
+   the full `canvas/announcements.json` array into
+   `references/canvas_native/announcements/source.json`. For announcements,
+   `reference_collector` must screen each item and preserve only relevant
+   complete announcement objects, one per
+   `references/canvas_native/announcement-<id-or-slug>/source.json`, with
+   `REFERENCE_INDEX.md` origins such as `canvas/announcements.json#id=26545`.
 
 3. **Stage 3 write source judgments**
    Read `references/REFERENCE_INDEX.md` and the preserved references named
@@ -584,9 +594,17 @@ Do not proceed to `[B]` until:
 - Non-trivial runs have `explore_context.md`, or a recorded inline-fallback
   reason.
 - Every dispatched non-source scout has a ledger row and a receipt path.
+- The `reference_collector` dispatch must be recorded in
+  `stage_reviews/child_dispatch_ledger.json` with a real child `agent_id` or
+  transcript handle; a handwritten alias such as
+  `reference_collector_<course>_<assignment>` is not clean evidence. An empty
+  dispatch ledger cannot prove `reference_collector_used: true`.
 - `references/REFERENCE_INDEX.md` exists.
 - `references/canvas_native/` contains verbatim source copies for relevant
   Canvas-native syllabus, announcement, assignment page, or Canvas page content.
+  Relevant announcements must be preserved as individual
+  `references/canvas_native/announcement-<id-or-slug>/source.json` objects, not
+  as the full `canvas/announcements.json` array.
 - PDFs that affect the assignment have original PDF, `.pdf.txt`, and
   `.pdf.links.json` companions.
 - `investigation/recon_summary.md` exists and gives a user-readable status plus
@@ -638,6 +656,9 @@ Do not proceed to `[B]` until:
   `references/canvas_native/` records verbatim `source.json`, readable
   `source.txt`, and provenance `ORIGIN.md`; summary-only output without
   preserved source copies is incomplete and blocks progression.
+- Non-empty `review_a.json.relevant_announcements` entries must all be preserved
+  `references/canvas_native/announcement-<id-or-slug>/source.json` paths. When
+  no announcement is relevant, `relevant_announcements` must be `[]`.
 - Any fetched PDF that was used as spec, rubric, input, or source-context
   evidence has sibling PDF link annotation manifests under
   `references/*.pdf.links.json` or `references/**/*.pdf.links.json`, even when

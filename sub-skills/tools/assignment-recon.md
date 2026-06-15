@@ -288,6 +288,24 @@ the raw JSON has no safe section boundary, copy the complete source object.
 For syllabus bodies that are not sectioned, copying the complete
 `canvas/syllabus.json` object is acceptable.
 
+Announcement arrays are collection snapshots, not source objects. Do not copy the
+full `canvas/announcements.json` array into a single
+`references/canvas_native/announcements/source.json` reference. For each
+task-relevant announcement, copy only that complete announcement object verbatim
+to:
+
+```text
+references/canvas_native/announcement-<id-or-slug>/source.json
+references/canvas_native/announcement-<id-or-slug>/source.txt
+references/canvas_native/announcement-<id-or-slug>/ORIGIN.md
+```
+
+`references/REFERENCE_INDEX.md` must list each retained announcement separately
+with a raw origin such as `canvas/announcements.json#id=26545`. If no
+announcement is task-relevant, keep only the Stage 1
+`canvas/announcements.json` snapshot and record `relevant_announcements: []` in
+`review_a.json`.
+
 `source.txt` is an exact body-text export when `body_text` or equivalent text
 exists. `ORIGIN.md` may record origin, copied object id, classification, and
 selection reason, but must not summarize requirements. The collector must not
@@ -539,6 +557,12 @@ Write strict JSON to `<work_dir>/investigation/review_a.json`:
   "verdict": "proceed"
 }
 ```
+
+Non-empty `review_a.json.relevant_announcements` entries must all be preserved
+`references/canvas_native/announcement-<id-or-slug>/source.json` paths. When no
+announcement is relevant, `relevant_announcements` must be `[]`. Do not treat an
+unscreened `references/canvas_native/announcements/source.json` copy of the full
+raw snapshot as valid preserved evidence.
 
 Allowed verdicts:
 

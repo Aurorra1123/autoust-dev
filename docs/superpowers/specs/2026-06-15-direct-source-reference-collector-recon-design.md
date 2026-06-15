@@ -197,6 +197,12 @@ Integrity rules:
 - If the raw JSON has no structured section boundaries, copy the complete
   relevant object. For syllabus bodies that are not sectioned, copying the full
   `canvas/syllabus.json` object is acceptable.
+- Announcement arrays are collection snapshots, not source objects. Never copy
+  the full `canvas/announcements.json` array into one
+  `references/canvas_native/announcements/source.json`; preserve each screened,
+  task-relevant announcement as its own
+  `references/canvas_native/announcement-<id-or-slug>/source.json` object with a
+  raw origin such as `canvas/announcements.json#id=...`.
 - `source.txt` is an exact body-text export when `body_text` or equivalent text
   exists.
 - `ORIGIN.md` records source path, copied object identifier, classification, and
@@ -334,6 +340,13 @@ evidence. The expected shape includes:
 Runs blocked by missing assignment shell, missing direct-spec source, failed
 required download, or unreadable required source set `verdict` to `blocked` and
 name the next recovery action.
+Non-empty `review_a.json.relevant_announcements` entries must all be preserved
+`references/canvas_native/announcement-<id-or-slug>/source.json` paths. When no
+announcement is relevant, `relevant_announcements` must be `[]`.
+`reference_collector_used: true` must be backed by a real
+`stage_reviews/child_dispatch_ledger.json` child row with `"role":
+"reference_collector"` and either `"agent_id"` or `"transcript_handle"`, not
+only by an `explore_manifest.json` status summary or handwritten alias.
 
 ## Directory Boundaries
 
@@ -369,9 +382,16 @@ Policy tests should assert:
 - standard homework reconnaissance includes `reference_collector`;
 - `assignment-recon` still fetches broad Canvas raw snapshots;
 - announcements are part of Stage 1;
+- announcement references are per relevant object and never a full
+  `canvas/announcements.json` mirror under `references/canvas_native/`;
 - `references/REFERENCE_INDEX.md` is the collector interface;
 - Canvas-native task-relevant sources are copied verbatim under
   `references/canvas_native/`;
+- non-empty `review_a.json.relevant_announcements` entries are all preserved
+  `references/canvas_native/announcement-<id-or-slug>/source.json` paths, and no
+  relevant announcements are represented by `[]`;
+- `reference_collector` clean runs have a non-empty
+  `stage_reviews/child_dispatch_ledger.json` row with real child identity;
 - normal runs do not create `reading_plan.compact.json`,
   `source_findings.compact.md`, source index appendix, source body fragments, or
   source scout receipts;

@@ -38,8 +38,15 @@ data/runs/<date>/pending_assignments.json
 
 ```text
 data/homework/<COURSE>/<HWID>/
-├── spec.md
+├── canvas/
+│   └── announcements.json
 ├── references/
+│   ├── REFERENCE_INDEX.md
+│   ├── source_docs/
+│   └── canvas_native/
+│       └── announcement-<id-or-slug>/source.json
+├── spec.md
+├── investigation/review_a.json
 ├── investigation/alignment_brief.md
 ├── pipeline_design.md
 ├── draft/

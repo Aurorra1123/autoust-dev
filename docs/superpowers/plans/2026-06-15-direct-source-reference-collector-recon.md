@@ -443,6 +443,12 @@ references/canvas_native/<slug>/ORIGIN.md
 
 `source.json` must be copied from the raw Canvas snapshot without paraphrase. If
 the raw JSON has no safe section boundary, copy the complete source object.
+Announcement arrays are collection snapshots, not source objects; do not copy the
+full `canvas/announcements.json` array into one
+`references/canvas_native/announcements/source.json`. Preserve each screened,
+task-relevant announcement as
+`references/canvas_native/announcement-<id-or-slug>/source.json` with raw origin
+`canvas/announcements.json#id=...`.
 `source.txt` is an exact body-text export when available. `ORIGIN.md` may record
 origin, copied object id, classification, and selection reason, but must not
 summarize requirements.
@@ -493,6 +499,14 @@ Replace old fields such as `compact_reading_plan_approved`, `source_findings_che
   "verdict": "proceed"
 }
 ```
+
+Non-empty `review_a.json.relevant_announcements` entries must all be preserved
+`references/canvas_native/announcement-<id-or-slug>/source.json` paths. When no
+announcement is relevant, `relevant_announcements` must be `[]`.
+`reference_collector_used: true` must be backed by a real
+`stage_reviews/child_dispatch_ledger.json` row with `"role":
+"reference_collector"` and either `"agent_id"` or `"transcript_handle"`, not
+only by an `explore_manifest.json` status summary or a handwritten alias.
 
 - [ ] **Step 7: Run targeted tests**
 
@@ -752,6 +766,9 @@ Expected:
 
 - one `references/REFERENCE_INDEX.md`;
 - at least one `references/canvas_native/**/source.json` for syllabus, announcement if relevant, assignment/page if relevant, or other Canvas-native task evidence;
+- if announcements are relevant, each preserved announcement is an individual
+  `references/canvas_native/announcement-<id-or-slug>/source.json`, not a full
+  `canvas/announcements.json` mirror;
 - proposal direct-spec PDF or equivalent source file under `references/source_docs/`;
 - matching `.pdf.txt` and `.pdf.links.json` for every fetched spec-impacting PDF.
 
@@ -793,13 +810,35 @@ missing = {k: (data.get(k), v) for k, v in required.items() if data.get(k) != v}
 assert not missing, missing
 assert data.get("direct_spec_sources"), "direct_spec_sources is empty"
 assert data.get("downloaded_references"), "downloaded_references is empty"
+for item in data.get("relevant_announcements", []):
+    assert "references/canvas_native/announcement-" in item, item
 assert "compact_reading_plan_approved" not in data
 assert "source_findings_checked" not in data
 print(review_paths[0])
 PY
 ```
 
-Expected: command prints the `review_a.json` path and exits 0.
+Then verify the real collector dispatch evidence:
+
+```bash
+.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+
+root = Path("data/homework/UCUG1808-L01")
+ledger_paths = list(root.glob("**/stage_reviews/child_dispatch_ledger.json"))
+assert len(ledger_paths) == 1, ledger_paths
+ledger = json.loads(ledger_paths[0].read_text())
+collector_rows = [row for row in ledger if row.get("role") == "reference_collector"]
+assert collector_rows, "missing reference_collector ledger row"
+for row in collector_rows:
+    assert row.get("agent_id") or row.get("transcript_handle"), row
+print(ledger_paths[0])
+PY
+```
+
+Expected: commands print the `review_a.json` path and the
+`stage_reviews/child_dispatch_ledger.json` path, then exit 0.
 
 - [ ] **Step 7: Validate reference index does not summarize source requirements**
 

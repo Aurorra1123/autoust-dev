@@ -134,8 +134,11 @@ Canvas IDs 和建议 workbench。选中编号后，不应该再靠标题模糊�
 AutoStudy 不会只看作业标题就开始生成。当前 homework contract 是：
 
 ```text
-Canvas sources
+Canvas raw snapshots, including canvas/announcements.json
+-> references/REFERENCE_INDEX.md
+-> references/source_docs/ and references/canvas_native/
 -> spec.md
+-> investigation/rubric.md and investigation/review_a.json
 -> investigation/explore_context.md
 -> investigation/alignment_brief.md or repair_plan.md
 -> pipeline_design.md or repair_pipeline_design.md
@@ -149,15 +152,19 @@ Canvas sources
 换成普通话就是：
 
 1. **侦查**：通过 `canvascli` 检查 assignment page、rubric、front page、
-   syllabus、modules、module items、files、pages 和外部链接。
-2. **写 spec**：把真正的作业要求总结到 `spec.md`；把抓到的 PDF、Google Doc、
-   starter code、数据集等放进 `references/`。
-3. **和你对齐**：只问那些不问就会猜错的问题，例如 topic、group info、dataset、
+   syllabus、modules、module items、announcements、files、pages 和外部链接。
+2. **保存 reference**：`reference_collector` 把任务相关的原始证据保存到
+   `references/`，包括 PDF 三件套和逐条筛选后的
+   `references/canvas_native/announcement-<id-or-slug>/source.json`；不会把完整
+   `canvas/announcements.json` 整包塞进 `references/canvas_native/`。
+3. **写 spec**：主代理读取 `references/REFERENCE_INDEX.md` 和保存好的原始证据，
+   把真正的作业要求总结到 `spec.md`，并写 `investigation/review_a.json`。
+4. **和你对齐**：只问那些不问就会猜错的问题，例如 topic、group info、dataset、
    architecture、style、scope。
-4. **确认 agreement**：新作业写入 `investigation/alignment_brief.md`；继续修改已有草稿时写入 `repair_plan.md`。
-5. **设计 pipeline**：根据 spec 和确认后的 intent 写 `pipeline_design.md`。现在不再有固定的 “paper pipeline” 或 “lab pipeline”，而是按作业现场组合工具。
-6. **执行和审查**：生成 stage briefs，必要时派发 executor/reviewer，记录 receipts，运行检查，把最终产物放进 `draft/`。
-7. **提交前询问**：Canvas submission 从不自动发生。
+5. **确认 agreement**：新作业写入 `investigation/alignment_brief.md`；继续修改已有草稿时写入 `repair_plan.md`。
+6. **设计 pipeline**：根据 spec 和确认后的 intent 写 `pipeline_design.md`。现在不再有固定的 “paper pipeline” 或 “lab pipeline”，而是按作业现场组合工具。
+7. **执行和审查**：生成 stage briefs，必要时派发 executor/reviewer，记录 receipts，运行检查，把最终产物放进 `draft/`。
+8. **提交前询问**：Canvas submission 从不自动发生。
 
 所以一个复杂项目可以在同一个 workbench 里同时产生 notebook、report PDF、slides、
 requirements、source zip、verification log 和 human review items。
