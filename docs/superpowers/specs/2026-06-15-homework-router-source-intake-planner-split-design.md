@@ -5,12 +5,14 @@ Date: 2026-06-15
 ## Approved Direction
 
 Split the current monolithic `sub-skills/tasks/do-homework.md` into a thin
-router plus two task files:
+router plus two task files, with retained current-state intake extracted into a
+tool workflow:
 
 ```text
 sub-skills/tasks/do-homework.md                  # router / preflight only
 sub-skills/tasks/assignment-source-intake.md     # clean-start source recon
 sub-skills/tasks/assignment-workflow-planner.md  # alignment, planning, retained artifact flow
+sub-skills/tools/current-state-intake.md         # retained-artifact current-state intake
 ```
 
 This is a file-boundary refactor, not a behavior rewrite. The implementation
@@ -24,13 +26,15 @@ tests/docs that point to the old monolithic shape should change.
 2. Make clean-start Canvas/source reconnaissance readable in isolation.
 3. Make post-recon alignment, pipeline design, and retained-artifact planning
    readable in isolation.
-4. Preserve the current `reference_collector` contract exactly, including:
+4. Keep retained-artifact current-state intake reusable and linkable as a tool
+   workflow, parallel in shape to `assignment-recon.md`.
+5. Preserve the current `reference_collector` contract exactly, including:
    Stage 1 full raw snapshots, Stage 2 narrowed preserved references,
    per-announcement Canvas-native preservation, and ledger-backed child identity.
-5. Preserve the current retained-artifact behavior: existing drafts do not run
+6. Preserve the current retained-artifact behavior: existing drafts do not run
    clean-start source recon by default, but still need current-state exploration
    before alignment/planning.
-6. Keep preflight archive and startup inventory as a shared entry boundary before
+7. Keep preflight archive and startup inventory as a shared entry boundary before
    route selection.
 
 ## Non-Goals
@@ -137,7 +141,8 @@ design schema.
 ### `assignment-workflow-planner.md`
 
 This file owns the current-task agreement and pipeline planning flow. It has two
-entry modes.
+entry modes. It may invoke tools, but it should not inline the full retained
+current-state intake procedure.
 
 Clean recon entry:
 
@@ -151,24 +156,61 @@ Clean recon entry:
 Retained artifact entry:
 
 - Read `prelaunch_startup_inventory.json`.
-- Preserve retained user-visible artifacts as current task context.
-- Treat old logs, prior reviews, transcripts, old stage receipts, and stale
-  pipeline files as process evidence by default.
+- Invoke `sub-skills/tools/current-state-intake.md` using the accepted startup
+  inventory and current request.
+- Read the current-state intake outputs, not raw archived process evidence.
+- Run the retained-artifact alignment loop.
+- Write `repair_plan.md` as the terminal agreement for repair/change flows.
+- Write `repair_pipeline_design.md` when planning a repair/change pipeline.
+
+The planner must not delete `draft/`, silently clean-start the workbench, or
+rerun Canvas/source recon unless current evidence says source/spec artifacts are
+missing, stale, or blocking.
+
+### `current-state-intake.md`
+
+This tool workflow owns retained-artifact current-state exploration. It is the
+retained-artifact counterpart to `assignment-recon.md`: `assignment-recon.md`
+answers "what is the assignment source?", while `current-state-intake.md`
+answers "what is the current retained state that planning may rely on?"
+
+Inputs:
+
+```text
+<work_dir>/prelaunch_startup_inventory.json
+current user request / repair request
+retained user-visible artifacts named in startup inventory
+allowlisted_history_files named in startup inventory
+```
+
+Responsibilities:
+
+- Preserve retained user-visible artifacts as current task context only when the
+  startup inventory names them.
+- Treat old logs, prior reviews, transcripts, old stage receipts, old
+  `pipeline_design.md`, prior `repair_plan.md`, and prior
+  `repair_pipeline_design.md` as process evidence by default.
 - Enable only relevant artifact/codebase/process-history/verification scouts.
-- Write or refresh:
+- Record skipped scouts with concrete reasons.
+- Allow process-history scouts to read only exact `allowlisted_history_files`.
+- Consolidate scout results into current-run artifacts before the planner writes
+  alignment or execution plans.
+- Never write `spec.md`, `review_a.json`, `alignment_brief.md`,
+  `repair_plan.md`, `pipeline_design.md`, or `repair_pipeline_design.md`.
+- Never run clean-start Canvas/source recon; if source/spec evidence is missing
+  or stale, report that as a blocker for the planner/router to handle.
+
+Outputs:
 
 ```text
 investigation/explore_manifest.json
 investigation/explore_context.md
 investigation/repair_recon.md       # when useful for retained-artifact compatibility
 repair_request.md                   # when user feedback needs a stable file
-repair_plan.md                      # terminal agreement for repair/change flows
-repair_pipeline_design.md           # when planning a repair/change pipeline
 ```
 
-Retained artifact entry must not delete `draft/`, silently clean-start the
-workbench, or rerun Canvas/source recon unless current evidence says source/spec
-artifacts are missing, stale, or blocking.
+The planner reads these outputs before writing `repair_plan.md` or
+`repair_pipeline_design.md`.
 
 ## Shared Preflight Archive Design
 
@@ -233,12 +275,14 @@ Implementation should be mostly mechanical:
 1. Copy the existing `[A]` workbench/source reconnaissance sections into
    `assignment-source-intake.md`.
 2. Copy existing `[B]` / `[C]` sections into `assignment-workflow-planner.md`.
-3. Move retained-artifact startup, scout, repair, and review/submit guidance into
-   the planner file, not the source-intake file.
+3. Create `sub-skills/tools/current-state-intake.md` and move retained-artifact
+   startup, scout, and current-state exploration guidance there.
 4. Replace the body of `do-homework.md` with router/preflight/handoff guidance.
-5. Update references in `skill.md`, README files, runtime protocol, validation
-   docs, and policy tests.
-6. Keep section wording stable unless it must change because the file boundary
+5. Make retained-artifact entries in `assignment-workflow-planner.md` link to
+   `../tools/current-state-intake.md`.
+6. Update references in `skill.md`, README files, runtime protocol, validation
+   docs, tools index, and policy tests.
+7. Keep section wording stable unless it must change because the file boundary
    changed.
 
 The implementation should avoid broad rewrites. If a paragraph already encodes a
@@ -268,9 +312,11 @@ problem.md
 pipeline_design.md                 # preliminary output-mode line only, if present
 ```
 
-For retained-artifact planning, the planner reads only current retained artifacts
-and allowlisted history from the startup inventory, then records distilled
-current-run findings in `explore_context.md` / `repair_recon.md`.
+For retained-artifact planning, `current-state-intake.md` reads only current
+retained artifacts and allowlisted history from the startup inventory, then
+records distilled current-run findings in `explore_context.md` /
+`repair_recon.md`. The planner reads those distilled outputs before alignment
+and planning.
 
 Raw `canvas/*.json` remains recovery/fallback evidence, not normal planner
 context after source intake preserves task-relevant source copies.
@@ -285,7 +331,9 @@ Policy tests should assert:
 - `assignment-source-intake.md` does not contain the full `[B]` alignment loop or
   full `[C]` pipeline schema.
 - `assignment-workflow-planner.md` contains `[B]` alignment, `[C]` pipeline
-  design, retained-artifact current-state intake, and repair planning guidance.
+  design, a link to `current-state-intake.md`, and repair planning guidance.
+- `current-state-intake.md` contains retained-artifact current-state intake,
+  scout enable/skip rules, allowlisted history boundaries, and terminal outputs.
 - retained-artifact route does not default to clean-start Canvas/source recon.
 - preflight archive/startup inventory is in router guidance.
 - legacy source-scout artifacts remain forbidden/stale, not normal outputs.
@@ -301,9 +349,11 @@ The refactor is accepted when:
 2. Clean-start route clearly points through `assignment-source-intake.md` then
    `assignment-workflow-planner.md`.
 3. Existing draft / retained artifact route clearly points directly to
-   `assignment-workflow-planner.md` current-state intake.
+   `assignment-workflow-planner.md`, which invokes `current-state-intake.md`.
 4. No behavior-critical details from the current A/B/C flow are deleted; they are
    moved to the appropriate file.
-5. Tests pass.
-6. The final diff is understandable as a split/move refactor rather than a new
+5. `sub-skills/tools/_index.md` lists `current-state-intake.md` as a tool
+   workflow.
+6. Tests pass.
+7. The final diff is understandable as a split/move refactor rather than a new
    workflow rewrite.
