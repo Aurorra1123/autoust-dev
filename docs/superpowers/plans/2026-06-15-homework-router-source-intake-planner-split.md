@@ -841,7 +841,7 @@ Skip this commit if no validation doc was created.
 **Files:**
 - All changed docs/tests
 
-- [ ] **Step 1: Self-review diff**
+- [x] **Step 1: Self-review diff**
 
 ```bash
 git status --short
@@ -852,7 +852,7 @@ git diff -- sub-skills/tasks/do-homework.md sub-skills/tasks/assignment-source-i
 
 Expected: no whitespace errors; diff reads as a split/move plus docs/tests, not a broad behavior rewrite.
 
-- [ ] **Step 2: Full tests**
+- [x] **Step 2: Full tests**
 
 ```bash
 .venv/bin/python -m pytest tests -q
@@ -860,7 +860,7 @@ Expected: no whitespace errors; diff reads as a split/move plus docs/tests, not 
 
 Expected: all tests pass.
 
-- [ ] **Step 3: Review commit granularity**
+- [x] **Step 3: Review commit granularity**
 
 User preference: one coherent task commit, not many tiny commits. If execution produced many micro-commits, squash them into one or a small number of coherent commits before final push:
 
@@ -882,7 +882,7 @@ docs: split homework router and intake flows
 test: validate homework split on UCUG1808
 ```
 
-- [ ] **Step 4: Push current branch**
+- [x] **Step 4: Push current branch**
 
 ```bash
 git status --short --branch
