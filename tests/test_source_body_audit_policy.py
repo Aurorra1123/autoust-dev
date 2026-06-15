@@ -69,7 +69,12 @@ def test_assignment_recon_uses_reference_collector_and_announcements():
 
 
 def test_do_homework_defines_direct_source_reference_boundary():
-    text = read("sub-skills/tasks/do-homework.md")
+    text = "\n".join(
+        [
+            read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
+        ]
+    )
 
     assert "reference_collector" in text
     assert "references/REFERENCE_INDEX.md" in text
@@ -87,6 +92,7 @@ def test_standard_homework_recon_removes_source_scout_pipeline():
         [
             read("skill.md"),
             read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("sub-skills/tools/assignment-recon.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
@@ -105,6 +111,7 @@ def test_reference_collector_preserves_canvas_native_sources_verbatim():
             read("skill.md"),
             read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("sub-skills/tasks/task-orchestrator.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
@@ -124,6 +131,7 @@ def test_reference_collector_preserves_announcements_per_relevant_object():
             read("skill.md"),
             read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -146,6 +154,7 @@ def test_reference_collector_dispatch_is_auditable():
     policy_text = "\n".join(
         [
             read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("docs/runtime-agent-protocol.md"),
             read("docs/development-validation-standard.md"),
         ]
@@ -190,6 +199,7 @@ def test_main_agent_reads_references_not_old_source_findings():
         [
             read("skill.md"),
             read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("sub-skills/tasks/task-orchestrator.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
@@ -224,6 +234,7 @@ def test_reference_collector_review_fields_are_documented():
         [
             read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -265,6 +276,7 @@ def test_reference_collector_forbids_old_artifacts_as_normal_run_outputs():
         [
             read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -299,6 +311,7 @@ def test_source_body_policy_keeps_ucug1808_only_in_acceptance_context():
         [
             read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -324,7 +337,7 @@ def test_acceptance_scenario_fails_on_main_agent_manual_rescue_or_missing_termin
 def test_recon_summary_scales_with_investigation_depth():
     policy_text = "\n".join(
         [
-            read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-workflow-planner.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -337,7 +350,7 @@ def test_recon_summary_scales_with_investigation_depth():
 
 
 def test_b_checkpoint_response_is_conclusion_first_not_artifact_inventory():
-    text = read("sub-skills/tasks/do-homework.md")
+    text = read("sub-skills/tasks/assignment-workflow-planner.md")
     skill_text = read("skill.md")
     recon_text = read("sub-skills/tools/assignment-recon.md")
 
@@ -364,7 +377,7 @@ def test_b_checkpoint_response_is_conclusion_first_not_artifact_inventory():
 
 
 def test_b_checkpoint_briefing_maps_findings_to_reference_categories():
-    text = read("sub-skills/tasks/do-homework.md")
+    text = read("sub-skills/tasks/assignment-workflow-planner.md")
     recon_text = read("sub-skills/tools/assignment-recon.md")
 
     assert "source-category evidence map" in text

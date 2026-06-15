@@ -43,7 +43,12 @@ def test_pdf_link_policy_does_not_name_course_or_resource_type_special_cases():
 
 
 def test_do_homework_requires_pdf_link_manifests_before_alignment():
-    text = read("sub-skills/tasks/do-homework.md")
+    text = "\n".join(
+        [
+            read("sub-skills/tasks/do-homework.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
+        ]
+    )
 
     assert "PDF link annotation manifests" in text
     assert "references/*.pdf.links.json" in text
