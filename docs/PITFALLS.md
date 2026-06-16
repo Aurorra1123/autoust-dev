@@ -147,11 +147,12 @@ except RuntimeError as e:
 
 真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。后来又遇到 DSAA2011 Project：assignment description 是空的，真正项目说明在 module item PDF 里；UCUG1505 FINAL project 则是 assignment description 和 Week 4 module item 都指向同一个 Google Doc spec。
 
-**正确做法**：`do-homework.md [A3]` must call agent-led
-`tools/assignment-recon.md`. The flow fetches broad Canvas raw snapshots,
+**正确做法**：`do-homework.md` routes clean starts to
+`background-recon.md`. That first-stage flow fetches broad Canvas raw snapshots,
 including announcements, then always runs `reference_collector` to preserve
 task-relevant original source evidence under `references/`. The Main Agent
-reads complete preserved references and writes terminal reconnaissance artifacts.
+reads complete preserved references and writes terminal reconnaissance artifacts
+before source confirmation and the planner handoff.
 Do not revive `metadata_scout -> reading_plan.compact.json -> content_scout ->
 source_findings.compact.md`.
 
@@ -170,7 +171,7 @@ assignment shell 定义提交物，proposal/final-project 文件定义框架，m
 topic-selection 课件定义如何选择课堂相关主题和研究路径，同周主题材料提供可选的
 supporting context。只读 proposal framework 会把“文件格式”误当成“作业理解”。
 
-**正确做法**：`assignment-recon` fetches broad Canvas raw snapshots, including
+**正确做法**：`background-recon.md` fetches broad Canvas raw snapshots, including
 announcements, then runs `reference_collector`. The collector preserves
 assignment/spec evidence, methods/topic-selection evidence, and any relevant
 syllabus, page, announcement, PDF, deck, or external source under `references/`
@@ -241,7 +242,7 @@ cluster 图从 page 2 底部开始，被页面边界裁掉；下一页只看到�
 - 群组作业 (UCUG) 通常附件是题目说明 + rubric；lab 类作业附件是数据集 + 题目
 - 极少有老师把题目正文直接粘到 Canvas WYSIWYG 里
 
-启示：**没有 Copilot 式 assignment-recon 这一步，整个 do-homework 就是个 pipeline demo**，不是真能做作业的工具。
+启示：**没有 Copilot 式 background recon 这一步，整个 homework flow 就是个 pipeline demo**，不是真能做作业的工具。
 
 ### 7. Canvas REST API 直接带 cookie 调，不用 OAuth token
 

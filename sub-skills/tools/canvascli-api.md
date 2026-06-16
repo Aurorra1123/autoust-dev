@@ -335,9 +335,9 @@ Submit a file to a Canvas assignment via `online_upload`.
 
 Canvas's `description` field may be an attachment link, a Google Doc link, an empty string, or only a small hint. Reading it directly is the most common cause of agents producing template / placeholder content.
 
-**Don't write your own extractor inline** — use
-`sub-skills/tools/assignment-recon.md`. It follows Canvas Copilot's
-Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
+**Don't write your own extractor inline** — follow
+`sub-skills/tasks/background-recon.md`. It contains the Canvas Generic
+workflow, adapted to AutoStudy's CLI boundary:
 
 1. Calls atomic context commands above: `assignment`, `rubric`,
    `front-page`, `syllabus`, `modules`, `module-items`, `page`, `file`, and
@@ -357,7 +357,9 @@ Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
    blocked resources in `<work_dir>/investigation/unreachable.txt`.
 7. Writes `<work_dir>/investigation/review_a.json` after a cold investigation
    review.
-8. Starts `<work_dir>/pipeline_design.md` with the output mode, then keeps
+8. Writes reconnaissance summaries such as
+   `<work_dir>/investigation/recon_summary.md` and
+   `<work_dir>/investigation/explore_context.md`, then keeps
    `<work_dir>/problem.md` only as a compatibility summary for older tools.
 
 Do not use or recreate an `assignment-context` aggregate command. The mature
@@ -365,8 +367,9 @@ pattern is atomic data access, raw CLI JSON stored under `<work_dir>/canvas/`,
 `reference_collector` preservation of task-relevant original evidence under
 `<work_dir>/references/`, and Main Agent source/spec judgment in
 `<work_dir>/spec.md`.
-Downstream tools should read `spec.md` and `pipeline_design.md` first;
-`problem.md` is temporary compatibility.
+Planner and downstream tools should read `spec.md`, first-stage recon artifacts,
+and then the `pipeline_design.md` or `repair_pipeline_design.md` produced by
+`alignment-planning.md`; `problem.md` is temporary compatibility.
 
 ### One-liner: list file IDs embedded in a saved assignment snapshot
 

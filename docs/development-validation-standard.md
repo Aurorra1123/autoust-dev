@@ -16,12 +16,11 @@ They share the same task artifacts, but they do not have the same actors.
 In the real user line, the current Claude Code Main Agent is the runtime Main
 Agent. It reads `skill.md`, routes to the public `do-homework` task, lets
 `do-homework.md` perform router/preflight/route selection, then follows the
-selected internal runtime file. Clean starts use `assignment-source-intake.md`
-for source/spec intake. Alignment, planning, and retained-artifact flow use
-`assignment-workflow-planner.md`; retained current-state exploration goes
-through `current-state-intake.md` before `repair_plan.md` or
-`repair_pipeline_design.md`. The agent dispatches normal stage workers as
-needed and hands the draft back at `[E]`.
+selected first-stage runtime file. Clean starts use `background-recon.md` for
+background recon plus source confirmation. Retained, repair, and continue starts
+use `existing-work-recon.md` for current work/state recon. The first-stage file
+then reveals `alignment-planning.md`, which owns alignment and pipeline
+planning before `task-orchestrator.md` executes an approved plan.
 
 In the development-validation line, the current session is Main Agent A: an
 outer test harness, not the runtime coordinator being tested. A prepares a
@@ -47,7 +46,7 @@ For `[B]` alignment-loop validation, use this bridge rule:
 6. A forwards B's final brief summary to the human reviewer for confirmation.
    Only after the reviewer confirms may B enter `[C]`.
 
-This lets development testing exercise the real `assignment-workflow-planner.md`
+This lets development testing exercise the real `alignment-planning.md`
 alignment behavior reached through the `do-homework.md` router without letting
 the outer developer session pre-solve the alignment problem.
 
@@ -307,12 +306,12 @@ The runtime coordinator must receive only:
 - explicit user supplements that would normally be provided at `[B]`;
 - `skill.md`;
 - `sub-skills/tasks/do-homework.md`;
-- `sub-skills/tasks/assignment-source-intake.md` for clean-start source/spec
-  intake when the router selects that path;
-- `sub-skills/tasks/assignment-workflow-planner.md` for alignment, planning, and
-  retained-artifact flow;
-- `sub-skills/tools/current-state-intake.md` for retained current-state
-  exploration when the planner invokes that tool;
+- `sub-skills/tasks/background-recon.md` for clean-start background recon when
+  the router selects that path;
+- `sub-skills/tasks/existing-work-recon.md` for retained, repair, or continue
+  current work/state recon when the router selects that path;
+- `sub-skills/tasks/alignment-planning.md` only after the first-stage tail
+  handoff reveals it;
 - `sub-skills/tasks/task-orchestrator.md`;
 - top-level tool contracts that a real AutoStudy runtime could progressively
   load.
@@ -353,17 +352,17 @@ coordinator identity in development validation evidence.
 
 ## Explore And Change-Request Contract
 
-The coordinator must begin every run with exploration, then write the terminal
-agreement for the current request. For clean starts, `do-homework.md` routes to
-`assignment-source-intake.md`, which writes `spec.md`, `problem.md`, references,
-and `investigation/explore_context.md`. For retained-artifact starts,
-`do-homework.md` routes to `assignment-workflow-planner.md`, which invokes
-`current-state-intake.md` before writing `repair_plan.md` or
-`repair_pipeline_design.md`; the tool may also write `repair_request.md` and
-`investigation/repair_recon.md`.
+The coordinator must begin every run with the routed first-stage task, then
+write the terminal agreement for the current request through
+`alignment-planning.md`. For clean starts, `do-homework.md` routes to
+`background-recon.md`, which writes `spec.md`, `problem.md`, references,
+`investigation/explore_context.md`, and the source confirmation checkpoint
+before tail handoff. For retained-artifact starts, `do-homework.md` routes to
+`existing-work-recon.md`, which writes current-state recon artifacts such as
+`investigation/repair_recon.md` before tail handoff to the planner.
 
 For non-trivial retained-artifact or verification runs,
-`current-state-intake.md` may dispatch read-only non-source scout children with
+`existing-work-recon.md` may dispatch read-only non-source scout children with
 isolated prompts, each limited to one evidence class:
 
 - artifact scout: current user-visible artifacts and source/package state, only
@@ -421,7 +420,7 @@ only the `allowlisted_history_files` named in the accepted startup inventory,
 and no scout may use `archive/`, old transcripts, old trajectory reviews, or
 prior diagnostics as hidden task evidence.
 
-The coordinator or `current-state-intake.md` consolidates scout outputs into
+The coordinator or `existing-work-recon.md` consolidates scout outputs into
 `investigation/explore_context.md` and `investigation/explore_manifest.json`
 before the terminal agreement. For retained-artifact starts, the tool may also
 write `investigation/repair_recon.md` as a compatibility summary, then the
@@ -435,7 +434,7 @@ explicitly grants a narrow read for a stage.
 
 When feedback or project intent is open-ended, ambiguous, or creative, the
 coordinator must not collapse directly from exploration to final plan. It must
-run an alignment loop through `assignment-workflow-planner.md`, bridged by A in
+run an alignment loop through `alignment-planning.md`, bridged by A in
 the same spirit as the public homework flow: ask one necessary question at a
 time, wait with a clear marker such as
 `WAITING_FOR_SIMULATED_USER_B_ROUND_<N>` or

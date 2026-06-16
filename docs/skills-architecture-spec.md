@@ -160,13 +160,13 @@ skill 可以在 Post-processing 中引用其他 skill。但不是硬编码调用
 ```markdown
 ## Post-processing
 - 如果当前 execution plan 声明了 `post-process: humanize`，
-  或用户在 assignment-workflow-planner.md [B] 要求降低 AI 味道，则读取 humanizer.md 并执行
+  或用户在 alignment-planning.md [B] 要求降低 AI 味道，则读取 humanizer.md 并执行
 - 否则跳过
 ```
 
 调用决策基于三个信息源：
 1. 当前 execution plan 中当前 stage 的声明
-2. 用户在 assignment-workflow-planner.md [B] 的补充要求
+2. 用户在 alignment-planning.md [B] 的补充要求
 3. skill 自身的判断（如检测到长文输出）
 
 ### 4.2 共享模式
@@ -206,7 +206,12 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 ## 5. Pipeline Design 格式
 
 `pipeline_design.md` 或 `repair_pipeline_design.md` 由
-assignment-workflow-planner.md [C] 在侦查/当前状态摄取 + 用户确认终端协议后写。
+alignment-planning.md [C] 在 first-stage recon 完成并经用户确认终端协议后写。
+`alignment-planning.md` 只负责 alignment 与 planning：clean start 的首次完整
+侦查 briefing/source confirmation 属于 `background-recon.md`，retained/repair
+的 current work/state recon 属于 `existing-work-recon.md`。如果 first-stage
+终端产物缺失，planner 必须停下返回路由或 first-stage task，不能在 `[B]`
+重复 full source-category evidence map 或静默补跑首次侦查。
 格式示例：
 
 ```markdown
@@ -391,7 +396,7 @@ assignment-workflow-planner.md [C] 在侦查/当前状态摄取 + 用户确认�
 
 | 层级 | 来源 | 存储位置 | 状态 |
 |---|---|---|---|
-| **任务级** | assignment-workflow-planner.md [B] 对齐循环 | `investigation/alignment_brief.md` 或 `repair_plan.md` -> 当前 execution plan stage 声明 | ✅ 当前实现方式 |
+| **任务级** | alignment-planning.md [B] 对齐循环 | `investigation/alignment_brief.md` 或 `repair_plan.md` -> 当前 execution plan stage 声明 | ✅ 当前实现方式 |
 | **课程级** | 跨作业积累的课程偏好 | `data/course-overrides/<COURSE>.md` | 🔲 待实现 |
 | **用户级** | 用户主动声明或推断 | Claude Code 项目 memory | 🔲 待实现 |
 
@@ -444,6 +449,13 @@ skill 文件中声明的默认值：
 ## 7. 当前文件结构
 
 ```text
+sub-skills/tasks/
+├── do-homework.md                 # router / preflight / first-stage route
+├── background-recon.md            # clean-start background recon + source confirmation
+├── existing-work-recon.md         # retained/repair/continue current work recon
+├── alignment-planning.md          # alignment-only + pipeline planning
+└── task-orchestrator.md           # approved execution plan runtime
+
 sub-skills/tools/
 ├── _index.md                     # 能力菜单（只列顶层 skill）
 ├── code-writer.md                # 代码生成：通用原则 + 加载语言附录
@@ -458,7 +470,6 @@ sub-skills/tools/
 ├── paper-search.md               # 文献搜索（已有）
 ├── figure-maker.md               # 数据可视化（已有）
 ├── test-runner.md                # 测试执行（已有）
-├── assignment-recon.md          # Canvas Generic 侦查（已有）
 └── canvascli-api.md              # Canvas CLI 参考（已有）
 ```
 

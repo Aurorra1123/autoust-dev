@@ -45,7 +45,7 @@ Runtime invariants:
   `repair_plan.md`, `pipeline_design.md`, `repair_pipeline_design.md`, or
   user-facing deliverables.
 - This tool must not run clean-start Canvas/source recon, call
-  `assignment-recon`, fetch course-wide Canvas sources, or rewrite
+  the clean-start background recon workflow, fetch course-wide Canvas sources, or rewrite
   `references/` as if starting over.
 
 ## Inputs

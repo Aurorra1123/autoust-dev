@@ -35,5 +35,5 @@ def test_top_level_checkpoints_split_recon_confirmation_from_alignment():
 
     assert "After exploration, present the reconnaissance briefing and ask the user to confirm the source understanding." in skill
     assert "After reconnaissance confirmation, run the alignment loop." in skill
-    assert "For the source-intake reconnaissance confirmation checkpoint" in skill
+    assert "For the background-recon reconnaissance confirmation checkpoint" in skill
     assert "For the homework workflow-planner `[B]` alignment checkpoint" not in skill

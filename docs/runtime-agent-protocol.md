@@ -20,7 +20,7 @@ Reference mapping:
 
 | Superpowers practice | AutoStudy runtime translation |
 |---|---|
-| `brainstorming` | post-recon alignment loop with the user in `assignment-workflow-planner.md [B]` |
+| `brainstorming` | post-recon alignment loop with the user in `alignment-planning.md [B]` |
 | spec document | assignment `spec.md` grounded in Canvas sources |
 | `writing-plans` | `pipeline_design.md` as the task-level execution plan |
 | implementer subagent | stage executor subagent with a precise `stage_brief.md` |
@@ -116,11 +116,20 @@ only the scouts whose inputs are present and planning-relevant.
 Runtime homework files map to that flow as:
 
 ```text
-do-homework.md = router/preflight/route selection
-assignment-source-intake.md = clean-start source/spec intake
-assignment-workflow-planner.md = alignment/planning/retained planner
-current-state-intake.md = retained current-state exploration tool
+do-homework.md = router/preflight/first-stage route selection
+background-recon.md = clean-start task background recon
+existing-work-recon.md = retained/repair/continue current work recon
+alignment-planning.md = shared user alignment, brainstorming, and pipeline planning
 ```
+
+`do-homework.md` names only the first-stage task for the accepted route. It must
+not name `alignment-planning.md`; alignment is revealed only by the tail handoff
+inside `background-recon.md` or `existing-work-recon.md`.
+
+For clean starts, `background-recon.md` must present the recon briefing/source
+confirmation checkpoint before revealing the alignment handoff. The planner
+`[B]` stage is alignment-only and must not repeat the full source-category
+evidence map.
 
 ### Archive And Startup Inventory
 
@@ -307,7 +316,7 @@ but it does not validate true scout/executor/reviewer isolation.
 
 This exception creates a second, development-only line around the normal runtime
 line. In real user-facing work there is only the Main Agent and its subagents:
-the Main Agent talks to the user during `assignment-workflow-planner.md [B]` and
+the Main Agent talks to the user during `alignment-planning.md [B]` and
 writes the confirmed terminal agreement. In development validation, the current session
 is outer Main Agent A, which launches coordinator B to simulate that real Main
 Agent. A may prepare clean startup evidence, inject B's stable id, bridge live
@@ -544,17 +553,24 @@ global safety rules.
 
 Runtime entry: the selected `sub-skills/tasks/<task>.md`.
 
-The Main Agent owns the task lifecycle. For `do-homework`, this means:
+The Main Agent owns the task lifecycle. For `do-homework`, this means only:
 
 - resolve the course and assignment;
 - create or resume the workbench;
-- coordinate Canvas reconnaissance;
-- summarize findings and ask the user for supplements;
-- write the task-level plan;
-- create stage briefs;
-- dispatch executor and reviewer subagents;
-- aggregate verification evidence;
-- ask the user whether to review, revise, or submit.
+- write or accept `prelaunch_startup_inventory.json`;
+- select exactly one first-stage route;
+- hand off to `background-recon.md` or `existing-work-recon.md`.
+
+First-stage task files own first-stage evidence:
+
+- `background-recon.md` owns clean-start background reconnaissance,
+  terminal source artifacts, and the recon briefing/source confirmation.
+- `existing-work-recon.md` owns retained, repair, and continue current
+  work/state reconnaissance before planner handoff.
+
+`alignment-planning.md [B]` writes the alignment agreement after first-stage
+handoff, and `alignment-planning.md [C]` writes the user-reviewed execution
+plan. `task-orchestrator.md` executes only an approved plan.
 
 The task skill is written for the Main Agent, not for subagents.
 
@@ -563,7 +579,8 @@ The task skill is written for the Main Agent, not for subagents.
 Primary runtime contracts:
 
 - `sub-skills/tools/canvascli-api.md`
-- `sub-skills/tools/assignment-recon.md`
+- `sub-skills/tasks/background-recon.md`
+- `sub-skills/tasks/existing-work-recon.md`
 - the current assignment workbench
 
 The Main Agent may perform reconnaissance directly or dispatch a focused
@@ -643,9 +660,9 @@ read; a paraphrase-only note is not enough.
 
 Superpowers reference: `brainstorming`.
 
-AutoStudy translation: after clean-start source intake or retained current-state
-intake, the Main Agent runs the `assignment-workflow-planner.md [B]` alignment
-loop.
+AutoStudy translation: after `background-recon.md` or
+`existing-work-recon.md` has written terminal first-stage artifacts and handed
+off, the Main Agent runs the `alignment-planning.md [B]` alignment loop.
 
 The purpose is not generic conversation and not rigid task classification. It is
 to decide whether the current Canvas facts plus user intent are sufficient to
@@ -653,20 +670,14 @@ start the project without guessing the user's core direction or project
 skeleton. Simple assignments may need one confirmation. Open-ended assignments
 require as many focused rounds as needed before planning starts.
 
-The first user-facing message is a recon summary: a depth-adaptive explanation
-of what `spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
-`investigation/unreachable.txt`, `references/`, `problem.md`, and the
-preliminary output-mode note in `investigation/recon_summary.md` or
-`investigation/explore_context.md` prove. It is not a second investigation and
-not a design proposal; it tells the user which facts are fixed by Canvas and
-which decisions still need alignment. Scale the
-   amount of user-facing detail with reconnaissance depth: a tiny one-source
-task can be summarized briefly, while a multi-source run with preserved
-references, PDFs/decks, methods guidance, timeline/calendar evidence, conflicts,
-or non-blocking gaps must surface those findings in the user-facing summary.
-Important source bodies should not be
-collapsed into vague phrases such as "supporting context checked."
-Do not collapse it into "supporting context checked."
+The first alignment message is not the first full reconnaissance-results
+briefing. For clean starts, that briefing and source-understanding confirmation
+already happened in `background-recon.md`. For retained or repair starts,
+current work/state reconnaissance already happened in `existing-work-recon.md`.
+The planner reads those terminal artifacts, asks the smallest user-intent
+question needed to avoid guessing, and must not repeat the full source-category
+evidence map. If the required first-stage artifacts are missing, that is a
+blocker, not permission for the planner to silently run first-stage recon.
 
 Before each user question, the Main Agent performs an internal alignment audit:
 
@@ -779,7 +790,7 @@ AutoStudy translation: the current execution plan.
 
 The current execution plan is `pipeline_design.md` for clean-start assignments
 or `repair_pipeline_design.md` for retained-artifact repair/change entries. It
-is written by the Main Agent after reading:
+is written by `alignment-planning.md [C]` after the Main Agent reads:
 
 - `spec.md`
 - `investigation/rubric.md`
@@ -813,16 +824,17 @@ Required responsibilities:
 - include `Pipeline Review Status`, initially `awaiting_user_review`, with
   approval fields that must be populated before `task-orchestrator.md` runs.
 
-After writing `pipeline_design.md` or `repair_pipeline_design.md`, the planner
-stops for user review. Stage brief generation is a separate
-`task-orchestrator.md` phase.
+After writing `pipeline_design.md` or `repair_pipeline_design.md`,
+`alignment-planning.md [C]` stops for user review. Stage brief generation is a
+separate `task-orchestrator.md` phase.
 
 ### Phase 5: Stage Brief Generation
 
 Superpowers reference: subagent implementer prompt with curated context.
 
-AutoStudy translation: the Main Agent converts each current execution-plan stage
-into precise executor and reviewer stage briefs.
+AutoStudy translation: after `Pipeline Review Status.status` is
+`approved_for_orchestration`, `task-orchestrator.md` converts each current
+execution-plan stage into precise executor and reviewer stage briefs.
 
 Recommended structure:
 
@@ -1373,9 +1385,12 @@ This protocol should eventually drive these updates:
 
 - `skill.md`: stay as runtime entry and safety router; do not grow into a
   development history document.
-- `do-homework.md`: become the Main Agent coordinator contract.
-- `task-orchestrator.md`: become the Main Agent stage-brief and subagent-review
-  loop contract.
+- `do-homework.md`: stay the router/preflight/first-stage route contract.
+- `background-recon.md` and `existing-work-recon.md`: own first-stage
+  reconnaissance contracts.
+- `alignment-planning.md`: own alignment and execution-plan contracts.
+- `task-orchestrator.md`: own stage-brief, execution, and subagent-review loop
+  contracts for approved plans.
 - `docs/skills-architecture-spec.md`: reference this protocol for stage brief
   and review design.
 - `docs/ROADMAP.md`: point to this protocol as the current M3.5 execution

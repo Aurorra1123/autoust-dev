@@ -109,7 +109,9 @@ assignments:
 
 The M3 tools remain active:
 
-- `assignment-recon`
+- `background-recon`
+- `existing-work-recon`
+- `alignment-planning`
 - `writing-helper`
 - `paper-search`
 - `figure-maker`
@@ -195,12 +197,11 @@ The current runtime model is:
 ```text
 do-homework.md router/preflight/route selection
 -> startup inventory
--> clean start: assignment-source-intake.md source/spec intake
--> retained artifact: assignment-workflow-planner.md
-   -> current-state-intake.md
+-> clean start: background-recon.md background recon + source confirmation
+-> retained artifact: existing-work-recon.md current work/state recon
    -> repair_plan.md / repair_pipeline_design.md
--> alignment contract
--> execution plan
+-> alignment-planning.md [B] alignment contract
+-> alignment-planning.md [C] execution plan
 -> executor/reviewer runtime
 -> verification and result receipt
 ```
@@ -218,13 +219,13 @@ The runtime branches on startup inventory, not hard-coded mode logic.
 runtime contracts:
 
 - `do-homework.md`: router, preflight, and route selection.
-- `assignment-source-intake.md`: clean-start source/spec intake.
-- `assignment-workflow-planner.md`: alignment, planning, and retained artifact flow.
-- `current-state-intake.md`: retained current-state exploration tool.
+- `background-recon.md`: clean-start background recon plus recon briefing/source confirmation.
+- `existing-work-recon.md`: retained/repair/continue current work recon.
+- `alignment-planning.md`: alignment-only user loop and pipeline planning after first-stage confirmation.
 
 ### 3. Canvas Generic Reconnaissance
 
-For clean starts, `do-homework.md` routes to `assignment-source-intake.md` for
+For clean starts, `do-homework.md` routes to `background-recon.md` for
 agent-led reconnaissance. Stage 1 fetches likely Canvas source surfaces through
 atomic `canvascli` commands. Then the always-on `reference_collector` child
 preserves task-relevant original evidence under `references/`, and the Main
@@ -256,8 +257,8 @@ The output is not a raw dump. It is a structured judgment:
 
 ### 4. User Alignment
 
-After reconnaissance, `assignment-workflow-planner.md` aligns with the user
-before execution.
+After first-stage reconnaissance and source/current-state confirmation,
+`alignment-planning.md [B]` aligns with the user before execution planning.
 
 For simple tasks this can be one confirmation. For open-ended assignments, the
 agent asks one drift-reducing question at a time, compares approaches when
@@ -274,7 +275,7 @@ repair_plan.md
 ```
 
 That retained route is `do-homework.md` router ->
-`assignment-workflow-planner.md` -> `current-state-intake.md` ->
+`existing-work-recon.md` -> `alignment-planning.md` ->
 `repair_plan.md` / `repair_pipeline_design.md`.
 
 No confirmed terminal agreement means no final execution plan and no draft run.

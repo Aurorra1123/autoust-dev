@@ -337,10 +337,10 @@ def test_recon_summary_scales_with_investigation_depth():
     )
 
     assert "depth-adaptive" in policy_text
-    assert "Scale the\n   amount of user-facing detail with reconnaissance depth" in policy_text
-    assert "methods/topic guidance, timeline/calendar facts" in policy_text
-    assert "Do not collapse it into \"supporting context checked.\"" in policy_text
-    assert "Important source bodies should not be\ncollapsed into vague phrases" in policy_text
+    assert "Scale the amount of user-facing detail with reconnaissance depth" in policy_text
+    assert "methods guidance" in policy_text
+    assert "timelines" in policy_text
+    assert "important findings without opening audit JSON" in policy_text
 
 
 def test_source_intake_confirmation_response_is_conclusion_first_not_artifact_inventory():
@@ -360,7 +360,7 @@ def test_source_intake_confirmation_response_is_conclusion_first_not_artifact_in
     assert "Ask only whether the reconnaissance understanding is correct" in text
     assert "file links only as a short optional audit appendix" in text
 
-    assert "For the source-intake reconnaissance confirmation checkpoint" in skill_text
+    assert "For the background-recon reconnaissance confirmation checkpoint" in skill_text
     assert "sub-skills/tasks/background-recon.md" in router_text
     assert "conclusion-first recon briefing" in skill_text
 

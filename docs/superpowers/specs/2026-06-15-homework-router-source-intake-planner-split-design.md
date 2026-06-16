@@ -1,5 +1,9 @@
 # Homework Router / Source Intake / Planner Split Design
 
+> Historical note: this file records the first router split. The active staged
+> routing refinement is `docs/superpowers/specs/2026-06-16-homework-staged-recon-routing-design.md`
+> and `docs/superpowers/plans/2026-06-16-homework-staged-recon-routing.md`.
+
 Date: 2026-06-15
 
 ## Approved Direction

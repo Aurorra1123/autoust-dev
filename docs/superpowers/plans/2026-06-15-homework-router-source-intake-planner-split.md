@@ -1,5 +1,9 @@
 # Homework Router Source Intake Planner Split Implementation Plan
 
+> Historical note: this file records the first router split. The active staged
+> routing refinement is `docs/superpowers/specs/2026-06-16-homework-staged-recon-routing-design.md`
+> and `docs/superpowers/plans/2026-06-16-homework-staged-recon-routing.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Split `do-homework.md` into a router, clean-start source intake, workflow planner, and retained current-state intake tool without changing the already-debugged runtime behavior.

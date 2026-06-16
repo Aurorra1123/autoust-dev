@@ -1,17 +1,17 @@
 ---
 name: task-orchestrator
-description: Execute an approved per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and a user-approved execution plan. Use after assignment-workflow-planner has produced and the user has approved pipeline_design.md or repair_pipeline_design.md.
+description: Execute an approved per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and a user-approved execution plan. Use after alignment-planning has produced and the user has approved pipeline_design.md or repair_pipeline_design.md.
 ---
 
 # task-orchestrator
 
 The core M3.5 execution coordination mechanism. This task is written for the
-Claude Code Main Agent. It runs only after `do-homework.md` has produced a
-pipeline and the user has approved it. It reads the current execution plan,
-creates bounded stage briefs, dispatches executor and reviewer subagents when a
-stage is delegated, executes simple `delegate: main-agent` stages inline only
-when the approved plan explicitly permits that mode, and aggregates evidence for
-final verification.
+Claude Code Main Agent. It runs only after `alignment-planning.md` has produced
+`pipeline_design.md` or `repair_pipeline_design.md` and the user has approved
+that plan. It reads the current execution plan, creates bounded stage briefs,
+dispatches executor and reviewer subagents when a stage is delegated, executes
+simple `delegate: main-agent` stages inline only when the approved plan
+explicitly permits that mode, and aggregates evidence for final verification.
 
 This task does **not** infer the assignment from raw Canvas fields and does
 **not** consume `task_profile.yaml`. The source of truth is:
@@ -56,23 +56,22 @@ context, the terminal agreement, and the execution plan first.
 
 ## When To Invoke
 
-Only after `do-homework` has:
+Only after `alignment-planning.md` has:
 
-1. Resolved `course_id` and `assignment_id`.
-2. Built the workbench.
-3. Completed the explore stage and wrote `investigation/explore_context.md`, or
-   explicitly recorded that the task was tiny enough for inline exploration.
-4. Completed the alignment loop and confirmed a terminal agreement with the
+1. Received terminal first-stage artifacts from `background-recon.md` or
+   `existing-work-recon.md`.
+2. Completed the alignment loop and confirmed a terminal agreement with the
    user: `investigation/alignment_brief.md` for initial assignments or
    `repair_plan.md` for retained-artifact change requests.
-5. Written or updated the current execution plan from that agreement:
+3. Written or updated the current execution plan from that agreement:
    `pipeline_design.md` or compatibility `repair_pipeline_design.md`.
-6. Presented the execution plan to the user and recorded
+4. Presented the execution plan to the user and recorded
    `Pipeline Review Status.status: approved_for_orchestration` inside the
    current execution plan.
 
 End users do not call this as the first step. They start with `do-homework`;
-this task is the second step after pipeline review approval.
+this task is reached after first-stage recon, alignment planning, and pipeline
+review approval.
 
 ## Required Workbench
 
@@ -168,7 +167,7 @@ runs. Each stage declares `id`, `primary_tool`, `tools`, `tool_roles`,
 `primary_tool: <path>` plus `tools: [<path>]`; normalize it before generating
 stage briefs.
 
-The format is written by `assignment-workflow-planner.md [C]` — the
+The format is written by `alignment-planning.md [C]` — the
 orchestrator reads and executes it. Do not redesign the format here.
 
 ## Execution Flow
@@ -756,8 +755,8 @@ Generic examples:
 ## Pitfalls
 
 1. **Don't make this a free-form classifier again.** Classification happens in
-   assignment-recon Stage 5 and is finalized by
-   `assignment-workflow-planner.md [C]`.
+   clean-start background recon and is finalized by
+   `alignment-planning.md [C]`.
 2. **Don't resurrect `task_profile.yaml`.** It was a transitional idea; the
    workbench plus current execution plan is the contract.
 3. **Don't bake course-specific logic here.** Course quirks belong in `spec.md`,

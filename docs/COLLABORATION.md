@@ -102,9 +102,9 @@ The AutoStudy translation of these practices lives in
 Current approved homework direction:
 
 - The public task remains `do-homework`. Its task file is the router,
-  preflight, and route-selection surface; `assignment-source-intake.md`,
-  `assignment-workflow-planner.md`, and `current-state-intake.md` are internal
-  runtime files, not user-facing commands.
+  preflight, and first-stage route-selection surface; `background-recon.md`,
+  `existing-work-recon.md`, and `alignment-planning.md` are internal runtime
+  files, not user-facing commands.
 - Reconnaissance follows Canvas Copilot `canvas-generic` Stage 1-5: fetch
   context, find rubric, locate inputs, review investigation, and classify output
   mode.
@@ -126,14 +126,15 @@ Current approved homework direction:
   `reading_plan.compact.json`, `source_findings.compact.md`, source index
   appendix files, source body fragments, or source-scout receipts.
 - `problem.md` is temporary compatibility for older tools.
-- Clean-start source/spec intake belongs to `assignment-source-intake.md`.
-  Alignment, planning, and retained-artifact flow belong to
-  `assignment-workflow-planner.md`.
+- Clean-start background recon and source confirmation belong to
+  `background-recon.md`.
+- Retained-artifact current work/state recon belongs to
+  `existing-work-recon.md`.
 - For retained drafts or feedback, the runtime route is `do-homework.md` router
-  -> `assignment-workflow-planner.md` -> `current-state-intake.md` ->
+  -> `existing-work-recon.md` -> `alignment-planning.md` ->
   `repair_plan.md` / `repair_pipeline_design.md`.
-- After the post-recon alignment loop, `assignment-workflow-planner.md` writes a
-  confirmed `investigation/alignment_brief.md`, then writes
+- After the first-stage tail handoff, `alignment-planning.md` writes a confirmed
+  `investigation/alignment_brief.md` or `repair_plan.md`, then writes
   `pipeline_design.md`; `task-orchestrator` executes that plan instead of
   reading `task_profile.yaml`.
 
@@ -193,7 +194,7 @@ reference to Canvas Copilot but serve AutoStudy's assistant-oriented identity:
    should support `revision_needed` status.
 
 4. **Three-layer preference system.** Task-level preferences are aligned at
-   `assignment-workflow-planner.md` `[B]` through a focused user conversation:
+   `alignment-planning.md` `[B]` through a focused user conversation:
    process notes go to
    `investigation/user_notes.md`, while the confirmed final agreement goes to
    `investigation/alignment_brief.md` and drives `pipeline_design.md`.

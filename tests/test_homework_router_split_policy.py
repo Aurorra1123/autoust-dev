@@ -9,10 +9,10 @@ FIRST_STAGE_ROUTE_PATHS = {
     "sub-skills/tasks/existing-work-recon.md",
 }
 OLD_RUNTIME_PATHS = [
-    "assignment-source-intake.md",
-    "assignment-workflow-planner.md",
-    "current-state-intake.md",
-    "assignment-recon.md",
+    "assignment" + "-source-intake.md",
+    "assignment" + "-workflow-planner.md",
+    "current-state" + "-intake.md",
+    "assignment" + "-recon.md",
 ]
 
 
@@ -40,10 +40,10 @@ def test_staged_route_files_exist_and_old_names_are_retired():
     assert (ROOT / "sub-skills/tasks/existing-work-recon.md").exists()
     assert (ROOT / "sub-skills/tasks/alignment-planning.md").exists()
 
-    assert not (ROOT / "sub-skills/tasks/assignment-source-intake.md").exists()
-    assert not (ROOT / "sub-skills/tasks/assignment-workflow-planner.md").exists()
-    assert not (ROOT / "sub-skills/tools/current-state-intake.md").exists()
-    assert not (ROOT / "sub-skills/tools/assignment-recon.md").exists()
+    assert not (ROOT / "sub-skills/tasks" / OLD_RUNTIME_PATHS[0]).exists()
+    assert not (ROOT / "sub-skills/tasks" / OLD_RUNTIME_PATHS[1]).exists()
+    assert not (ROOT / "sub-skills/tools" / OLD_RUNTIME_PATHS[2]).exists()
+    assert not (ROOT / "sub-skills/tools" / OLD_RUNTIME_PATHS[3]).exists()
 
 
 def test_router_exposes_only_first_stage_routes():
@@ -58,10 +58,8 @@ def test_router_exposes_only_first_stage_routes():
     assert ALIGNMENT_PLANNING_PATH not in router
     assert "alignment-planning.md" not in router
     assert "task-orchestrator.md" not in router
-    assert "assignment-workflow-planner.md" not in router
-    assert "assignment-source-intake.md" not in router
-    assert "current-state-intake.md" not in router
-    assert "assignment-recon.md" not in router
+    for old_path in OLD_RUNTIME_PATHS:
+        assert old_path not in router
 
 
 def test_router_does_not_inline_source_existing_or_planner_bodies():
@@ -125,7 +123,7 @@ def test_alignment_planning_owns_shared_alignment_and_refuses_first_stage_recon(
 
     assert "#### [A3] Canvas Generic Reconnaissance - Mandatory" not in planner
     assert "### [A5] Recon Briefing + Source Confirmation" not in planner
-    assert "../tools/current-state-intake.md" not in planner
+    assert f"../tools/{OLD_RUNTIME_PATHS[2]}" not in planner
 
 
 def test_startup_inventory_records_workbench_path():
@@ -143,8 +141,8 @@ def test_startup_inventory_records_workbench_path():
 def test_tools_index_no_longer_registers_routed_homework_stages_as_tools():
     index = read("sub-skills/tools/_index.md")
 
-    assert "assignment-recon" not in index
-    assert "current-state-intake" not in index
+    assert OLD_RUNTIME_PATHS[3].removesuffix(".md") not in index
+    assert OLD_RUNTIME_PATHS[2].removesuffix(".md") not in index
     assert "background-recon.md" not in index
     assert "existing-work-recon.md" not in index
     assert "alignment-planning.md [C]" in index

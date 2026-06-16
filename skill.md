@@ -99,17 +99,16 @@ Important login model:
 skill.md
 ├── sub-skills/tasks/
 │   ├── sync-status.md          # Canvas snapshot -> assistant plan
-│   ├── do-homework.md          # Router / preflight / route selection
-│   ├── assignment-source-intake.md     # Clean-start source/spec recon
-│   ├── assignment-workflow-planner.md  # Alignment, planning, retained artifact flow
+│   ├── do-homework.md          # Router / preflight / first-stage route selection
+│   ├── background-recon.md     # Clean-start homework background recon
+│   ├── existing-work-recon.md  # Retained draft / repair / continue recon
+│   ├── alignment-planning.md   # User alignment, brainstorm, pipeline planning
 │   ├── task-orchestrator.md    # Stage execution/review from approved execution plan
 │   ├── sync-course.md          # Persistent course material archive
 │   └── write-course-notes.md   # Notes from synced lecture PDFs
 ├── sub-skills/tools/
 │   ├── canvascli-setup.md
 │   ├── canvascli-api.md
-│   ├── assignment-recon.md
-│   ├── current-state-intake.md
 │   ├── _index.md
 │   ├── code-writer.md
 │   ├── writing-helper.md
@@ -149,6 +148,15 @@ selector has returned an exact object.
 ### Homework / Drafting
 
 For "do this assignment" style requests, read `sub-skills/tasks/do-homework.md`.
+Runtime homework files map to the staged route as:
+
+```text
+do-homework.md = router/preflight/first-stage route selection
+background-recon.md = clean-start task background recon plus recon briefing/source confirmation
+existing-work-recon.md = retained/repair/continue current work recon
+alignment-planning.md = user alignment, brainstorming, pipeline planning after first-stage confirmation
+```
+
 The required source-of-truth chain is:
 
 ```text
@@ -214,11 +222,12 @@ For open-ended or creative work, keep the alignment loop alive until you can
 write a concrete `alignment_brief.md` with selected approach, design skeleton,
 constraints, delegated decisions, human review items, and stop conditions.
 
-For retained drafts or user feedback, `do-homework.md` routes directly to
-`assignment-workflow-planner.md`, which invokes
-`sub-skills/tools/current-state-intake.md`. Preserve only user-visible artifacts
-declared in startup inventory, write a current `repair_plan.md`, then plan
-through `repair_pipeline_design.md` when appropriate.
+For retained drafts or user feedback, `do-homework.md` routes first to
+`existing-work-recon.md`, which owns current work/state reconnaissance and
+writes the terminal retained-work context before tail handoff. Preserve only
+user-visible artifacts declared in startup inventory, write a current
+`repair_plan.md`, then plan through `repair_pipeline_design.md` when
+appropriate.
 
 ## Safety Rules
 
@@ -258,14 +267,14 @@ When finishing a task, keep the handoff compact:
 - what remains for the user, if anything;
 - whether Canvas submission happened.
 
-For the source-intake reconnaissance confirmation checkpoint, do not use the
+For the background-recon reconnaissance confirmation checkpoint, do not use the
 generic artifact handoff shape. Use the conclusion-first recon briefing required
-by `sub-skills/tasks/assignment-source-intake.md`: lead with the assignment
+by `sub-skills/tasks/background-recon.md`: lead with the assignment
 conclusion, source-category findings, deliverables, grading signals, conflicts
 or gaps, and the source-confirmation question. File paths are only a short
 optional audit appendix after the briefing.
 
-For the later homework workflow-planner `[B]` alignment checkpoint, assume the
+For the later homework `alignment-planning.md [B]` checkpoint, assume the
 source understanding has already been confirmed. Ask the smallest user-intent
 question needed to avoid guessing; do not repeat the full reconnaissance
 briefing unless it is needed to frame the alignment question or explain a
