@@ -9,8 +9,18 @@ This task owns user-facing intent alignment and pipeline planning. It does not
 run clean-start Canvas/source reconnaissance and does not own the first full
 reconnaissance-results briefing. For clean starts, this planner requires a confirmed reconnaissance briefing from
 `sub-skills/tasks/background-recon.md`; then it reads the terminal
-outputs to align user intent. For retained artifacts, first invoke
-`sub-skills/tasks/existing-work-recon.md`.
+outputs to align user intent. For retained artifacts, this planner requires
+terminal current-state artifacts from `sub-skills/tasks/existing-work-recon.md`.
+
+This stage does not run `background-recon.md` and does not run
+`existing-work-recon.md`. It reads terminal artifacts from whichever first-stage
+task completed. Missing first-stage artifacts are blockers, not permission to
+silently perform the first-stage investigation here.
+
+For clean starts, this stage also assumes the reconnaissance briefing/source
+understanding was already confirmed in `background-recon.md`. Do not repeat the
+full source-category evidence map here; start from the smallest alignment
+question needed to avoid guessing.
 
 Clean-start planning artifact chain:
 
@@ -49,10 +59,10 @@ prelaunch_startup_inventory.json
 | Entry | Required read | Next action |
 |---|---|---|
 | clean recon | confirmed reconnaissance briefing plus `prelaunch_startup_inventory.json`, `spec.md`, `investigation/explore_context.md`, `investigation/recon_summary.md`, `investigation/review_a.json`, `references/` | run `[B]`, then `[C]` |
-| retained artifact | `prelaunch_startup_inventory.json`, then `sub-skills/tasks/existing-work-recon.md` outputs | run retained alignment, write `repair_plan.md`, then `repair_pipeline_design.md` when needed |
+| retained artifact | `prelaunch_startup_inventory.json`, plus terminal current-state artifacts from `sub-skills/tasks/existing-work-recon.md` | run retained alignment, write `repair_plan.md`, then `repair_pipeline_design.md` when needed |
 | pipeline review | existing result when present plus `pipeline_design.md` or `repair_pipeline_design.md` | help user approve/revise; do not execute inside planner |
 | draft review | retained draft/result artifacts named in startup inventory | help user review/revise/submit path; do not clean-start by default |
-| recovery | previous `result.json` plus allowlisted history | use current-state intake unless source evidence is explicitly missing/stale |
+| recovery | previous `result.json` plus allowlisted history | use terminal current-state artifacts unless source evidence is explicitly missing/stale |
 
 ## Route Guidance
 
@@ -67,19 +77,19 @@ prelaunch_startup_inventory.json
   startup inventory; help the user review, revise, or submit path. Do not
   clean-start by default.
 - For `continue` or recovery, inspect the previous `result.json` and use
-  current-state intake unless missing/stale source evidence is the blocker.
+  terminal current-state artifacts unless missing/stale source evidence is the
+  blocker.
 
-## Retained Current-State Intake
+## Retained Terminal State Artifacts
 
 For retained artifacts, previous results, user feedback, `review_or_submit`,
-`review_or_execute`, or recovery/continue entries, first read:
+`review_or_execute`, or recovery/continue entries, this planner must arrive
+after `sub-skills/tasks/existing-work-recon.md` has written terminal
+current-state artifacts. Do not invoke retained-state recon from this planner.
+If required current-state artifacts are missing, stop and return to the router
+or the first-stage recon task.
 
-```text
-sub-skills/tasks/existing-work-recon.md
-```
-
-Run that tool against the accepted `prelaunch_startup_inventory.json` and the
-current request. Then read:
+Read:
 
 ```text
 investigation/explore_manifest.json
@@ -98,7 +108,7 @@ User-interaction phase #1.
 Read `spec.md` first, then `investigation/explore_context.md`,
 `investigation/recon_summary.md`, `investigation/review_a.json`,
 `investigation/rubric.md`, `investigation/unreachable.txt`, and `problem.md`
-when present. These files are already confirmed source-intake outputs. Use them
+when present. These files are already confirmed first-stage source outputs. Use them
 to ask alignment questions and write the terminal agreement; do not repeat the
 full source-category evidence map from the reconnaissance confirmation
 checkpoint.

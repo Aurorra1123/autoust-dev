@@ -5,8 +5,13 @@ description: retained draft, repair, review, and continue state reconnaissance
 
 # Existing Work Recon
 
-Use this tool workflow when a homework request starts from an existing
-workbench with retained artifacts instead of a clean-start Canvas assignment.
+Use this task only for retained drafts, existing outputs, repair requests,
+pipeline review, draft review, failed runs, and continue flows after
+`sub-skills/tasks/do-homework.md` accepts the startup inventory.
+
+This is a first-stage routed homework task. It is not a tool registry entry and
+it must not run clean-start Canvas/source reconnaissance.
+
 Its job is to answer:
 
 1. What current workbench state already exists?
@@ -42,12 +47,6 @@ Runtime invariants:
 - This tool must not run clean-start Canvas/source recon, call
   `assignment-recon`, fetch course-wide Canvas sources, or rewrite
   `references/` as if starting over.
-
-## Capability
-
-- `current_state_intake` - `(work_dir, current_request)` -> retained-artifact
-  current-state evidence manifest, explore context, and optional repair
-  reconnaissance.
 
 ## Inputs
 
@@ -211,3 +210,16 @@ Before handing off to the planner, confirm:
   `investigation/alignment_brief.md`, `repair_plan.md`,
   `pipeline_design.md`, or `repair_pipeline_design.md`.
 - The run did not execute clean-start Canvas/source reconnaissance.
+
+## Tail Handoff
+
+If existing work recon completed successfully and the terminal current-state
+artifacts are written, continue by reading:
+
+```text
+sub-skills/tasks/alignment-planning.md
+```
+
+Do not run clean-start Canvas/source recon from this file. If source evidence is
+missing or stale, report that blocker in `investigation/explore_context.md` or
+`stage_reviews/process_concerns.jsonl` and return to the router.
