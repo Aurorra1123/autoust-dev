@@ -1,17 +1,17 @@
 ---
-name: assignment-source-intake
-description: clean-start source/spec intake
+name: background-recon
+description: clean-start homework background reconnaissance
 ---
 
-# Assignment Source Intake
+# Background Recon
 
 Use this task only for `entry_preset: clean_start`. It owns clean-start
 Canvas/source reconnaissance and stops after terminal source artifacts are ready
-for `sub-skills/tasks/assignment-workflow-planner.md`.
+for `sub-skills/tasks/alignment-planning.md`.
 
 Do not use this task as the normal entry for retained drafts, prior outputs,
 `review_or_submit`, `review_or_execute`, or repair/continue flows. Those entries
-belong to `../tools/current-state-intake.md` and the workflow planner. The only
+belong to `sub-skills/tasks/existing-work-recon.md` and the workflow planner. The only
 retained-flow exception is a narrow source-evidence recovery submode where the
 planner/router has identified missing, stale, or blocking source evidence and
 routes back here for source intake only.
@@ -209,6 +209,8 @@ call that a successful Subagent dispatch.
 
 `reference_collector` copies source material; it does not decide which source
 controls the assignment.
+For Canvas-native source copies, preserve the original body; the collector
+must not summarize or paraphrase it as the saved source evidence.
 
 Main Agent summary is not a Subagent receipt. The Main Agent reads
 `references/REFERENCE_INDEX.md`, preserved reference files, and Canvas-native
@@ -274,7 +276,7 @@ It must summarize:
 - skipped source-preservation or source-recovery actions and reasons;
 - stale or forbidden context that must not be passed to later children;
 - source sufficiency risks and downstream verification risks;
-- user decisions needed by `sub-skills/tasks/assignment-workflow-planner.md`.
+- user decisions needed by `sub-skills/tasks/alignment-planning.md`.
 
 Also write `investigation/recon_summary.md` before planner handoff. This is the
 human-readable entrance for the user and reviewer. It must be concise but
@@ -599,7 +601,7 @@ User-interaction phase #1 for clean-start source intake.
 After terminal reconnaissance artifacts are written and `[A4]` passes, the Main
 Agent must present the reconnaissance results to the user and ask the user to
 confirm the source understanding before reading
-`sub-skills/tasks/assignment-workflow-planner.md`.
+`sub-skills/tasks/alignment-planning.md`.
 
 This checkpoint is not alignment and not pipeline planning. It confirms whether
 the assignment facts, source judgments, grading signals, conflicts, and gaps are
@@ -651,7 +653,7 @@ assessment-weight constraints; Canvas has no rubric; Canvas and PDF due dates
 conflict. Is this source understanding correct before I move into alignment?"
 
 Only after the user confirms the reconnaissance briefing should the Main Agent
-read `sub-skills/tasks/assignment-workflow-planner.md` for alignment. If the
+read `sub-skills/tasks/alignment-planning.md` for alignment. If the
 user corrects a source fact, save the correction to the workbench, update
 `spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
 `investigation/recon_summary.md`, and `investigation/explore_context.md` as
@@ -663,7 +665,7 @@ After this file completes successfully and the user confirms the recon briefing,
 continue by reading:
 
 ```text
-sub-skills/tasks/assignment-workflow-planner.md
+sub-skills/tasks/alignment-planning.md
 ```
 
 Do not execute draft-production stages here. This task ends when source intake

@@ -331,7 +331,7 @@ def test_acceptance_scenario_fails_on_main_agent_manual_rescue_or_missing_termin
 def test_recon_summary_scales_with_investigation_depth():
     policy_text = "\n".join(
         [
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -344,9 +344,10 @@ def test_recon_summary_scales_with_investigation_depth():
 
 
 def test_source_intake_confirmation_response_is_conclusion_first_not_artifact_inventory():
-    text = read("sub-skills/tasks/assignment-source-intake.md")
+    text = read("sub-skills/tasks/background-recon.md")
+    router_text = read("sub-skills/tasks/do-homework.md")
     skill_text = read("skill.md")
-    planner_text = read("sub-skills/tasks/assignment-workflow-planner.md")
+    planner_text = read("sub-skills/tasks/alignment-planning.md")
     normalized_text = normalize_ws(text)
 
     assert "### [A5] Recon Briefing + Source Confirmation" in text
@@ -360,7 +361,7 @@ def test_source_intake_confirmation_response_is_conclusion_first_not_artifact_in
     assert "file links only as a short optional audit appendix" in text
 
     assert "For the source-intake reconnaissance confirmation checkpoint" in skill_text
-    assert "sub-skills/tasks/assignment-source-intake.md" in skill_text
+    assert "sub-skills/tasks/background-recon.md" in router_text
     assert "conclusion-first recon briefing" in skill_text
 
     assert "does not own the first full reconnaissance-results briefing" in planner_text
@@ -368,8 +369,8 @@ def test_source_intake_confirmation_response_is_conclusion_first_not_artifact_in
 
 
 def test_source_intake_briefing_maps_findings_to_reference_categories():
-    text = read("sub-skills/tasks/assignment-source-intake.md")
-    planner_text = read("sub-skills/tasks/assignment-workflow-planner.md")
+    text = read("sub-skills/tasks/background-recon.md")
+    planner_text = read("sub-skills/tasks/alignment-planning.md")
     normalized_text = normalize_ws(text)
 
     assert "source-category evidence map" in text

@@ -56,6 +56,7 @@ def test_router_exposes_only_first_stage_routes():
     assert "recommended_action" in router
 
     assert ALIGNMENT_PLANNING_PATH not in router
+    assert "alignment-planning.md" not in router
     assert "task-orchestrator.md" not in router
     assert "assignment-workflow-planner.md" not in router
     assert "assignment-source-intake.md" not in router
@@ -110,16 +111,20 @@ def test_existing_work_recon_owns_retained_state_and_tail_handoff_only():
 
 def test_alignment_planning_owns_shared_alignment_and_refuses_first_stage_recon():
     planner = read("sub-skills/tasks/alignment-planning.md")
+    normalized_planner = " ".join(planner.split())
 
-    assert "### [B] Recon Summary + Alignment Loop" in planner
+    assert "### [B] Alignment Loop" in planner
+    assert "### [B] Recon Summary + Alignment Loop" not in planner
     assert "### [C] Design Pipeline" in planner
     assert "repair_plan.md" in planner
     assert "repair_pipeline_design.md" in planner
     assert "Pipeline Review Status" in planner
-    assert "does not run `background-recon.md`" in planner
-    assert "does not run `existing-work-recon.md`" in planner
+    assert "does not run clean-start Canvas/source reconnaissance" in normalized_planner
+    assert "sub-skills/tasks/background-recon.md" in planner
+    assert "sub-skills/tasks/existing-work-recon.md" in planner
 
     assert "#### [A3] Canvas Generic Reconnaissance - Mandatory" not in planner
+    assert "### [A5] Recon Briefing + Source Confirmation" not in planner
     assert "../tools/current-state-intake.md" not in planner
 
 

@@ -1,9 +1,9 @@
 ---
-name: current-state-intake
-description: Retained-artifact current-state intake. Inspect existing workbench artifacts, codebase state, process history, and verification evidence to produce explore context and optional repair reconnaissance without rerunning clean-start Canvas/source recon.
+name: existing-work-recon
+description: retained draft, repair, review, and continue state reconnaissance
 ---
 
-# current-state-intake
+# Existing Work Recon
 
 Use this tool workflow when a homework request starts from an existing
 workbench with retained artifacts instead of a clean-start Canvas assignment.

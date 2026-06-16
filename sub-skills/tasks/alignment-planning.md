@@ -1,16 +1,16 @@
 ---
-name: assignment-workflow-planner
-description: homework workflow planner
+name: alignment-planning
+description: homework user alignment, brainstorming, and pipeline planning
 ---
 
-# Assignment Workflow Planner
+# Alignment Planning
 
 This task owns user-facing intent alignment and pipeline planning. It does not
 run clean-start Canvas/source reconnaissance and does not own the first full
 reconnaissance-results briefing. For clean starts, this planner requires a confirmed reconnaissance briefing from
-`sub-skills/tasks/assignment-source-intake.md`; then it reads the terminal
+`sub-skills/tasks/background-recon.md`; then it reads the terminal
 outputs to align user intent. For retained artifacts, first invoke
-`../tools/current-state-intake.md`.
+`sub-skills/tasks/existing-work-recon.md`.
 
 Clean-start planning artifact chain:
 
@@ -49,14 +49,14 @@ prelaunch_startup_inventory.json
 | Entry | Required read | Next action |
 |---|---|---|
 | clean recon | confirmed reconnaissance briefing plus `prelaunch_startup_inventory.json`, `spec.md`, `investigation/explore_context.md`, `investigation/recon_summary.md`, `investigation/review_a.json`, `references/` | run `[B]`, then `[C]` |
-| retained artifact | `prelaunch_startup_inventory.json`, then `../tools/current-state-intake.md` outputs | run retained alignment, write `repair_plan.md`, then `repair_pipeline_design.md` when needed |
+| retained artifact | `prelaunch_startup_inventory.json`, then `sub-skills/tasks/existing-work-recon.md` outputs | run retained alignment, write `repair_plan.md`, then `repair_pipeline_design.md` when needed |
 | pipeline review | existing result when present plus `pipeline_design.md` or `repair_pipeline_design.md` | help user approve/revise; do not execute inside planner |
 | draft review | retained draft/result artifacts named in startup inventory | help user review/revise/submit path; do not clean-start by default |
 | recovery | previous `result.json` plus allowlisted history | use current-state intake unless source evidence is explicitly missing/stale |
 
 ## Route Guidance
 
-- Clean starts arrive after `sub-skills/tasks/assignment-source-intake.md` has
+- Clean starts arrive after `sub-skills/tasks/background-recon.md` has
   written terminal source outputs and the user has confirmed the reconnaissance
   briefing. This planner reads those outputs and does not run clean-start
   Canvas/source reconnaissance.
@@ -75,7 +75,7 @@ For retained artifacts, previous results, user feedback, `review_or_submit`,
 `review_or_execute`, or recovery/continue entries, first read:
 
 ```text
-../tools/current-state-intake.md
+sub-skills/tasks/existing-work-recon.md
 ```
 
 Run that tool against the accepted `prelaunch_startup_inventory.json` and the
@@ -868,7 +868,7 @@ If the user approves execution, update `pipeline_design.md` or
 
 Then hand off to `tasks/task-orchestrator.md` with the workbench path. This is
 a new workflow phase owned by `task-orchestrator.md`; it is not part of
-`assignment-workflow-planner.md` execution.
+`alignment-planning.md` execution.
 
 ## Output Format
 

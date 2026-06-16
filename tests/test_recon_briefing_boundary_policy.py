@@ -9,7 +9,7 @@ def read(path: str) -> str:
 
 
 def test_source_intake_owns_recon_briefing_confirmation_gate():
-    source_intake = read("sub-skills/tasks/assignment-source-intake.md")
+    source_intake = read("sub-skills/tasks/background-recon.md")
 
     assert "### [A5] Recon Briefing + Source Confirmation" in source_intake
     assert "State the main assignment conclusion first" in source_intake
@@ -20,7 +20,7 @@ def test_source_intake_owns_recon_briefing_confirmation_gate():
 
 
 def test_workflow_planner_starts_after_recon_confirmation_and_owns_alignment_only():
-    planner = read("sub-skills/tasks/assignment-workflow-planner.md")
+    planner = read("sub-skills/tasks/alignment-planning.md")
 
     assert "requires a confirmed reconnaissance briefing" in planner
     assert "does not own the first full reconnaissance-results briefing" in planner

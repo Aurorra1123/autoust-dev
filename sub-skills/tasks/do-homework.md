@@ -6,15 +6,20 @@ description: Homework planning workflow. Use when the user asks "complete X assi
 # Do Homework
 
 Use this task as the stable user-facing entrypoint for one Canvas assignment.
-It does not inline source reconnaissance, current-state exploration, alignment,
-pipeline design, or draft execution. It routes to:
+It does not inline source reconnaissance, retained-work exploration, alignment,
+pipeline design, or draft execution. It routes to exactly one first-stage task
+file:
 
 ```text
-sub-skills/tasks/assignment-source-intake.md
-sub-skills/tasks/assignment-workflow-planner.md
-sub-skills/tools/current-state-intake.md
-sub-skills/tasks/task-orchestrator.md
+clean start -> sub-skills/tasks/background-recon.md
+retained / repair / review / continue -> sub-skills/tasks/existing-work-recon.md
 ```
+
+Do not read or name later-stage files from this router. Follow the routed
+first-stage task to completion; that task owns its own tail handoff.
+
+Clean-start source confirmation is handled inside the routed first-stage task,
+not in this router.
 
 ## Router Responsibilities
 
@@ -24,9 +29,8 @@ sub-skills/tasks/task-orchestrator.md
 3. Determine `work_dir`, `recommended_action`, and `entry_preset`.
 4. Run preflight archive/startup inventory before reading old workbench files
    as task context.
-5. Route to the downstream task or tool file named in the route table.
-6. Stop before draft execution unless the user separately approves
-   `sub-skills/tasks/task-orchestrator.md`.
+5. Route to the first-stage task file named in the route table.
+6. Stop there; the first-stage task owns any later handoff.
 
 ## Preflight Startup Inventory
 
@@ -44,7 +48,7 @@ and record the accepted route:
 {
   "work_dir": "data/homework/<COURSE>/<assignment>",
   "entry_preset": "clean_start | retained_artifact_start",
-  "route": "assignment-source-intake.md | assignment-workflow-planner.md",
+  "route": "background-recon.md | existing-work-recon.md",
   "recommended_action": "recon | review_or_execute | review_or_submit | continue",
   "retained_user_visible_artifacts": [],
   "current_source_files": [],
@@ -64,64 +68,17 @@ states why it affects the current route.
 
 ## Route Table
 
-| Input state | Entry preset | Route |
+| Input state | Entry preset | First-stage route |
 |---|---|---|
-| `recommended_action: recon` | `clean_start` | Read `sub-skills/tasks/assignment-source-intake.md`; stop there for reconnaissance briefing/source confirmation, then hand off to `sub-skills/tasks/assignment-workflow-planner.md` only after the user confirms the source understanding. |
-| `recommended_action: review_or_execute` or `pipeline_ready` | `retained_artifact_start` | Read `sub-skills/tasks/assignment-workflow-planner.md` for pipeline review; use `sub-skills/tools/current-state-intake.md` only for retained/current-state evidence needed by the planner; do not rerun source recon. |
-| `recommended_action: review_or_submit` or `draft_ready` | `retained_artifact_start` | Read `sub-skills/tasks/assignment-workflow-planner.md` for retained artifact review; use `sub-skills/tools/current-state-intake.md`; do not clean-start by default. |
-| `recommended_action: continue` or failed/interrupted work | `retained_artifact_start` | Read `sub-skills/tasks/assignment-workflow-planner.md` recovery intake; use `sub-skills/tools/current-state-intake.md`; run `sub-skills/tasks/assignment-source-intake.md` only when missing or stale source evidence is the blocker and the startup inventory records that exception. |
-| Direct retained draft, prior output, feedback, repair, package, or verification request | `retained_artifact_start` | Read `sub-skills/tasks/assignment-workflow-planner.md`, which invokes `sub-skills/tools/current-state-intake.md` before repair or continuation planning. |
-
-## Clean-Start Source Contract
-
-Clean-start source intake must be delegated to
-`sub-skills/tasks/assignment-source-intake.md`. It must preserve original source
-evidence through `reference_collector` and write the terminal source artifacts
-the planner needs:
-
-```text
-references/REFERENCE_INDEX.md
-references/canvas_native/
-references/source_docs/
-references/slides/
-references/external/
-spec.md
-investigation/rubric.md
-investigation/review_a.json
-investigation/recon_summary.md
-investigation/explore_context.md
-```
-
-The Main Agent owns final source interpretation. For proposal/research/open-ended
-work, direct-spec bodies and syllabus-relevant bodies must remain readable as
-complete original evidence before planning. PDF link annotation manifests are
-part of source completeness: `references/*.pdf.links.json` must be checked, and
-do not treat PDF text extraction as complete when link annotations are missing.
-
-Do not create `reading_plan.compact.json`. Do not create `source_findings.compact.md`.
-Do not make legacy source-scout appendix files the coordinator interface.
-Subagents must not write final `spec.md`,
-`investigation/review_a.json`, `pipeline_design.md`, or user alignment
-decisions.
-
-Do not create `reading_plan.compact.approved.json`.
-Do not create `investigation/_appendix/source_index.json`.
-Do not create `investigation/_appendix/body_evidence_fragments/`.
-Do not create `investigation/_appendix/scout_receipts/` for standard source
-reconnaissance artifacts.
+| `recommended_action: recon` | `clean_start` | Read `sub-skills/tasks/background-recon.md`; it owns recon briefing/source confirmation and its own tail handoff. |
+| `recommended_action: review_or_execute` or `pipeline_ready` | `retained_artifact_start` | Read `sub-skills/tasks/existing-work-recon.md`; do not rerun source recon. |
+| `recommended_action: review_or_submit` or `draft_ready` | `retained_artifact_start` | Read `sub-skills/tasks/existing-work-recon.md`; do not clean-start by default. |
+| `recommended_action: continue` or failed/interrupted work | `retained_artifact_start` | Read `sub-skills/tasks/existing-work-recon.md`; run clean-start source recon only if that stage reports missing/stale source evidence as a blocker and the router accepts a new route. |
+| Direct retained draft, prior output, feedback, repair, package, or verification request | `retained_artifact_start` | Read `sub-skills/tasks/existing-work-recon.md`. |
 
 ## Handoff
 
-After routing, follow the downstream file exactly:
-
-- Clean starts: `sub-skills/tasks/assignment-source-intake.md` writes terminal
-  source artifacts and owns the reconnaissance briefing/source confirmation
-  checkpoint. After the user confirms the source understanding,
-  `sub-skills/tasks/assignment-workflow-planner.md` owns user alignment and
-  pipeline design.
-- Retained-artifact starts: `sub-skills/tasks/assignment-workflow-planner.md`
-  invokes `sub-skills/tools/current-state-intake.md` before repair,
-  continuation, review, package, or verification planning.
-- Draft execution happens only through
-  `sub-skills/tasks/task-orchestrator.md` after the user approves
-  `pipeline_design.md` or `repair_pipeline_design.md`.
+After route selection, read only the first-stage route named in the route table.
+Do not preload, inspect, or name later-stage task files from this router. The
+first-stage task owns the next handoff after it writes its terminal artifacts
+and completes any required user confirmation checkpoint.
