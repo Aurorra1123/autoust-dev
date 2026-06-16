@@ -5,10 +5,12 @@ description: homework workflow planner
 
 # Assignment Workflow Planner
 
-This task owns user-facing agreement and pipeline planning. It does not run
-clean-start Canvas/source reconnaissance. For clean starts, read the terminal
-outputs from `sub-skills/tasks/assignment-source-intake.md`. For retained
-artifacts, first invoke `../tools/current-state-intake.md`.
+This task owns user-facing intent alignment and pipeline planning. It does not
+run clean-start Canvas/source reconnaissance and does not own the first full
+reconnaissance-results briefing. For clean starts, this planner requires a confirmed reconnaissance briefing from
+`sub-skills/tasks/assignment-source-intake.md`; then it reads the terminal
+outputs to align user intent. For retained artifacts, first invoke
+`../tools/current-state-intake.md`.
 
 Clean-start planning artifact chain:
 
@@ -46,7 +48,7 @@ prelaunch_startup_inventory.json
 
 | Entry | Required read | Next action |
 |---|---|---|
-| clean recon | `prelaunch_startup_inventory.json`, `spec.md`, `investigation/explore_context.md`, `investigation/recon_summary.md`, `investigation/review_a.json`, `references/` | run `[B]`, then `[C]` |
+| clean recon | confirmed reconnaissance briefing plus `prelaunch_startup_inventory.json`, `spec.md`, `investigation/explore_context.md`, `investigation/recon_summary.md`, `investigation/review_a.json`, `references/` | run `[B]`, then `[C]` |
 | retained artifact | `prelaunch_startup_inventory.json`, then `../tools/current-state-intake.md` outputs | run retained alignment, write `repair_plan.md`, then `repair_pipeline_design.md` when needed |
 | pipeline review | existing result when present plus `pipeline_design.md` or `repair_pipeline_design.md` | help user approve/revise; do not execute inside planner |
 | draft review | retained draft/result artifacts named in startup inventory | help user review/revise/submit path; do not clean-start by default |
@@ -55,8 +57,9 @@ prelaunch_startup_inventory.json
 ## Route Guidance
 
 - Clean starts arrive after `sub-skills/tasks/assignment-source-intake.md` has
-  written terminal source outputs. This planner reads those outputs and does not
-  run clean-start Canvas/source reconnaissance.
+  written terminal source outputs and the user has confirmed the reconnaissance
+  briefing. This planner reads those outputs and does not run clean-start
+  Canvas/source reconnaissance.
 - For `review_or_execute`, read the existing result, accepted workbench, and
   `pipeline_design.md` or `repair_pipeline_design.md`; help the user review
   or approve the existing pipeline. Do not execute stages inside this planner.
@@ -88,99 +91,26 @@ repair_request.md                   # when present
 Do not read raw archived process evidence unless `prelaunch_startup_inventory.json`
 allowlists exact paths for process-history exploration.
 
-### [B] Recon Summary + Alignment Loop
+### [B] Alignment Loop
 
 User-interaction phase #1.
 
 Read `spec.md` first, then `investigation/explore_context.md`,
-`investigation/recon_summary.md`, `investigation/review_a.json`, `investigation/rubric.md`,
-`investigation/unreachable.txt`, and `problem.md` when present.
-Summarize with depth-adaptive detail. Use 4-6 lines only when the investigation
-was genuinely simple. For non-trivial proposal/research/open-ended work, or any
-run with multiple direct-spec source bodies, preserved Canvas-native sources,
-downloaded PDFs/decks, timelines, methods guidance, conflicts, or non-blocking
-gaps, give the user a fuller summary with enough substance to understand the
-investigation without opening the workbench:
+`investigation/recon_summary.md`, `investigation/review_a.json`,
+`investigation/rubric.md`, `investigation/unreachable.txt`, and `problem.md`
+when present. These files are already confirmed source-intake outputs. Use them
+to ask alignment questions and write the terminal agreement; do not repeat the
+full source-category evidence map from the reconnaissance confirmation
+checkpoint.
+Do not repeat the full source-category evidence map.
 
-- Course + assignment name + due date + points.
-- Source trail and main spec judgment. Example: "assignment page was empty;
-  a module item contained the project guidelines PDF."
-- Key findings from each high-signal source body preserved in `references/`,
-  including methods/topic guidance, timeline/calendar facts, required sections,
-  formatting, and policy constraints when present.
-- Syllabus relevance: constraints found there, or why it did not add
-  assignment-specific requirements.
-- Concrete deliverables and tasks.
-- Rubric or grading criteria if found; say "Canvas rubric not found" if only
-  spec-based criteria exist.
-- Conflicts and non-blocking gaps from `references/REFERENCE_INDEX.md` or
-  `review_a.json`, such as date conflicts, blocked pages, absent rubrics, or
-  sparse slide templates.
-- Preliminary output mode from `investigation/recon_summary.md` or
-  `investigation/explore_context.md`.
-- The user-decision areas you may need to align before starting, such as group
-  ID, partner names, dataset choice, project concept, argument, creative
-  direction, personal experience, oral instructor notes, scope, style, video
-  recording, or blocked external resources.
+This planner does not own the first full reconnaissance-results briefing. It
+may briefly restate the confirmed assignment facts only when needed to frame the
+next alignment question, correct a user misunderstanding, or explain why a
+missing user decision blocks planning. The normal `[B]` response starts from the
+smallest user-intent question needed to avoid guessing.
 
-This recon summary is not a second investigation and not a design proposal. It
-is the compact user-facing view of `[A]` outputs: `spec.md`,
-`investigation/explore_context.md`, `investigation/rubric.md`, `investigation/review_a.json`,
-`investigation/unreachable.txt`, `references/`, `problem.md` when present, and
-the preliminary output-mode note in `investigation/recon_summary.md` or
-`investigation/explore_context.md`. Its job is to tell the
-user what Canvas fixed, what the sources prove, and which decisions still belong
-to the user before planning.
-
-#### Conclusion-first `[B]` response rule
-
-The user-facing `[B]` message must be investigation-conclusion first. It should
-read like an assignment briefing, not an artifact inventory, process receipt, or
-completion checklist. The `[B]` chat reply is not a completion checklist even
-when all quality gates pass. Do not lead the user-facing `[B]` message with workbench paths, generated file lists, JSON field names, validation script results, child transport details, or process verification details. Those details may be mentioned only after the investigation conclusions, and only when they change the user's decision, explain a blocker, or provide a compact optional audit trail.
-
-Required order for the chat message at `[B]`:
-
-1. State the main assignment conclusion: what the student must produce and which
-   source controls that conclusion.
-2. Give source findings before file links: assignment page, spec PDF/page,
-   syllabus, rubric, announcements, modules, required inputs, and supporting
-   sources, each with the actionable facts discovered from the body.
-3. State grading criteria, due-date or source conflicts, missing/blocked
-   materials, and stale/forbidden context in user terms.
-4. Ask the smallest next alignment question needed to avoid guessing.
-5. Add file links only as a short audit appendix. In other words, file links may appear only after the investigation conclusions, never as the main answer.
-
-The briefing must include a source-category evidence map when more than one
-source category contributed to the investigation. Group findings by source
-category. For each category, say what was learned from that category, not only
-that the category was checked. In short: for each category, say what was learned from that category. Put another way: group findings by source category.
-
-- `references/source_docs/`: PDFs or document exports, with requirements,
-  sections, formatting, timelines, inputs, methods guidance, or grading language
-  found in the document body.
-- `references/slides/`: slide decks, with methods guidance, examples,
-  presentation constraints, timelines, or topic-selection guidance found in the
-  slide text.
-- `references/external/`: Google Docs, external pages, GitHub links, datasets,
-  or starter-code pages, with the concrete facts those sources add.
-- `references/canvas_native/`: Canvas-native assignment shell, rubric status,
-  syllabus, announcements, modules/pages, front page, assignment files, and file
-  metadata. Name the relevant Canvas-native category, such as assignment shell,
-  syllabus, announcements, modules/pages, rubric status, or assignment files,
-  and state what was learned from that body.
-
-Do not collapse all evidence into `references/` or `Canvas sources`. Users
-should be able to tell whether a requirement came from a source doc, a slide
-deck, an external page, or a specific Canvas-native body such as the assignment shell, syllabus, announcement, module/page, or rubric status.
-
-Bad shape: "I finished `[A]`; here are `spec.md`, `review_a.json`,
-`recon_summary.md`, and validation passed." Good shape: "The proposal requires
-a 1200-1500 word APA7 document plus slides; the proposal PDF is the main spec;
-the syllabus adds AI-transparency and assessment-weight constraints; Canvas has
-no rubric; Canvas and PDF due dates conflict; now I need your research topic."
-
-Even when `review_a.json.verdict == "proceed"`, this checkpoint is mandatory.
+Even when `review_a.json.verdict == "proceed"`, alignment is still mandatory.
 `proceed` means the Canvas materials are sufficient to understand the assignment
 surface. It does not mean the user's intended direction is aligned.
 

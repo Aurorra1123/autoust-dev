@@ -592,14 +592,80 @@ paraphrase without a complete preserved Canvas-native source copy under
 `references/canvas_native/`, or a documented blocked reason, treat the
 reconnaissance as incomplete.
 
+### [A5] Recon Briefing + Source Confirmation
+
+User-interaction phase #1 for clean-start source intake.
+
+After terminal reconnaissance artifacts are written and `[A4]` passes, the Main
+Agent must present the reconnaissance results to the user and ask the user to
+confirm the source understanding before reading
+`sub-skills/tasks/assignment-workflow-planner.md`.
+
+This checkpoint is not alignment and not pipeline planning. It confirms whether
+the assignment facts, source judgments, grading signals, conflicts, and gaps are
+understood correctly. Do not ask for topic, research question, group facts, or method choice
+here unless the user volunteers corrections while confirming the reconnaissance
+facts. Those user-owned decisions belong to the later alignment loop.
+
+The user-facing recon briefing must be conclusion-first:
+
+1. State the main assignment conclusion first: what the student must produce and
+   which source controls that conclusion.
+2. Give source findings before file links. For each relevant source category,
+   state what was learned from the body, not only that it was checked.
+3. State grading signals, due-date or source conflicts, missing or blocked
+   materials, stale/forbidden context, and user-owned facts that must not be
+   fabricated.
+4. Ask only whether the reconnaissance understanding is correct and whether any
+   source fact needs correction. Good shape: "If this source understanding is
+   correct, I will move into alignment next; if not, point me to the correction."
+5. Add file links only as a short optional audit appendix after the briefing.
+
+The briefing must include a source-category evidence map when more than one
+source category contributed to the investigation:
+
+- `references/source_docs/`: PDFs or document exports, with requirements,
+  sections, formatting, timelines, inputs, methods guidance, or grading language
+  found in the document body.
+- `references/slides/`: slide decks, with methods guidance, examples,
+  presentation constraints, timelines, or topic-selection guidance found in the
+  slide text.
+- `references/external/`: Google Docs, external pages, GitHub links, datasets,
+  or starter-code pages, with the concrete facts those sources add.
+- `references/canvas_native/`: Canvas-native assignment shell, rubric status,
+  syllabus, announcements, modules/pages, front page, assignment files, and file
+  metadata. Name the relevant Canvas-native category and state what was learned
+  from that body.
+
+Do not collapse all evidence into `references/` or `Canvas sources`. Users
+should be able to tell whether a requirement came from a source doc, a slide
+deck, an external page, or a specific Canvas-native body such as the assignment
+shell, syllabus, announcement, module/page, or rubric status.
+
+Bad shape: "I finished `[A]`; here are `spec.md`, `review_a.json`,
+`recon_summary.md`, and validation passed."
+
+Good shape: "The proposal requires a 1200-1500 word APA7 document plus slides;
+the proposal PDF is the main spec; the syllabus adds AI-transparency and
+assessment-weight constraints; Canvas has no rubric; Canvas and PDF due dates
+conflict. Is this source understanding correct before I move into alignment?"
+
+Only after the user confirms the reconnaissance briefing should the Main Agent
+read `sub-skills/tasks/assignment-workflow-planner.md` for alignment. If the
+user corrects a source fact, save the correction to the workbench, update
+`spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
+`investigation/recon_summary.md`, and `investigation/explore_context.md` as
+needed, then present the corrected recon briefing again.
+
 ## Terminal Handoff
 
-After this file completes successfully, continue by reading:
+After this file completes successfully and the user confirms the recon briefing,
+continue by reading:
 
 ```text
 sub-skills/tasks/assignment-workflow-planner.md
 ```
 
 Do not execute draft-production stages here. This task ends when source intake
-has produced the terminal reconnaissance artifacts and the next action is
-planner alignment or recovery.
+has produced the terminal reconnaissance artifacts, the user has confirmed the
+source understanding, and the next action is planner alignment or recovery.

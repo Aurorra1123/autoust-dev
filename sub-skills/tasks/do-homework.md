@@ -66,7 +66,7 @@ states why it affects the current route.
 
 | Input state | Entry preset | Route |
 |---|---|---|
-| `recommended_action: recon` | `clean_start` | Read `sub-skills/tasks/assignment-source-intake.md`, then hand off to `sub-skills/tasks/assignment-workflow-planner.md`. |
+| `recommended_action: recon` | `clean_start` | Read `sub-skills/tasks/assignment-source-intake.md`; stop there for reconnaissance briefing/source confirmation, then hand off to `sub-skills/tasks/assignment-workflow-planner.md` only after the user confirms the source understanding. |
 | `recommended_action: review_or_execute` or `pipeline_ready` | `retained_artifact_start` | Read `sub-skills/tasks/assignment-workflow-planner.md` for pipeline review; use `sub-skills/tools/current-state-intake.md` only for retained/current-state evidence needed by the planner; do not rerun source recon. |
 | `recommended_action: review_or_submit` or `draft_ready` | `retained_artifact_start` | Read `sub-skills/tasks/assignment-workflow-planner.md` for retained artifact review; use `sub-skills/tools/current-state-intake.md`; do not clean-start by default. |
 | `recommended_action: continue` or failed/interrupted work | `retained_artifact_start` | Read `sub-skills/tasks/assignment-workflow-planner.md` recovery intake; use `sub-skills/tools/current-state-intake.md`; run `sub-skills/tasks/assignment-source-intake.md` only when missing or stale source evidence is the blocker and the startup inventory records that exception. |
@@ -115,8 +115,10 @@ reconnaissance artifacts.
 After routing, follow the downstream file exactly:
 
 - Clean starts: `sub-skills/tasks/assignment-source-intake.md` writes terminal
-  source artifacts, then `sub-skills/tasks/assignment-workflow-planner.md` owns
-  user alignment and pipeline design.
+  source artifacts and owns the reconnaissance briefing/source confirmation
+  checkpoint. After the user confirms the source understanding,
+  `sub-skills/tasks/assignment-workflow-planner.md` owns user alignment and
+  pipeline design.
 - Retained-artifact starts: `sub-skills/tasks/assignment-workflow-planner.md`
   invokes `sub-skills/tools/current-state-intake.md` before repair,
   continuation, review, package, or verification planning.

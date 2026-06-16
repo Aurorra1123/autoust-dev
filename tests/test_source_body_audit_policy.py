@@ -331,7 +331,7 @@ def test_acceptance_scenario_fails_on_main_agent_manual_rescue_or_missing_termin
 def test_recon_summary_scales_with_investigation_depth():
     policy_text = "\n".join(
         [
-            read("sub-skills/tasks/alignment-planning.md"),
+            read("sub-skills/tasks/assignment-source-intake.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -343,37 +343,34 @@ def test_recon_summary_scales_with_investigation_depth():
     assert "Important source bodies should not be\ncollapsed into vague phrases" in policy_text
 
 
-def test_b_checkpoint_response_is_conclusion_first_not_artifact_inventory():
-    text = read("sub-skills/tasks/alignment-planning.md")
+def test_source_intake_confirmation_response_is_conclusion_first_not_artifact_inventory():
+    text = read("sub-skills/tasks/assignment-source-intake.md")
     skill_text = read("skill.md")
-    recon_text = read("sub-skills/tasks/background-recon.md")
+    planner_text = read("sub-skills/tasks/assignment-workflow-planner.md")
+    normalized_text = normalize_ws(text)
 
-    assert "Conclusion-first `[B]` response rule" in text
-    assert "Do not lead the user-facing `[B]` message with workbench paths" in text
-    assert "artifact inventory" in text
-    assert "process verification details" in text
-    assert "source findings before file links" in text
-    assert "file links may appear only after the investigation conclusions" in text
-    assert "not a completion checklist" in text
-    assert "State the main assignment conclusion" in text
-    assert "what the student must produce and which" in text
-    assert "source controls that conclusion" in text
-    assert "each with the actionable facts discovered from the body" in text
-    assert "grading criteria, due-date or source conflicts" in text
-    assert "stale/forbidden context in user terms" in text
-    assert "Ask the smallest next alignment question needed to avoid guessing" in text
+    assert "### [A5] Recon Briefing + Source Confirmation" in text
+    assert "The user-facing recon briefing must be conclusion-first" in text
+    assert "State the main assignment conclusion first" in text
+    assert "what the student must produce and which source controls that conclusion" in normalized_text
+    assert "Give source findings before file links" in text
+    assert "grading signals, due-date or source conflicts" in text
+    assert "stale/forbidden context" in text
+    assert "Ask only whether the reconnaissance understanding is correct" in text
+    assert "file links only as a short optional audit appendix" in text
 
-    assert "For the homework workflow-planner `[B]` alignment checkpoint" in skill_text
-    assert "sub-skills/tasks/alignment-planning.md" in skill_text
-    assert "conclusion-first assignment briefing" in skill_text
+    assert "For the source-intake reconnaissance confirmation checkpoint" in skill_text
+    assert "sub-skills/tasks/assignment-source-intake.md" in skill_text
+    assert "conclusion-first recon briefing" in skill_text
 
-    assert "artifact existence/status alone is insufficient" in recon_text
-    assert "conclusion-first briefing" in recon_text
+    assert "does not own the first full reconnaissance-results briefing" in planner_text
+    assert "Do not repeat the full source-category evidence map" in planner_text
 
 
-def test_b_checkpoint_briefing_maps_findings_to_reference_categories():
-    text = read("sub-skills/tasks/alignment-planning.md")
-    recon_text = read("sub-skills/tasks/background-recon.md")
+def test_source_intake_briefing_maps_findings_to_reference_categories():
+    text = read("sub-skills/tasks/assignment-source-intake.md")
+    planner_text = read("sub-skills/tasks/assignment-workflow-planner.md")
+    normalized_text = normalize_ws(text)
 
     assert "source-category evidence map" in text
     assert "`references/source_docs/`" in text
@@ -385,10 +382,9 @@ def test_b_checkpoint_briefing_maps_findings_to_reference_categories():
     assert "announcements" in text
     assert "modules/pages" in text
     assert "rubric status" in text
-    assert "group findings by source category" in text
-    assert "for each category, say what was learned from that category" in text
+    assert "For each relevant source category" in text
+    assert "state what was learned from the body" in text
     assert "Do not collapse all evidence into `references/` or `Canvas sources`" in text
-    assert "specific Canvas-native body such as the assignment shell, syllabus, announcement, module/page, or rubric status" in text
+    assert "specific Canvas-native body such as the assignment shell, syllabus, announcement, module/page, or rubric status" in normalized_text
 
-    assert "source-category evidence map for `[B]`" in recon_text
-    assert "user-facing briefing should explain what was learned from each source category" in recon_text
+    assert "Do not repeat the full source-category evidence map" in planner_text

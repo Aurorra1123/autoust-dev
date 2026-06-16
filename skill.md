@@ -205,8 +205,9 @@ copies; raw `canvas/*.json` reads are recovery or explicit fallback exceptions.
 
 The user-facing checkpoints are:
 
-1. After exploration, summarize what was found and run the alignment loop.
-2. After draft generation and verification, ask what the user wants to do next,
+1. After exploration, present the reconnaissance briefing and ask the user to confirm the source understanding.
+2. After reconnaissance confirmation, run the alignment loop.
+3. After draft generation and verification, ask what the user wants to do next,
    including whether to submit.
 
 For open-ended or creative work, keep the alignment loop alive until you can
@@ -257,12 +258,18 @@ When finishing a task, keep the handoff compact:
 - what remains for the user, if anything;
 - whether Canvas submission happened.
 
-For the homework workflow-planner `[B]` alignment checkpoint, do not use the
-generic artifact handoff shape. Use the conclusion-first assignment briefing
-required by `sub-skills/tasks/assignment-workflow-planner.md`:
-lead with the investigation conclusions, source findings, deliverables, grading
-signals, conflicts or gaps, and the next alignment question. File paths are only
-a short optional audit appendix after the assignment briefing.
+For the source-intake reconnaissance confirmation checkpoint, do not use the
+generic artifact handoff shape. Use the conclusion-first recon briefing required
+by `sub-skills/tasks/assignment-source-intake.md`: lead with the assignment
+conclusion, source-category findings, deliverables, grading signals, conflicts
+or gaps, and the source-confirmation question. File paths are only a short
+optional audit appendix after the briefing.
+
+For the later homework workflow-planner `[B]` alignment checkpoint, assume the
+source understanding has already been confirmed. Ask the smallest user-intent
+question needed to avoid guessing; do not repeat the full reconnaissance
+briefing unless it is needed to frame the alignment question or explain a
+blocker.
 
 Examples:
 
