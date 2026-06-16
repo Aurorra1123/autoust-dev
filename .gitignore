@@ -2,6 +2,7 @@
 .auth/
 .state/
 .claude/
+.serena/
 data/
 __pycache__/
 *.pyc
