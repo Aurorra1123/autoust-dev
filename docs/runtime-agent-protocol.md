@@ -1364,9 +1364,13 @@ repair before handoff.
 
 ## 8. Forbidden Context Rules
 
+Committed root `AGENTS.md` and `CLAUDE.md` files are bootstrap pointers to
+`skill.md`; they may be read by agent runtimes before AutoStudy routing starts,
+but they do not replace `skill.md` and do not authorize preloading task files.
+
 Runtime agents should not read these as task instructions:
 
-- `AGENTS.md` if a local ignored developer override exists at the repo root
+- local ignored developer overrides at the repo root
 - `docs/DEVELOPMENT.md`
 - `docs/ROADMAP.md`
 - `docs/COLLABORATION.md`
