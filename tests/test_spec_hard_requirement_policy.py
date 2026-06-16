@@ -9,7 +9,7 @@ def read(path: str) -> str:
 
 
 def test_do_homework_records_non_downgradable_spec_requirements():
-    text = read("sub-skills/tasks/assignment-workflow-planner.md")
+    text = read("sub-skills/tasks/alignment-planning.md")
 
     assert "Spec Hard Requirements / No-Downgrade Policy" in text
     assert "required_spec_constraints" in text

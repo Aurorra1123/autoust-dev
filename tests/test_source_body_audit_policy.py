@@ -56,7 +56,7 @@ def assert_artifact_only_appears_in_forbidden_creation_context(
 
 
 def test_assignment_recon_uses_reference_collector_and_announcements():
-    text = read("sub-skills/tools/assignment-recon.md")
+    text = read("sub-skills/tasks/background-recon.md")
 
     assert "reference_collector" in text
     assert "canvas/announcements.json" in text
@@ -72,7 +72,7 @@ def test_do_homework_defines_direct_source_reference_boundary():
     text = "\n".join(
         [
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
         ]
     )
 
@@ -92,8 +92,7 @@ def test_standard_homework_recon_removes_source_scout_pipeline():
         [
             read("skill.md"),
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
-            read("sub-skills/tools/assignment-recon.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -109,9 +108,8 @@ def test_reference_collector_preserves_canvas_native_sources_verbatim():
     policy_text = "\n".join(
         [
             read("skill.md"),
-            read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("sub-skills/tasks/task-orchestrator.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
@@ -129,9 +127,8 @@ def test_reference_collector_preserves_announcements_per_relevant_object():
     policy_text = "\n".join(
         [
             read("skill.md"),
-            read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -154,7 +151,7 @@ def test_reference_collector_dispatch_is_auditable():
     policy_text = "\n".join(
         [
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("docs/runtime-agent-protocol.md"),
             read("docs/development-validation-standard.md"),
         ]
@@ -199,7 +196,7 @@ def test_main_agent_reads_references_not_old_source_findings():
         [
             read("skill.md"),
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("sub-skills/tasks/task-orchestrator.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
@@ -232,9 +229,8 @@ def test_main_agent_reads_references_not_old_source_findings():
 def test_reference_collector_review_fields_are_documented():
     policy_text = "\n".join(
         [
-            read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -274,9 +270,8 @@ def test_reference_collector_review_fields_are_documented():
 def test_reference_collector_forbids_old_artifacts_as_normal_run_outputs():
     policy_text = "\n".join(
         [
-            read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -309,9 +304,8 @@ def test_reference_collector_forbids_old_artifacts_as_normal_run_outputs():
 def test_source_body_policy_keeps_ucug1808_only_in_acceptance_context():
     policy_text = "\n".join(
         [
-            read("sub-skills/tools/assignment-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -337,7 +331,7 @@ def test_acceptance_scenario_fails_on_main_agent_manual_rescue_or_missing_termin
 def test_recon_summary_scales_with_investigation_depth():
     policy_text = "\n".join(
         [
-            read("sub-skills/tasks/assignment-workflow-planner.md"),
+            read("sub-skills/tasks/alignment-planning.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
     )
@@ -350,9 +344,9 @@ def test_recon_summary_scales_with_investigation_depth():
 
 
 def test_b_checkpoint_response_is_conclusion_first_not_artifact_inventory():
-    text = read("sub-skills/tasks/assignment-workflow-planner.md")
+    text = read("sub-skills/tasks/alignment-planning.md")
     skill_text = read("skill.md")
-    recon_text = read("sub-skills/tools/assignment-recon.md")
+    recon_text = read("sub-skills/tasks/background-recon.md")
 
     assert "Conclusion-first `[B]` response rule" in text
     assert "Do not lead the user-facing `[B]` message with workbench paths" in text
@@ -370,7 +364,7 @@ def test_b_checkpoint_response_is_conclusion_first_not_artifact_inventory():
     assert "Ask the smallest next alignment question needed to avoid guessing" in text
 
     assert "For the homework workflow-planner `[B]` alignment checkpoint" in skill_text
-    assert "sub-skills/tasks/assignment-workflow-planner.md" in skill_text
+    assert "sub-skills/tasks/alignment-planning.md" in skill_text
     assert "conclusion-first assignment briefing" in skill_text
 
     assert "artifact existence/status alone is insufficient" in recon_text
@@ -378,8 +372,8 @@ def test_b_checkpoint_response_is_conclusion_first_not_artifact_inventory():
 
 
 def test_b_checkpoint_briefing_maps_findings_to_reference_categories():
-    text = read("sub-skills/tasks/assignment-workflow-planner.md")
-    recon_text = read("sub-skills/tools/assignment-recon.md")
+    text = read("sub-skills/tasks/alignment-planning.md")
+    recon_text = read("sub-skills/tasks/background-recon.md")
 
     assert "source-category evidence map" in text
     assert "`references/source_docs/`" in text

@@ -9,7 +9,7 @@ def read(path: str) -> str:
 
 
 def test_assignment_recon_extracts_pdf_link_annotations_generically():
-    text = read("sub-skills/tools/assignment-recon.md")
+    text = read("sub-skills/tasks/background-recon.md")
 
     assert "PDF Link Annotation Extraction" in text
     assert "page.get_links()" in text
@@ -25,7 +25,7 @@ def test_pdf_link_policy_does_not_name_course_or_resource_type_special_cases():
     policy_text = "\n".join(
         [
             read("tests/test_pdf_link_annotation_policy.py"),
-            read("sub-skills/tools/assignment-recon.md"),
+            read("sub-skills/tasks/background-recon.md"),
             read("sub-skills/tasks/do-homework.md"),
             read("docs/runtime-agent-protocol.md"),
         ]
@@ -34,8 +34,8 @@ def test_pdf_link_policy_does_not_name_course_or_resource_type_special_cases():
     course_specific_name = "DSAA" + "2011"
     assert course_specific_name not in policy_text
 
-    assignment_recon = read("sub-skills/tools/assignment-recon.md")
-    pdf_link_section = assignment_recon.split("### PDF Link Annotation Extraction", 1)[1]
+    background_recon = read("sub-skills/tasks/background-recon.md")
+    pdf_link_section = background_recon.split("### PDF Link Annotation Extraction", 1)[1]
     pdf_link_section = pdf_link_section.split("Record resources that cannot be fetched", 1)[0]
 
     for resource_type in ["Air Quality", "Student Dropout", "GitHub", "style file"]:
@@ -46,7 +46,7 @@ def test_do_homework_requires_pdf_link_manifests_before_alignment():
     text = "\n".join(
         [
             read("sub-skills/tasks/do-homework.md"),
-            read("sub-skills/tasks/assignment-source-intake.md"),
+            read("sub-skills/tasks/background-recon.md"),
         ]
     )
 
