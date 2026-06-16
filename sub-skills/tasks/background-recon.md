@@ -7,7 +7,7 @@ description: clean-start homework background reconnaissance
 
 Use this task only for `entry_preset: clean_start`. It owns clean-start
 Canvas/source reconnaissance and stops after terminal source artifacts are ready
-for `sub-skills/tasks/alignment-planning.md`.
+for the next alignment stage.
 
 Do not use this task as the normal entry for retained drafts, prior outputs,
 `review_or_submit`, `review_or_execute`, or repair/continue flows. Those entries
@@ -102,7 +102,8 @@ For clean-start proposal, research, or open-ended homework, read this checklist
 before the longer flow below. It is the shortest contract for the behavior that
 must happen at runtime.
 
-1. Fetch raw Canvas snapshots through `assignment-recon.md`.
+1. Fetch raw Canvas snapshots through the Canvas Evidence Recon Contract in this
+   file.
 2. Dispatch `reference_collector` for every homework run.
 3. Wait for `references/REFERENCE_INDEX.md`.
 4. Read preserved references, not broad raw Canvas snapshots.
@@ -121,6 +122,32 @@ must happen at runtime.
    direction is open and not explicitly delegated in the current request or
    accepted startup inventory, hand off for planner alignment instead of writing
    `alignment_brief.md` here.
+
+## Canvas Evidence Recon Contract
+
+Runtime invariants:
+
+- Keep Stage 1 broad: inspect all likely Canvas source surfaces before deciding
+  the main spec, including assignment, rubric, syllabus, modules, pages, file
+  metadata, assignment files, and announcements.
+- Always dispatch `reference_collector` after Stage 1. The collector preserves
+  complete original task-relevant evidence under `references/`; it does not
+  interpret the assignment or write terminal reconnaissance artifacts.
+- Treat `canvas/syllabus.json` as a first-class Canvas source: fetch it, read it,
+  and record whether it contains assignment requirements, grading criteria,
+  submission policy, late policy, academic-integrity rules, AI/tool policy, or
+  other course-level constraints.
+- For Canvas-native bodies such as assignment, syllabus, front page, pages, and
+  announcements, raw Canvas JSON is the canonical evidence. Task-relevant
+  Canvas-native source objects must be copied verbatim into
+  `references/canvas_native/` with exact text exports when available.
+- Write `spec.md` as a concise evidence-grounded report, not as a raw dump.
+- Keep `problem.md` as compatibility only; downstream planning reads `spec.md`.
+- Do not let a helper script or child worker decide the final main-spec
+  judgment.
+- Do not create `reading_plan.compact.json`, `source_findings.compact.md`,
+  source index appendix files, source body fragments, or source scout receipts
+  in standard runs.
 
 ## [A] Run Source Intake In The Initialized Workbench
 
@@ -198,8 +225,9 @@ collector replace Main Agent interpretation or final artifact writing.
 role and not a completed child result. It may appear in legacy manifests only as
 a domain label; it must not have a successful dispatch id or receipt path.
 
-A normal homework run must dispatch `reference_collector` after
-`assignment-recon.md` has fetched raw Canvas snapshots.
+A normal homework run must dispatch `reference_collector` after raw Canvas
+snapshots have been fetched through the Canvas Evidence Recon Contract in this
+file.
 
 Main Agent inline recovery must be recorded as recovery evidence, not as a
 Subagent receipt. If a child Subagent times out or cannot be dispatched, the
@@ -276,7 +304,7 @@ It must summarize:
 - skipped source-preservation or source-recovery actions and reasons;
 - stale or forbidden context that must not be passed to later children;
 - source sufficiency risks and downstream verification risks;
-- user decisions needed by `sub-skills/tasks/alignment-planning.md`.
+- user decisions needed by the alignment stage.
 
 Also write `investigation/recon_summary.md` before planner handoff. This is the
 human-readable entrance for the user and reviewer. It must be concise but
@@ -322,9 +350,9 @@ confirmed terminal agreement become normal downstream context.
 
 ### [A3] Canvas Generic Reconnaissance - Mandatory
 
-Invoke `../tools/assignment-recon.md` as the source/spec workflow. This is a Main
-Agent source/spec exploration domain and may be supported by
-`reference_collector`, but it must not be replaced by a standalone
+Run the Canvas Evidence Recon Contract in this file as the source/spec
+workflow. This is a Main Agent source/spec exploration domain and may be
+supported by `reference_collector`, but it must not be replaced by a standalone
 spec-generation script. The Main Agent must read `references/REFERENCE_INDEX.md`,
 preserved reference files, and Canvas-native `source.json` / `source.txt`
 copies; it must not load broad raw Canvas snapshots as normal context after the
@@ -333,7 +361,8 @@ collector has preserved task-relevant evidence. It judges the main spec, writes
 
 Required [A3] order:
 
-1. Fetch raw Canvas snapshots through `assignment-recon.md`.
+1. Fetch raw Canvas snapshots through the Canvas Evidence Recon Contract in this
+   file.
 2. Dispatch `reference_collector` for every homework run.
 3. Wait for `references/REFERENCE_INDEX.md`.
 4. Read preserved references, not broad raw Canvas snapshots.
@@ -401,6 +430,59 @@ Follow the Canvas Generic stages:
    `form_answers`, `slides`, or `mixed`) and record the preliminary output mode
    in `investigation/recon_summary.md` and `investigation/explore_context.md`.
    Do not write the full `pipeline_design.md` schema here.
+
+### PDF Link Annotation Extraction
+
+This rule is part of the `reference_collector` contract.
+
+PDF text extraction is not complete source extraction. Human readers can see and
+click linked text because PDF viewers combine the visible text layer with link
+annotations; tools such as `pdftotext` or `page.get_text()` usually return only
+the visible text and omit the target URL.
+
+For every fetched PDF that may affect the assignment spec, also extract link
+annotations and save them beside the PDF:
+
+```text
+references/<name>.pdf
+references/<name>.pdf.txt
+references/<name>.pdf.links.json
+references/source_docs/<slug>/<slug>.pdf
+references/source_docs/<slug>/<slug>.pdf.txt
+references/source_docs/<slug>/<slug>.pdf.links.json
+```
+
+Use PyMuPDF `page.get_links()` or an equivalent PDF annotation reader. The link
+manifest should be a JSON array with generic fields:
+
+```json
+[
+  {
+    "source_pdf": "references/example.pdf",
+    "page": 1,
+    "anchor_text": "visible linked words near the link rectangle",
+    "uri": "https://example.invalid/resource",
+    "rect": [0, 0, 0, 0]
+  }
+]
+```
+
+If a PDF has no external links, write an empty `[]` manifest. If link extraction
+fails, record the failure in `investigation/unreachable.txt` with the PDF path
+and tool error. Do not specialize this rule by URL domain, resource type, or
+course. The generic contract is: preserve every URI embedded in PDF link
+annotations so later spec, rubric, input, and blocker decisions can decide
+whether each URL matters.
+
+When useful, also write an aggregate `references/pdf_links.json` that
+concatenates all per-PDF link records for quick review; the sibling
+`*.pdf.links.json` manifests remain the source-adjacent evidence. New
+workbenches may store these manifests under nested source directories, so
+review using `references/**/*.pdf.links.json` while accepting legacy flat
+`references/*.pdf.links.json`.
+
+Record resources that cannot be fetched in `investigation/unreachable.txt` with
+the source path or URL and a concise reason.
 
 After `[A3]`, immediately read `references/REFERENCE_INDEX.md`, then read the
 preserved reference files named there:
@@ -600,8 +682,7 @@ User-interaction phase #1 for clean-start source intake.
 
 After terminal reconnaissance artifacts are written and `[A4]` passes, the Main
 Agent must present the reconnaissance results to the user and ask the user to
-confirm the source understanding before reading
-`sub-skills/tasks/alignment-planning.md`.
+confirm the source understanding before reading the alignment stage.
 
 This checkpoint is not alignment and not pipeline planning. It confirms whether
 the assignment facts, source judgments, grading signals, conflicts, and gaps are
@@ -653,21 +734,21 @@ assessment-weight constraints; Canvas has no rubric; Canvas and PDF due dates
 conflict. Is this source understanding correct before I move into alignment?"
 
 Only after the user confirms the reconnaissance briefing should the Main Agent
-read `sub-skills/tasks/alignment-planning.md` for alignment. If the
-user corrects a source fact, save the correction to the workbench, update
+read the next alignment-stage file. If the user corrects a source fact, save the
+correction to the workbench, update
 `spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
 `investigation/recon_summary.md`, and `investigation/explore_context.md` as
 needed, then present the corrected recon briefing again.
 
-## Terminal Handoff
+## Tail Handoff
 
-After this file completes successfully and the user confirms the recon briefing,
+If background recon completed successfully, all terminal artifacts are written,
+and the user has confirmed the reconnaissance briefing/source understanding,
 continue by reading:
 
 ```text
 sub-skills/tasks/alignment-planning.md
 ```
 
-Do not execute draft-production stages here. This task ends when source intake
-has produced the terminal reconnaissance artifacts, the user has confirmed the
-source understanding, and the next action is planner alignment or recovery.
+Do not execute draft stages from this file. Alignment, user-owned decisions,
+pipeline design, and pipeline review belong to the next stage.

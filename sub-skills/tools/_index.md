@@ -10,14 +10,12 @@ available tools and their contracts. Each tool's full guidance lives in
 `sub-skills/tools/<name>.md`.
 
 **For pipeline design guidance** (common pipeline shapes, tool chaining),
-see `sub-skills/tasks/assignment-workflow-planner.md [C]`.
+see `sub-skills/tasks/alignment-planning.md [C]`.
 
 ## Tool registry
 
 | Tool | File | One-line capability | Inputs | Outputs |
 |---|---|---|---|---|
-| **assignment-recon** | [assignment-recon.md](./assignment-recon.md) | Canvas Generic Stage 1-5 reconnaissance → spec.md + rubric + references | course_id, assignment_id, work_dir | spec.md, investigation/, references/, problem.md |
-| **current-state-intake** | [current-state-intake.md](./current-state-intake.md) | Retained-artifact current-state intake -> explore context + repair recon | work_dir, current_request | investigation/explore_manifest.json, investigation/explore_context.md, optional investigation/repair_recon.md, optional repair_request.md |
 | **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | Markdown → PDF (Chinese, LaTeX math, code, callouts) | markdown file, options | PDF file |
 | **writing-helper** | [writing-helper.md](./writing-helper.md) | Structured academic prose (essay/report/reflection) | spec.md, execution plan, rubric, references | draft.md |
 | **paper-search** | [paper-search.md](./paper-search.md) | Literature search via arxiv → bib + json | keywords, max_results | references.bib, references.json |
@@ -33,8 +31,8 @@ see `sub-skills/tasks/assignment-workflow-planner.md [C]`.
 > `tools: [tool]`.
 > `primary_tool` is the stage ownership/lead contract; `tools` is the complete
 > ordered list of top-level tool contracts the stage must preserve.
-> For retained-artifact requests, load `current-state-intake` before repair or
-> continuation planning.
+> Retained-artifact reconnaissance is a routed task stage, not a tool registry
+> entry. Start from `sub-skills/tasks/do-homework.md`.
 
 ## Task registry
 
@@ -47,8 +45,6 @@ see `sub-skills/tasks/assignment-workflow-planner.md [C]`.
 
 | Verb | Meaning |
 |---|---|
-| `assignment_recon` | Canvas reconnaissance → spec.md |
-| `current_state_intake` | Retained-artifact current state -> explore context |
 | `render_pdf` | Markdown → PDF |
 | `render_slides` | Slides (HTML/PDF) |
 | `search_papers` | Literature search → bib |
