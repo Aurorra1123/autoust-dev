@@ -123,6 +123,22 @@ def test_reference_collector_preserves_canvas_native_sources_verbatim():
     assert "must not summarize" in policy_text or "must not paraphrase" in policy_text
 
 
+def test_reference_collector_forbids_empty_canvas_native_directories():
+    policy_text = "\n".join(
+        [
+            read("sub-skills/tasks/background-recon.md"),
+            read("docs/runtime-agent-protocol.md"),
+            read("sub-skills/tools/canvascli-api.md"),
+        ]
+    )
+    normalized_policy_text = normalize_ws(policy_text)
+
+    assert "Every `references/canvas_native/<slug>/` directory left at collector completion must contain" in normalized_policy_text
+    assert "`source.json`, `source.txt`, and `ORIGIN.md`" in normalized_policy_text
+    assert "Delete candidate or renamed Canvas-native directories that do not contain the complete three-file set" in normalized_policy_text
+    assert "empty `references/canvas_native/*` directories are not valid reference artifacts" in normalized_policy_text
+
+
 def test_reference_collector_preserves_announcements_per_relevant_object():
     policy_text = "\n".join(
         [

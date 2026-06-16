@@ -620,6 +620,12 @@ when available. `references/` is the source evidence interface for downstream
 source reads; `canvas/` remains the durable raw snapshot store. Announcement
 snapshots live at `canvas/announcements.json`.
 
+Every `references/canvas_native/<slug>/` directory left at collector completion
+must contain `source.json`, `source.txt`, and `ORIGIN.md`. Delete candidate or
+renamed Canvas-native directories that do not contain the complete three-file
+set; empty `references/canvas_native/*` directories are not valid reference
+artifacts and must not be left for the Main Agent or user to inspect.
+
 Announcement arrays are collection snapshots, not source objects. Do not copy the
 full `canvas/announcements.json` array into
 `references/canvas_native/announcements/source.json`. Each retained announcement

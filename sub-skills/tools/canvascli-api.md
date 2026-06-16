@@ -350,6 +350,12 @@ workflow, adapted to AutoStudy's CLI boundary:
    `references/canvas_native/announcements/source.json`. Relevant announcements
    are saved one object per
    `references/canvas_native/announcement-<id-or-slug>/source.json`.
+   Every `references/canvas_native/<slug>/` directory left at collector
+   completion must contain `source.json`, `source.txt`, and `ORIGIN.md`. Delete
+   candidate or renamed Canvas-native directories that do not contain the
+   complete three-file set; empty `references/canvas_native/*` directories are
+   not valid reference artifacts and must not be left for the Main Agent or user
+   to inspect.
 4. Writes `<work_dir>/spec.md` as the Main Agent reconnaissance report, not a
    raw dump.
 5. Finds grading criteria into `<work_dir>/investigation/rubric.md`.

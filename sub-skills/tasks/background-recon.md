@@ -393,6 +393,12 @@ Follow the Canvas Generic stages:
    content verbatim under `references/canvas_native/<slug>/source.json` with
    readable `source.txt` and provenance `ORIGIN.md`. Wait for
    `references/REFERENCE_INDEX.md`.
+   Every `references/canvas_native/<slug>/` directory left at collector
+   completion must contain `source.json`, `source.txt`, and `ORIGIN.md`. Delete
+   candidate or renamed Canvas-native directories that do not contain the
+   complete three-file set; empty `references/canvas_native/*` directories are
+   not valid reference artifacts and must not be left for the Main Agent or user
+   to inspect.
 
    Announcement arrays are collection snapshots, not source objects. Do not copy
    the full `canvas/announcements.json` array into
@@ -553,6 +559,11 @@ Do not hand off to the planner until:
   Relevant announcements must be preserved as individual
   `references/canvas_native/announcement-<id-or-slug>/source.json` objects, not
   as the full `canvas/announcements.json` array.
+- No empty or partial `references/canvas_native/*` directories remain after
+  `reference_collector` completion. Each retained directory contains
+  `source.json`, `source.txt`, and `ORIGIN.md`; candidate directories without
+  the complete three-file set have been deleted before `REFERENCE_INDEX.md` is
+  considered final.
 - PDFs that affect the assignment have original PDF, `.pdf.txt`, and
   `.pdf.links.json` companions.
 - `investigation/recon_summary.md` exists and gives a user-readable status plus
