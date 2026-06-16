@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Rename and restructure the homework routing docs so `do-homework.md` reveals only the first-stage recon task, and alignment/planning is revealed only by the first-stage file tail handoff.
+**Goal:** Rename and restructure the homework routing docs so `do-homework.md` reveals only the first-stage recon task, clean starts stop for recon briefing/source confirmation inside the first stage, and alignment/planning is revealed only by the first-stage file tail handoff after that confirmation.
 
-**Architecture:** `do-homework.md` becomes a progressive-disclosure router with two first-stage route targets: `background-recon.md` for clean starts and `existing-work-recon.md` for retained/repair/continue starts. Both first-stage task files write terminal artifacts and then hand off to the shared `alignment-planning.md` file. The former `assignment-recon.md` contract is folded into `background-recon.md`; the former `current-state-intake.md` moves from `tools/` to `tasks/` as `existing-work-recon.md`.
+**Architecture:** `do-homework.md` becomes a progressive-disclosure router with two first-stage route targets: `background-recon.md` for clean starts and `existing-work-recon.md` for retained/repair/continue starts. `background-recon.md` preserves the `[A5] Recon Briefing + Source Confirmation` checkpoint before its tail handoff. Both first-stage task files write terminal artifacts and then hand off to the shared `alignment-planning.md` file; for clean starts, that handoff is gated on source-understanding confirmation. The former `assignment-recon.md` contract is folded into `background-recon.md`; the former `current-state-intake.md` moves from `tools/` to `tasks/` as `existing-work-recon.md`.
 
 **Tech Stack:** Markdown task docs, Python `pytest` policy tests, git file moves.
 
@@ -32,8 +32,18 @@ Modify:
 - `tests/test_pdf_link_annotation_policy.py` - point source recon assertions at `background-recon.md`
 - `tests/test_source_body_audit_policy.py` - point source/body assertions at `background-recon.md` and alignment assertions at `alignment-planning.md`
 - `tests/test_spec_hard_requirement_policy.py` - point no-downgrade planner assertions at `alignment-planning.md`
+- `tests/test_recon_briefing_boundary_policy.py` - preserve the recon confirmation boundary tests and update them to the renamed files
 
 Do not edit runtime artifact names such as `spec.md`, `review_a.json`, `alignment_brief.md`, `repair_plan.md`, `pipeline_design.md`, or `repair_pipeline_design.md`.
+
+Do not remove the upstream recon-confirmation behavior when moving files:
+
+- `[A5] Recon Briefing + Source Confirmation` belongs in the clean-start first
+  stage after `[A4]`.
+- The first-stage clean-start briefing is conclusion-first and includes source
+  category findings before file links.
+- The planner `[B]` stage is alignment-only and must not repeat the full
+  source-category evidence map.
 
 ---
 
@@ -258,8 +268,22 @@ git commit -m "test: require staged homework recon routing"
 - Move: `sub-skills/tasks/assignment-workflow-planner.md` -> `sub-skills/tasks/alignment-planning.md`
 - Move: `sub-skills/tools/current-state-intake.md` -> `sub-skills/tasks/existing-work-recon.md`
 - Modify: `sub-skills/tasks/do-homework.md`
+- Modify: `tests/test_recon_briefing_boundary_policy.py`
+- Modify: `tests/test_source_body_audit_policy.py`
 
-- [ ] **Step 1: Move the three runtime files**
+- [ ] **Step 1: Confirm upstream recon-confirmation edits are present before moving files**
+
+Run:
+
+```bash
+rg -n "\[A5\] Recon Briefing \+ Source Confirmation|does not own the first full reconnaissance-results briefing|After reconnaissance confirmation, run the alignment loop" sub-skills/tasks/assignment-source-intake.md sub-skills/tasks/assignment-workflow-planner.md skill.md
+```
+
+Expected: all three phrases are present. If any phrase is missing, stop and
+inspect the working tree before continuing; do not recreate the older `[B]`
+recon-summary design.
+
+- [ ] **Step 2: Move the three runtime files**
 
 Run:
 
@@ -269,7 +293,7 @@ git mv sub-skills/tasks/assignment-workflow-planner.md sub-skills/tasks/alignmen
 git mv sub-skills/tools/current-state-intake.md sub-skills/tasks/existing-work-recon.md
 ```
 
-- [ ] **Step 2: Update front matter and headings**
+- [ ] **Step 3: Update front matter and headings**
 
 In `sub-skills/tasks/background-recon.md`, replace the front matter and H1 with:
 
@@ -304,7 +328,7 @@ description: homework user alignment, brainstorming, and pipeline planning
 # Alignment Planning
 ```
 
-- [ ] **Step 3: Replace `do-homework.md` route disclosure**
+- [ ] **Step 4: Replace `do-homework.md` route disclosure**
 
 In `sub-skills/tasks/do-homework.md`, replace the initial route list with:
 
@@ -321,9 +345,12 @@ retained / repair / review / continue -> sub-skills/tasks/existing-work-recon.md
 
 Do not read or name later-stage files from this router. Follow the routed
 first-stage task to completion; that task owns its own tail handoff.
+
+Clean-start source confirmation is handled inside the routed first-stage task,
+not in this router.
 ```
 
-- [ ] **Step 4: Replace the startup inventory route enum**
+- [ ] **Step 5: Replace the startup inventory route enum**
 
 In `sub-skills/tasks/do-homework.md`, update the JSON route field to:
 
@@ -331,7 +358,7 @@ In `sub-skills/tasks/do-homework.md`, update the JSON route field to:
   "route": "background-recon.md | existing-work-recon.md",
 ```
 
-- [ ] **Step 5: Replace the route table**
+- [ ] **Step 6: Replace the route table**
 
 In `sub-skills/tasks/do-homework.md`, replace the current route table with:
 
@@ -340,14 +367,14 @@ In `sub-skills/tasks/do-homework.md`, replace the current route table with:
 
 | Input state | Entry preset | First-stage route |
 |---|---|---|
-| `recommended_action: recon` | `clean_start` | Read `sub-skills/tasks/background-recon.md`. |
+| `recommended_action: recon` | `clean_start` | Read `sub-skills/tasks/background-recon.md`; it owns recon briefing/source confirmation and its own tail handoff. |
 | `recommended_action: review_or_execute` or `pipeline_ready` | `retained_artifact_start` | Read `sub-skills/tasks/existing-work-recon.md`; do not rerun source recon. |
 | `recommended_action: review_or_submit` or `draft_ready` | `retained_artifact_start` | Read `sub-skills/tasks/existing-work-recon.md`; do not clean-start by default. |
 | `recommended_action: continue` or failed/interrupted work | `retained_artifact_start` | Read `sub-skills/tasks/existing-work-recon.md`; run clean-start source recon only if that stage reports missing/stale source evidence as a blocker and the router accepts a new route. |
 | Direct retained draft, prior output, feedback, repair, package, or verification request | `retained_artifact_start` | Read `sub-skills/tasks/existing-work-recon.md`. |
 ```
 
-- [ ] **Step 6: Replace the router handoff section**
+- [ ] **Step 7: Replace the router handoff section**
 
 In `sub-skills/tasks/do-homework.md`, replace `## Handoff` with:
 
@@ -356,10 +383,26 @@ In `sub-skills/tasks/do-homework.md`, replace `## Handoff` with:
 
 After route selection, read only the first-stage route named in the route table.
 Do not preload, inspect, or name later-stage task files from this router. The
-first-stage task owns the next handoff after it writes its terminal artifacts.
+first-stage task owns the next handoff after it writes its terminal artifacts
+and completes any required user confirmation checkpoint.
 ```
 
-- [ ] **Step 7: Remove forbidden later-stage names from the router**
+- [ ] **Step 8: Update recon confirmation tests to renamed files**
+
+In `tests/test_recon_briefing_boundary_policy.py`, make these substitutions:
+
+```text
+sub-skills/tasks/assignment-source-intake.md -> sub-skills/tasks/background-recon.md
+sub-skills/tasks/assignment-workflow-planner.md -> sub-skills/tasks/alignment-planning.md
+```
+
+Keep all assertions about `[A5] Recon Briefing + Source Confirmation`,
+confirmed reconnaissance briefing, and alignment-only planner behavior.
+
+In `tests/test_source_body_audit_policy.py`, keep the recon briefing assertions
+owned by `background-recon.md`, not `alignment-planning.md`.
+
+- [ ] **Step 9: Remove forbidden later-stage names from the router**
 
 Run:
 
@@ -369,7 +412,7 @@ rg -n "alignment-planning|task-orchestrator|assignment-workflow-planner|assignme
 
 Expected: no output.
 
-- [ ] **Step 8: Run the staged router test**
+- [ ] **Step 10: Run the staged router test**
 
 Run:
 
@@ -380,7 +423,7 @@ Run:
 Expected: still FAIL because `background-recon.md` does not yet contain the
 folded `assignment-recon.md` contract and old references remain in moved files.
 
-- [ ] **Step 9: Commit the file moves and router disclosure change**
+- [ ] **Step 11: Commit the file moves and router disclosure change**
 
 ```bash
 git add -A sub-skills/tasks sub-skills/tools/current-state-intake.md
@@ -444,15 +487,16 @@ rg -n "assignment-recon.md|assignment_recon" sub-skills/tasks/background-recon.m
 
 Expected: no output.
 
-- [ ] **Step 3: Add the tail handoff in `background-recon.md`**
+- [ ] **Step 3: Preserve `[A5]` and add the gated tail handoff in `background-recon.md`**
 
 At the end of `sub-skills/tasks/background-recon.md`, add this exact section:
 
 ```markdown
 ## Tail Handoff
 
-If background recon completed successfully and all terminal artifacts are
-written, continue by reading:
+If background recon completed successfully, all terminal artifacts are written,
+and the user has confirmed the reconnaissance briefing/source understanding,
+continue by reading:
 
 ```text
 sub-skills/tasks/alignment-planning.md
@@ -461,6 +505,10 @@ sub-skills/tasks/alignment-planning.md
 Do not execute draft stages from this file. Alignment, user-owned decisions,
 pipeline design, and pipeline review belong to the next stage.
 ```
+
+Keep the existing `[A5] Recon Briefing + Source Confirmation` section before
+this tail handoff. Do not move the full source-category evidence map into
+`alignment-planning.md`.
 
 - [ ] **Step 4: Delete `sub-skills/tools/assignment-recon.md`**
 
@@ -618,6 +666,11 @@ This stage does not run `background-recon.md` and does not run
 `existing-work-recon.md`. It reads terminal artifacts from whichever first-stage
 task completed. Missing first-stage artifacts are blockers, not permission to
 silently perform the first-stage investigation here.
+
+For clean starts, this stage also assumes the reconnaissance briefing/source
+understanding was already confirmed in `background-recon.md`. Do not repeat the
+full source-category evidence map here; start from the smallest alignment
+question needed to avoid guessing.
 ```
 
 - [ ] **Step 6: Run the staged router test**
@@ -647,6 +700,7 @@ git commit -m "docs: make existing work recon a routed task"
 - Modify: `docs/canvas-pilot-reference.md`
 - Modify: `docs/skills-architecture-spec.md`
 - Modify: `docs/progress/agent-progress.md`
+- Modify: `tests/test_recon_briefing_boundary_policy.py`
 
 - [ ] **Step 1: Update runtime architecture in `skill.md`**
 
@@ -679,9 +733,9 @@ Replace the runtime homework file map with:
 
 ```text
 do-homework.md = router/preflight/first-stage route selection
-background-recon.md = clean-start task background recon
+background-recon.md = clean-start task background recon plus recon briefing/source confirmation
 existing-work-recon.md = retained/repair/continue current work recon
-alignment-planning.md = user alignment, brainstorming, pipeline planning
+alignment-planning.md = user alignment, brainstorming, pipeline planning after first-stage confirmation
 ```
 
 - [ ] **Step 2: Update `docs/runtime-agent-protocol.md`**
@@ -708,6 +762,11 @@ Add this progressive-disclosure rule near the homework routing section:
 `do-homework.md` names only the first-stage task for the accepted route. It must
 not name `alignment-planning.md`; alignment is revealed only by the tail handoff
 inside `background-recon.md` or `existing-work-recon.md`.
+
+For clean starts, `background-recon.md` must present the recon briefing/source
+confirmation checkpoint before revealing the alignment handoff. The planner
+`[B]` stage is alignment-only and must not repeat the full source-category
+evidence map.
 ```
 
 - [ ] **Step 3: Update old file names across docs**

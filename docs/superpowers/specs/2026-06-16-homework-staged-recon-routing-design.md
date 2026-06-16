@@ -100,11 +100,13 @@ do-homework.md
 pre-announce `alignment-planning.md` anywhere in the runtime router.
 
 `background-recon.md` runs clean-start Canvas/source/background reconnaissance,
-preserves references, writes terminal recon artifacts, and only then ends with a
-handoff such as:
+preserves references, writes terminal recon artifacts, presents the
+reconnaissance briefing/source confirmation checkpoint, and only after the user
+confirms the source understanding ends with a handoff such as:
 
 ```text
-If this background recon completed successfully, continue by reading:
+If this background recon completed successfully and the user confirmed the
+source understanding, continue by reading:
 sub-skills/tasks/alignment-planning.md
 ```
 
@@ -182,6 +184,10 @@ Responsibilities:
 - Keep the three reference preservation levels: original file, extracted text,
   and link/annotation manifests when applicable.
 - Keep `references/REFERENCE_INDEX.md` as the source evidence entrance.
+- Present `[A5] Recon Briefing + Source Confirmation` before the handoff:
+  conclusion first, source-category findings before file links, grading signals
+  and conflicts/gaps, one source-understanding confirmation question, then a
+  short optional audit appendix.
 - Write terminal clean-start artifacts:
 
 ```text
@@ -199,6 +205,9 @@ stage_reviews/process_concerns.jsonl # when needed
 Boundaries:
 
 - It does not run user alignment.
+- It does not ask for topic, research question, group facts, method choice, or
+  other user-owned alignment decisions unless the user volunteers corrections
+  while confirming the reconnaissance facts.
 - It does not write `alignment_brief.md`, `pipeline_design.md`,
   `repair_plan.md`, or `repair_pipeline_design.md`.
 - It does not create `reading_plan.compact.json`,
@@ -210,6 +219,9 @@ Handoff:
 
 - The only downstream task named inside this file should be the tail handoff to
   `alignment-planning.md`.
+- The tail handoff is gated on user confirmation of the recon briefing. If the
+  user corrects a source fact, update the terminal recon artifacts and present
+  the corrected recon briefing again before handing off.
 
 ### `existing-work-recon.md`
 
@@ -282,7 +294,9 @@ accepted retained artifacts named by startup inventory
 
 Responsibilities:
 
-- Present a conclusion-first briefing to the user.
+- For clean starts, assume the first full reconnaissance-results briefing was
+  already presented and confirmed in `background-recon.md`.
+- Ask the smallest user-owned alignment question needed before planning.
 - Ask for user-owned decisions before planning.
 - Run alignment/brainstorming with the user.
 - Write `investigation/alignment_brief.md` for clean-start work.
@@ -297,6 +311,9 @@ Boundaries:
 - It does not run `existing-work-recon.md`.
 - It reads terminal artifacts from the first stage and treats missing required
   artifacts as blockers.
+- It does not repeat the full source-category evidence map from the clean-start
+  recon confirmation checkpoint unless needed to correct a misunderstanding or
+  explain a blocker.
 - It may route back to the router only when the first-stage artifacts are
   missing, stale, or contradict the accepted startup inventory.
 
