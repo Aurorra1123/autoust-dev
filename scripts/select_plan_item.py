@@ -90,9 +90,7 @@ def build_selection(date: str, plan_item: dict[str, Any], pending_item: dict[str
     if cid is None or aid is None:
         raise RuntimeError("selected plan item is missing course_id or assignment_id")
 
-    canvas_url = merged.get("html_url")
-    if not canvas_url:
-        canvas_url = f"https://hkust-gz.instructure.com/courses/{cid}/assignments/{aid}"
+    canvas_url = merged.get("html_url") or None
 
     existing_status = merged.get("existing_result_status")
     result_path = merged.get("existing_result_path")
@@ -114,6 +112,7 @@ def build_selection(date: str, plan_item: dict[str, Any], pending_item: dict[str
         "requires_recon": action == "recon",
         "requires_error_review": action == "continue",
         "requires_manual_review": action == "manual_review",
+        "has_existing_pipeline": existing_status == "pipeline_ready",
         "has_existing_draft": existing_status == "draft_ready",
         "suggested_work_dir": merged.get("suggested_work_dir"),
         "canvas_url": canvas_url,

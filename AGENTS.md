@@ -1,118 +1,18 @@
-# AGENTS.md
+# AutoStudy Agent Bootstrap
 
-> Entry + constraints for **developers** of AutoStudy. If you're using AutoStudy as a skill (i.e. you're an end-user agent loading it to do Canvas tasks), read [skill.md](./skill.md) instead.
+对话保持使用中文。
 
-## Who reads this
+This repository is governed by `skill.md`. Before handling Canvas, homework,
+course sync, note generation, or any `sub-skills/` workflow, read `skill.md`
+first and follow the route it selects.
 
-This file is for the next person (or agent) who picks up AutoStudy development — extending tasks, adding tools, fixing bugs. Two different audiences, two different entry points:
+Do not preload `sub-skills/tasks/*.md`. Open only the task selected by
+`skill.md`, then follow that task's explicit handoff before reading any later
+stage.
 
-| Audience | Entry | Asks |
-|---|---|---|
-| **Skill user** (agent doing Canvas tasks for the user) | [`skill.md`](./skill.md) | "What can I do for this HKUST(GZ) student right now?" |
-| **Skill developer** (this file) | `AGENTS.md` | "How is this repo organized? What's the current state? Where do I write things?" |
+For repository development, read `docs/DEVELOPMENT.md`. For runtime Canvas work,
+do not use development docs as task instructions unless the user is explicitly
+asking to modify AutoStudy itself.
 
-If you only read `skill.md`, you'd think the repo is a runtime tool. Reading this file first tells you it's also an evolving project with its own roadmap, conventions, and verification rituals.
-
-## Sister repo
-
-The Canvas data layer (`canvascli`) lives at **`~/workspace/canvascli/`** (or wherever the user cloned it). It's a separate git repo, installed into AutoStudy's `.venv` via `pip install -e`. When you change Canvas access behavior, that work belongs in `canvascli/`, not here.
-
-For the full three-project workflow, branch policy, verification rules, and
-documentation-sync checklist, read `docs/COLLABORATION.md`.
-
-Layer boundary:
-
-- `canvascli` is the data layer: Canvas login/session, REST API calls, pagination, course/assignment/file/announcement/submission commands, and stable JSON output.
-- `autoust` is the application layer: skill routing, task orchestration, study/homework workflows, user confirmation points, and documentation for agents.
-
-When a bug or feature request touches both, land the data-layer change in `canvascli` first, then update AutoStudy docs/tasks against the new CLI contract. For rapid development, keep both repos on the user's long-lived update branch (`codex/deepwisdom-updates`) and commit there; open a PR only when the user asks for review or release.
-
-## Reference project
-
-Canvas Copilot is the design reference for this project. Prefer the local clone at **`/Users/deepwisdom/Desktop/project/canvas_copilot`** when it exists; otherwise use the public repo [X-isdoingreat/Canvas_pilot_public](https://github.com/X-isdoingreat/Canvas_pilot_public). Before inventing a new Canvas workflow, inspect how Canvas Copilot solved similar problems, especially around deep assignment reconnaissance, submission safeguards, hooks, tests, and recurring automation.
-
-AutoStudy's distilled notes live in `docs/canvas-pilot-reference.md`. Treat that file as the first stop for "what should we borrow from Canvas Copilot?" and go to the source repo when implementation details matter.
-
-Superpowers is the workflow reference for agent handoff discipline: brainstorm
-before plans, plans before execution, fresh subagents with curated context, and
-independent review before completion claims. It is a design reference, not a
-runtime dependency. AutoStudy translates these practices into its own runtime
-protocol in `docs/runtime-agent-protocol.md`.
-
-Current M3.5 homework direction is recorded in `docs/COLLABORATION.md` and
-`docs/canvas-pilot-reference.md`: use agent-led Canvas Generic Stage 1-5
-reconnaissance, write a standardized `spec.md`, keep `problem.md` only as
-compatibility, run a post-recon alignment loop that writes confirmed
-`investigation/alignment_brief.md`, and execute through `pipeline_design.md`
-instead of `task_profile.yaml`.
-
-Five design principles govern M3.5+ development (full text in
-`docs/COLLABORATION.md` → Design Principles):
-
-1. Assistant, not automation
-2. Dynamic skills composition, no fixed pipelines
-3. Multi-turn iteration (in-session resume + cross-session refinement)
-4. Three-layer preference system (task / course / user)
-5. Review-first design (composable sub-agent review per pipeline stage)
-
-## Skills architecture
-
-Skills are **domain expertise supplements** — not fixed pipeline scripts. The
-complete spec is in **`docs/skills-architecture-spec.md`**. Read that file before
-modifying any skill or adding a new one.
-
-Key rules:
-- `_index.md` only lists top-level skills; sub-skills are discovered progressively
-- Each skill follows a standard template: Contract → Guidance → Appendices →
-  Post-processing → Self-check
-- Skills compose via files in the workbench, not direct calls
-- Language/type specifics go in appendix files, not the main skill or `_index.md`
-- Defaults live in skill files; overrides come from confirmed
-  `investigation/alignment_brief.md` plus `pipeline_design.md` (task),
-  `data/course-overrides/` (course, not yet implemented), or Claude Code memory
-  (user, not yet implemented)
-
-## Start-of-session checklist
-
-Run through these before touching code:
-
-1. Read `docs/progress/agent-progress.md` — what just happened and where we left off
-2. Read `docs/plans/feature-list.json` — the structured backlog with status
-3. Check `git log --oneline | head -10` — recent commits across both repos (`AutoStudy` and `~/workspace/canvascli`)
-4. Re-verify one or two recently-passed features by re-running them. If a regression slipped in, **flip status back to `untested` first**, then start work
-5. Pick exactly one in-progress or pending feature to push forward
-
-## End-of-session checklist
-
-Don't close out a session without:
-
-- [ ] Updating `docs/progress/agent-progress.md` (1–3 sentences on what changed and what's next)
-- [ ] Updating the status of any feature you touched in `docs/plans/feature-list.json`
-- [ ] Capturing verification evidence somewhere (in-line commit body, screenshot path noted, or `docs/verification/<date>/<topic>/` if substantial)
-- [ ] No uncommitted changes (or if there are, explain in progress note why)
-
-## Where things live
-
-| What | Where |
-|---|---|
-| Roadmap (the big picture) | [docs/ROADMAP.md](./docs/ROADMAP.md) |
-| Runtime agent handoff protocol | [docs/runtime-agent-protocol.md](./docs/runtime-agent-protocol.md) |
-| Skill entry for end-users | [skill.md](./skill.md) at repo root |
-| Marketing scenarios | [docs/MARKETING.md](./docs/MARKETING.md) |
-| Burnt-once pitfalls | [docs/PITFALLS.md](./docs/PITFALLS.md) |
-| Backlog with status | `docs/plans/feature-list.json` |
-| Session handoff notes | `docs/progress/agent-progress.md` |
-| Skill tool/task docs | `sub-skills/{tools,tasks}/*.md` |
-
-We're deliberately **not** maintaining `docs/standards/` or `docs/adr/` yet. ROADMAP and PITFALLS already cover what they would, at this scale. Add them if/when they become genuinely needed (i.e. a new contributor can't ramp up without them).
-
-## Rules of thumb
-
-- **Verification before "passing"**: never flip a feature from in-progress to passing without something concrete to point to (a commit, a tested artifact, a screenshot).
-- **Pitfalls go to `docs/PITFALLS.md` or the relevant sub-skill `.md`**, not into chat or commit messages. The next agent won't read your commit body.
-- **Don't write features that require canvascli changes without confirming the canvascli repo state first.** They evolve together.
-- **Repo > chat**: anything worth knowing twice goes to a file, not the conversation.
-
-## Influences
-
-The two-tier (entry / docs) layout follows the pattern in [Aurorra1123/ust-dev `harness-best-practice` skill](https://github.com/Aurorra1123/ust-dev/commit/59761756ebcd01d68a4b62729b4e03f09948dc63) — minus the parts that don't fit AutoStudy yet (`adr/`, `architecture/`, `verification/`, `exec-plan/`). We adopt only `progress/` and `plans/` for now; the rest is overhead at our current size.
+Use focused subagents for exploration, validation, and repetitive workflow checks
+when that improves quality without bypassing the loading boundary above.

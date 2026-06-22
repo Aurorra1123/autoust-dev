@@ -151,12 +151,11 @@ Download each file:
 #### 2f. Archive announcements
 
 ```bash
-.venv/bin/canvascli announcements 2>/dev/null > /tmp/all_announcements.json
+.venv/bin/canvascli announcements --course-id "$COURSE_ID" 2>/dev/null > /tmp/course_announcements.json
 .venv/bin/python -c "
 import json
-all_ann = json.load(open('/tmp/all_announcements.json'))
-course_ann = [a for a in (all_ann if isinstance(all_ann, list) else [])
-              if str(a.get('course_id')) == '$COURSE_ID']
+course_ann = json.load(open('/tmp/course_announcements.json'))
+course_ann = course_ann if isinstance(course_ann, list) else []
 ann_path = '$COURSE_DIR/canvas_sync/announcements.json'
 try:
     existing = json.load(open(ann_path))

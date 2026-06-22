@@ -101,19 +101,42 @@ The AutoStudy translation of these practices lives in
 
 Current approved homework direction:
 
+- The public task remains `do-homework`. Its task file is the router,
+  preflight, and first-stage route-selection surface; `background-recon.md`,
+  `existing-work-recon.md`, and `alignment-planning.md` are internal runtime
+  files, not user-facing commands.
 - Reconnaissance follows Canvas Copilot `canvas-generic` Stage 1-5: fetch
   context, find rubric, locate inputs, review investigation, and classify output
   mode.
 - This reconnaissance is agent-led. AutoStudy no longer keeps a standalone
   script that writes the final assignment spec; mechanical helpers may only
   save snapshots or download specific sources.
-- `spec.md` is a standardized report written after reading all sources; full
-  source text belongs in `references/`, not in a raw context dump.
+- Source reading is direct-source preservation: Stage 1 saves broad raw Canvas
+  snapshots, including `canvas/announcements.json`; the always-on
+  `reference_collector` child narrows task-relevant evidence into
+  `references/REFERENCE_INDEX.md`, `references/source_docs/`, and
+  `references/canvas_native/`.
+- Announcement arrays are collection snapshots, not source objects. The collector
+  preserves only screened relevant announcement objects, one per
+  `references/canvas_native/announcement-<id-or-slug>/source.json`, with raw
+  origins such as `canvas/announcements.json#id=26545`.
+- `spec.md` is a standardized report written after the Main Agent reads the
+  reference index, preserved source files, Canvas-native source copies, and
+  completes the parent self-check. Standard runs do not create
+  `reading_plan.compact.json`, `source_findings.compact.md`, source index
+  appendix files, source body fragments, or source-scout receipts.
 - `problem.md` is temporary compatibility for older tools.
-- After the post-recon alignment loop, `do-homework` writes a confirmed
-  `investigation/alignment_brief.md`, then writes `pipeline_design.md`;
-  `task-orchestrator` executes that plan instead of reading
-  `task_profile.yaml`.
+- Clean-start background recon and source confirmation belong to
+  `background-recon.md`.
+- Retained-artifact current work/state recon belongs to
+  `existing-work-recon.md`.
+- For retained drafts or feedback, the runtime route is `do-homework.md` router
+  -> `existing-work-recon.md` -> `alignment-planning.md` ->
+  `repair_plan.md` / `repair_pipeline_design.md`.
+- After the first-stage tail handoff, `alignment-planning.md` writes a confirmed
+  `investigation/alignment_brief.md` or `repair_plan.md`, then writes
+  `pipeline_design.md`; `task-orchestrator` executes that plan instead of
+  reading `task_profile.yaml`.
 
 ### Skills Architecture
 
@@ -171,7 +194,8 @@ reference to Canvas Copilot but serve AutoStudy's assistant-oriented identity:
    should support `revision_needed` status.
 
 4. **Three-layer preference system.** Task-level preferences are aligned at
-   `[B]` through a focused user conversation: process notes go to
+   `alignment-planning.md` `[B]` through a focused user conversation:
+   process notes go to
    `investigation/user_notes.md`, while the confirmed final agreement goes to
    `investigation/alignment_brief.md` and drives `pipeline_design.md`.
    Course-level preferences accumulated across assignments are stored in
@@ -290,7 +314,7 @@ Chat-only evidence does not count.
 
 After any feature or CLI contract change, check whether these need updates:
 
-- `AGENTS.md` — developer rules, repo boundaries, reference project entry.
+- `docs/DEVELOPMENT.md` — developer rules, repo boundaries, reference project entry.
 - `skill.md` — user-facing entry and safety rules.
 - `sub-skills/tools/canvascli-api.md` — CLI contract and JSON shapes.
 - `sub-skills/tasks/*.md` — task flow changes.

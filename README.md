@@ -1,6 +1,6 @@
 # AutoStudy
 
-> 面向 HKUST(GZ) Canvas 的本地学业助手 skill。
+> 本地 Canvas LMS 学业助手 skill，已在 HKUST(GZ) 的 Canvas 实例上验证。
 > 同步 Canvas、规划 ddl、侦查作业要求、生成可审核草稿、归档课件、生成课程笔记。
 
 其他版本：
@@ -9,7 +9,7 @@
 - [快速版中文 README](./README.quick.md)
 
 AutoStudy 是一个跑在 Claude Code / Codex 这类 agentic coding 环境里的
-**本地 skill 包**。你用自然语言提出需求，agent 读取 `skill.md`，调用本地
+**本地 Canvas LMS skill 包**，已在 HKUST(GZ) 的 Canvas 实例上验证。你用自然语言提出需求，agent 读取 `skill.md`，调用本地
 `canvascli` 数据层，把证据和产物写回这个仓库，并在关键节点询问你。
 
 它不是网页应用，不是托管服务，也不是后台偷偷跑的自动化机器人。它更像一个
@@ -47,7 +47,22 @@ M3.5+：更深的 Canvas 侦查、明确的用户对齐、动态 pipeline、阶�
 
 ### 1. 让 agent 加载这个 skill
 
-AutoStudy 是一个完整的本地仓库，不是单独一个 `skill.md` 文件。第一次使用时，建议让 agent 把它 clone 到一个独立文件夹，比如 `~/workspace/autoust-dev`：
+AutoStudy 是一个完整的本地仓库，不是单独一个 `skill.md` 文件。第一次使用时，最稳的方式是在 Claude Code / Codex 里先打开一个你准备用来放 AutoStudy 的空白项目文件夹，然后让 agent 直接 clone 到当前目录：
+
+```text
+请把 https://github.com/Aurorra1123/autoust-dev clone 到当前空白文件夹，
+读取里面的 skill.md，并按步骤帮我完成初始化。
+```
+
+agent 应该先确认当前目录是空目录，再执行等价于下面的命令：
+
+```bash
+git clone https://github.com/Aurorra1123/autoust-dev.git .
+```
+
+如果当前目录不是空的，或者你还没有打开一个明确的项目文件夹，agent 应该先问你要放到哪里，而不是默认放进 `~/workspace`、桌面、下载目录或其他隐式位置。
+
+你也可以明确指定一个路径：
 
 ```text
 请把 https://github.com/Aurorra1123/autoust-dev clone 到 ~/workspace/autoust-dev，
@@ -68,15 +83,15 @@ cd ~/workspace/autoust-dev
 请使用当前目录里的 AutoStudy skill，阅读 skill.md，然后帮我初始化。
 ```
 
-`~/workspace/autoust-dev` 只是推荐位置；你也可以换成自己喜欢的文件夹。关键是 AutoStudy 要作为一个独立仓库存在，因为 `.venv/`、`data/`、`scripts/` 和 `sub-skills/` 都会在这个仓库目录下使用。agent 应该读取 `skill.md`，检查环境，并把缺失依赖安装到本地 `.venv/`。
+`~/workspace/autoust-dev` 只是一个示例位置，不是默认位置。关键是 AutoStudy 要作为一个独立仓库存在，因为 `.venv/`、`data/`、`scripts/` 和 `sub-skills/` 都会在这个仓库目录下使用。agent 应该读取 `skill.md`，检查环境，并把缺失依赖安装到本地 `.venv/`。
 
 ### 2. 完成一次 Canvas 登录
 
 AutoStudy 使用独立的 [`canvascli`](https://github.com/Aurorra1123/canvascli)
-作为 Canvas 数据层。第一次使用时，agent 会打开浏览器让你完成 HKUST(GZ) SSO：
+作为 Canvas 数据层。第一次使用时，agent 会先确认你的 Canvas 学校/域名或登录页，然后打开浏览器让你完成对应的 Canvas SSO：
 
 ```bash
-.venv/bin/canvascli init
+.venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
 ```
 
 Canvas 登录态保存在本机：
@@ -119,8 +134,18 @@ Canvas IDs 和建议 workbench。选中编号后，不应该再靠标题模糊�
 AutoStudy 不会只看作业标题就开始生成。当前 homework contract 是：
 
 ```text
-Canvas sources
+do-homework.md router/preflight/route selection
+├── clean start -> assignment-source-intake.md
+│   -> Canvas/source/spec intake
+└── retained draft or feedback -> assignment-workflow-planner.md
+    -> current-state-intake.md
+    -> repair_plan.md / repair_pipeline_design.md
+
+Canvas raw snapshots, including canvas/announcements.json
+-> references/REFERENCE_INDEX.md
+-> references/source_docs/ and references/canvas_native/
 -> spec.md
+-> investigation/rubric.md and investigation/review_a.json
 -> investigation/explore_context.md
 -> investigation/alignment_brief.md or repair_plan.md
 -> pipeline_design.md or repair_pipeline_design.md
@@ -131,18 +156,33 @@ Canvas sources
 -> result.json
 ```
 
+用户侧任务名仍然是 `do-homework`。`assignment-source-intake.md`、
+`assignment-workflow-planner.md` 和 `current-state-intake.md` 是内部路由文件，
+不是用户需要直接调用的新命令。
+
 换成普通话就是：
 
-1. **侦查**：通过 `canvascli` 检查 assignment page、rubric、front page、
-   syllabus、modules、module items、files、pages 和外部链接。
-2. **写 spec**：把真正的作业要求总结到 `spec.md`；把抓到的 PDF、Google Doc、
-   starter code、数据集等放进 `references/`。
-3. **和你对齐**：只问那些不问就会猜错的问题，例如 topic、group info、dataset、
-   architecture、style、scope。
-4. **确认 agreement**：新作业写入 `investigation/alignment_brief.md`；继续修改已有草稿时写入 `repair_plan.md`。
-5. **设计 pipeline**：根据 spec 和确认后的 intent 写 `pipeline_design.md`。现在不再有固定的 “paper pipeline” 或 “lab pipeline”，而是按作业现场组合工具。
-6. **执行和审查**：生成 stage briefs，必要时派发 executor/reviewer，记录 receipts，运行检查，把最终产物放进 `draft/`。
-7. **提交前询问**：Canvas submission 从不自动发生。
+1. **路由和预检**：`do-homework.md` 建立 workbench、做 startup inventory，并选择
+   clean-start source intake 或 retained-artifact planning 路线。
+2. **侦查**：clean start 由 `assignment-source-intake.md` 通过 `canvascli` 检查
+   assignment page、rubric、front page、syllabus、modules、module items、
+   announcements、files、pages 和外部链接。
+3. **保存 reference**：`reference_collector` 把任务相关的原始证据保存到
+   `references/`，包括 PDF 三件套和逐条筛选后的
+   `references/canvas_native/announcement-<id-or-slug>/source.json`；不会把完整
+   `canvas/announcements.json` 整包塞进 `references/canvas_native/`。
+4. **写 spec**：主代理读取 `references/REFERENCE_INDEX.md` 和保存好的原始证据，
+   把真正的作业要求总结到 `spec.md`，并写 `investigation/review_a.json`。
+5. **和你对齐**：`assignment-workflow-planner.md` 只问那些不问就会猜错的问题，
+   例如 topic、group info、dataset、architecture、style、scope。
+6. **确认 agreement**：新作业写入 `investigation/alignment_brief.md`；继续修改
+   已有草稿或处理反馈时，`assignment-workflow-planner.md` 调用
+   `current-state-intake.md`，再写当前轮 `repair_plan.md`。
+7. **设计 pipeline**：根据 spec 和确认后的 intent 写 `pipeline_design.md`；retained
+   flow 按需要写 `repair_pipeline_design.md`。现在不再有固定的 “paper pipeline” 或
+   “lab pipeline”，而是按作业现场组合工具。
+8. **执行和审查**：生成 stage briefs，必要时派发 executor/reviewer，记录 receipts，运行检查，把最终产物放进 `draft/`。
+9. **提交前询问**：Canvas submission 从不自动发生。
 
 所以一个复杂项目可以在同一个 workbench 里同时产生 notebook、report PDF、slides、
 requirements、source zip、verification log 和 human review items。
@@ -183,7 +223,6 @@ data/courses/<COURSE>/
 ```text
 AutoStudy/
 ├── skill.md                         # 用户侧 skill 入口和路由
-├── AGENTS.md                        # 开发者交接和仓库规则
 ├── README.md                        # 中文默认 README
 ├── README.en.md                     # 英文完整版
 ├── README.quick.md                  # 中文快速版
@@ -194,7 +233,9 @@ AutoStudy/
 ├── sub-skills/
 │   ├── tasks/
 │   │   ├── sync-status.md
-│   │   ├── do-homework.md
+│   │   ├── do-homework.md             # router / preflight / route selection
+│   │   ├── assignment-source-intake.md # clean-start source/spec intake
+│   │   ├── assignment-workflow-planner.md # alignment / planning / retained flow
 │   │   ├── task-orchestrator.md
 │   │   ├── sync-course.md
 │   │   └── write-course-notes.md
@@ -202,12 +243,14 @@ AutoStudy/
 │       ├── canvascli-setup.md
 │       ├── canvascli-api.md
 │       ├── assignment-recon.md
+│       ├── current-state-intake.md    # retained current-state exploration
 │       ├── code-writer.md
 │       ├── writing-helper.md
 │       ├── pdf-renderer.md
 │       ├── slide-maker.md
 │       └── ...
 ├── docs/
+│   ├── DEVELOPMENT.md
 │   ├── ROADMAP.md
 │   ├── COLLABORATION.md
 │   ├── runtime-agent-protocol.md
@@ -230,10 +273,13 @@ AutoStudy/
 
 - `canvascli` Canvas 数据层。
 - `sync-status` scan-plan 流程。
-- `do-homework` workbench、侦查、alignment、动态 pipeline、本地草稿流。
+- `do-homework` public homework 入口；内部由 router/preflight 分流到 clean-start
+  source intake、alignment/planning、retained current-state exploration 和动态
+  pipeline planning。
+- `task-orchestrator` 基于已确认 pipeline 的本地草稿执行流。
 - M3 工具：prose、code、figures、tests、slides、PDF rendering、humanizer。
 - 课程资料同步和课程笔记生成。
-- `result.json` 记录 skipped、draft_ready、submitted、error 等状态。
+- `result.json` 记录 skipped、pipeline_ready、draft_ready、submitted、error 等状态。
 
 仍在 hardening：
 
@@ -265,6 +311,6 @@ AutoStudy/
 
 ## 贡献开发
 
-如果你是开发者，先读 [AGENTS.md](./AGENTS.md)。它解释了 AutoStudy 与
-`canvascli` 的边界、Canvas Copilot 参考项目、当前分支策略、progress/backlog
-更新规则和验证要求。
+如果你是开发者，先读 [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)。它解释
+AutoStudy 与 `canvascli` 的边界、Canvas Copilot 参考项目、当前分支策略、
+progress/backlog 更新规则和验证要求。

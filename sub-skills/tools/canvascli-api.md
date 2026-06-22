@@ -5,7 +5,7 @@ description: Reference for calling canvascli commands from agent flows. Use when
 
 # canvascli API reference
 
-`canvascli` is the external Canvas command-line tool AutoStudy depends on. All commands are JSON-by-default — that's the contract that lets agents pipe its output into `jq` / Python / further processing.
+`canvascli` is the external Canvas command-line tool AutoStudy depends on. Data-returning commands are JSON-by-default — that's the contract that lets agents pipe their output into `jq` / Python / further processing.
 
 If `canvascli` isn't installed yet, run `canvascli-setup.md` first.
 
@@ -25,14 +25,21 @@ canvascli <command>
 
 ## Output contract
 
-- **stdout**: JSON (object or array). One line by default; `--pretty` indents.
-- **stderr**: progress / status / errors. Safe to ignore when piping JSON.
-- **exit code**: `0` ok · `1` runtime error · `2` user error (missing args, no session)
+- **stdout**: JSON success payload only for data-returning commands. One line by default; `--pretty` indents.
+- **stderr**: progress / status / errors; not part of the JSON payload. Do not parse it as data; save it when the exit code is non-zero.
+- **exit code**: `0` ok · `1` runtime / network / Canvas 5xx · `2` user / auth / permission / not found / argument error.
 
-So the agent's typical idiom is:
+Exceptions:
+
+- `version` prints plain text, not JSON.
+- `init` opens the login flow and writes login/status messages to stderr; it
+  has no JSON payload.
+
+So the agent's typical idiom for data-returning commands is:
 
 ```bash
-.venv/bin/canvascli courses 2>/dev/null | jq '.[].name'
+set -o pipefail
+.venv/bin/canvascli courses | jq '.[].name'
 ```
 
 or in Python:
@@ -45,17 +52,30 @@ courses = json.loads(out)
 
 ## Command reference
 
+### `version`
+Print the installed canvascli version as plain text.
+```bash
+.venv/bin/canvascli version
+```
+
 ### `init`
 Explicit SSO login / refresh. This opens a browser and writes a new
-`state.json`; it is not a status check. **Run in the user's own terminal or only
-when the user is ready for the browser popup.**
+`state.json`; it is not a status check and does not emit JSON. **Run in the
+user's own terminal or only when the user is ready for the browser popup.**
 ```bash
 .venv/bin/canvascli init
+.venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
+.venv/bin/canvascli init --canvas-url "https://school.instructure.com/api/v1"
 ```
 
 If the SSO page offers "remember login" / "trust this browser", ask the user to
 select it. A successful `init` writes `state.json` either way; the checkbox only
 affects whether the next SSO refresh can skip a full manual login.
+
+`canvascli` stores the normalized Canvas web root and API root outside the repo
+next to the saved session cookie. AutoStudy should read Canvas-provided
+`html_url` values and must not reconstruct school-specific assignment URLs from
+course and assignment IDs.
 
 ### `whoami`
 Verify the current saved session. Returns the user object without opening a
@@ -109,7 +129,7 @@ Output shape (per item):
   "course_name": "DSAA2043 (L01) - ...",
   "due_at": "2025-11-13T15:59:00Z",
   "points_possible": 100,
-  "html_url": "https://hkust-gz.instructure.com/...",
+  "html_url": "https://canvas.example.edu/courses/2151/assignments/12345",
   "submission_state": "graded",
   "submission_types": ["online_upload"]
 }
@@ -204,13 +224,26 @@ Generic reconnaissance patterns:
   duplicates as corroboration and still distinguish nearby supporting context.
 
 ### `announcements`
-List announcements across all courses in the latest active Canvas term.
+List announcements for a course or across all courses in the latest active
+Canvas term.
 ```bash
 .venv/bin/canvascli announcements
+.venv/bin/canvascli announcements --course-id 2151
+.venv/bin/canvascli announcements --course-id 2151 --start-date 2025-09-01 --end-date 2025-12-20
 .venv/bin/canvascli announcements --term "2025-26 Spring"
 ```
 
-Note: HKUST(GZ) instructors rarely use Canvas announcements (often 0).
+Default scope is a latest-active-term complete snapshot when canvascli can
+derive a date range: first from `term.start_at` / `term.end_at`, then from the
+course `start_at` / `end_at` if term dates are incomplete. Only when both term
+and course dates are incomplete does canvascli let Canvas use its default
+announcements window. Pass `--start-date` / `--end-date` only when the user
+explicitly asks for a custom date range.
+
+Users do not need to know Canvas internal course IDs. Agents should first run
+`courses`, match the user's course name/code, and then pass the resolved id as
+`--course-id <cid>`. Some Canvas instances rarely use announcements, so 0
+results can be a valid checked state.
 
 ### `files [--course-id <cid>]`
 List files (no download). Defaults to all courses in the latest active Canvas term, optionally scoped.
@@ -275,13 +308,22 @@ Submit a file to a Canvas assignment via `online_upload`.
 3. **Don't use `init` as a session check.** It always opens a browser. Use `whoami` or the real read command to verify the existing session.
 4. **Don't auto-download or auto-submit.** Always confirm scope with `AskUserQuestion`.
 5. **Don't auto-pick "the latest"** assignment / file / folder. The user picks explicitly.
-6. **Pipe JSON, not stdout text.** The text in `--pretty` mode is for humans, not parsing.
+6. **Pipe compact data-command JSON for automation.** Reserve `--pretty` for human inspection; it is still JSON but parsers should not require it. Do not parse `version` or `init` as JSON.
+7. **Request failures are concise.** Runtime/user failures write a short stderr
+   message and exit non-zero; do not expect or parse Python tracebacks.
 
 ## Common pitfalls
 
 - **Run via `.venv/bin/canvascli`, not bare `canvascli`** — system PATH might not have the venv binary.
 - **`state.json` and SSO remember-login are separate.** `state.json` is canvascli's saved Canvas API cookie. The SSO checkbox does not decide whether `state.json` is written; it decides whether the next browser login is fast or requires full credentials again.
 - **Term scope belongs in canvascli.** AutoStudy tasks should call `courses`, `assignments`, and `announcements` directly unless the user explicitly asks for a semester, in which case pass `--term`.
+- **Do not reimplement announcements REST windows in AutoStudy.** The
+  announcements default date scope, term-date then course-date fallback
+  behavior, and `--start-date` / `--end-date` contract belong in canvascli.
+- **Concise request failures are normal.** Auth, permission, not-found,
+  argument, network, and Canvas 5xx errors go to stderr without a traceback;
+  branch on the exit code and save the stderr text when an audit trail is
+  needed.
 - **HTTP 404 on quizzes/modules/discussions is normal** — that course turned the feature off. canvascli returns `[]` in those cases.
 - **Tuples of `(datetime, dict)`** aren't sortable in Python (dict isn't comparable) — when sorting by `due_at`, always use `key=lambda x: x["due_at"]`.
 - **Filenames with Chinese / spaces are common.** Always quote paths in shell calls.
@@ -293,29 +335,47 @@ Submit a file to a Canvas assignment via `online_upload`.
 
 Canvas's `description` field may be an attachment link, a Google Doc link, an empty string, or only a small hint. Reading it directly is the most common cause of agents producing template / placeholder content.
 
-**Don't write your own extractor inline** — use
-`sub-skills/tools/assignment-recon.md`. It follows Canvas Copilot's
-Canvas Generic workflow, adapted to AutoStudy's CLI boundary:
+**Don't write your own extractor inline** — follow
+`sub-skills/tasks/background-recon.md`. It contains the Canvas Generic
+workflow, adapted to AutoStudy's CLI boundary:
 
 1. Calls atomic context commands above: `assignment`, `rubric`,
    `front-page`, `syllabus`, `modules`, `module-items`, `page`, `file`, and
-   `assignment-files`.
+   `assignment-files`, and `announcements`.
 2. Stores raw CLI JSON under `<work_dir>/canvas/`.
-3. Reads all likely sources before judging which one is the main spec.
-4. Writes `<work_dir>/spec.md` as a standardized reconnaissance report, not a
+3. Runs `reference_collector` to preserve task-relevant source evidence under
+   `<work_dir>/references/`.
+   `canvas/announcements.json` is a Stage 1 collection snapshot; Stage 2 must not
+   copy the full announcements array into
+   `references/canvas_native/announcements/source.json`. Relevant announcements
+   are saved one object per
+   `references/canvas_native/announcement-<id-or-slug>/source.json`.
+   Every `references/canvas_native/<slug>/` directory left at collector
+   completion must contain `source.json`, `source.txt`, and `ORIGIN.md`. Delete
+   candidate or renamed Canvas-native directories that do not contain the
+   complete three-file set; empty `references/canvas_native/*` directories are
+   not valid reference artifacts and must not be left for the Main Agent or user
+   to inspect.
+4. Writes `<work_dir>/spec.md` as the Main Agent reconnaissance report, not a
    raw dump.
 5. Finds grading criteria into `<work_dir>/investigation/rubric.md`.
 6. Downloads or fetches needed inputs into `<work_dir>/references/`, and logs
    blocked resources in `<work_dir>/investigation/unreachable.txt`.
 7. Writes `<work_dir>/investigation/review_a.json` after a cold investigation
    review.
-8. Starts `<work_dir>/pipeline_design.md` with the output mode, then keeps
+8. Writes reconnaissance summaries such as
+   `<work_dir>/investigation/recon_summary.md` and
+   `<work_dir>/investigation/explore_context.md`, then keeps
    `<work_dir>/problem.md` only as a compatibility summary for older tools.
 
 Do not use or recreate an `assignment-context` aggregate command. The mature
-pattern is atomic data access plus agent judgment after reading all sources.
-Downstream tools should read `spec.md` and `pipeline_design.md` first;
-`problem.md` is temporary compatibility.
+pattern is atomic data access, raw CLI JSON stored under `<work_dir>/canvas/`,
+`reference_collector` preservation of task-relevant original evidence under
+`<work_dir>/references/`, and Main Agent source/spec judgment in
+`<work_dir>/spec.md`.
+Planner and downstream tools should read `spec.md`, first-stage recon artifacts,
+and then the `pipeline_design.md` or `repair_pipeline_design.md` produced by
+`alignment-planning.md`; `problem.md` is temporary compatibility.
 
 ### One-liner: list file IDs embedded in a saved assignment snapshot
 

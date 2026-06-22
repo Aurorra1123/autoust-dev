@@ -20,7 +20,7 @@ Reference mapping:
 
 | Superpowers practice | AutoStudy runtime translation |
 |---|---|
-| `brainstorming` | post-recon alignment loop with the user at `do-homework [B]` |
+| `brainstorming` | post-recon alignment loop with the user in `alignment-planning.md [B]` |
 | spec document | assignment `spec.md` grounded in Canvas sources |
 | `writing-plans` | `pipeline_design.md` as the task-level execution plan |
 | implementer subagent | stage executor subagent with a precise `stage_brief.md` |
@@ -38,7 +38,7 @@ For the project developer and development agents maintaining AutoStudy itself.
 
 Examples:
 
-- `AGENTS.md`
+- `docs/DEVELOPMENT.md`
 - `docs/COLLABORATION.md`
 - `docs/ROADMAP.md`
 - `docs/progress/agent-progress.md`
@@ -113,6 +113,24 @@ flow-specific substitute. A first run with no draft naturally skips artifact,
 codebase, history, and current-verification scouts. A retained-draft run enables
 only the scouts whose inputs are present and planning-relevant.
 
+Runtime homework files map to that flow as:
+
+```text
+do-homework.md = router/preflight/first-stage route selection
+background-recon.md = clean-start task background recon
+existing-work-recon.md = retained/repair/continue current work recon
+alignment-planning.md = shared user alignment, brainstorming, and pipeline planning
+```
+
+`do-homework.md` names only the first-stage task for the accepted route. It must
+not name `alignment-planning.md`; alignment is revealed only by the tail handoff
+inside `background-recon.md` or `existing-work-recon.md`.
+
+For clean starts, `background-recon.md` must present the recon briefing/source
+confirmation checkpoint before revealing the alignment handoff. The planner
+`[B]` stage is alignment-only and must not repeat the full source-category
+evidence map.
+
 ### Archive And Startup Inventory
 
 Before a run starts, the Main Agent creates a rollback/audit boundary for any
@@ -141,11 +159,49 @@ evidence.
 
 The explore stage is universal. The coordinator may perform a tiny exploration
 inline for a trivial request, but for non-trivial homework work it dispatches
-focused read-only explorer/scout subagents with curated context. Available scout
-capabilities are:
+focused read-only explorer/scout subagents with curated context.
 
-- source/spec scout: discover or refresh Canvas assignment facts, rubrics,
-  linked docs, references, and required deliverables;
+Main Agent / Subagent taxonomy is explicit:
+
+- Main Agent exploration domains decide which broad surfaces matter:
+  `source_spec`, artifact, codebase, process history, and verification.
+- `source_spec` is a Main Agent exploration domain, not a dispatchable Subagent
+  role and not one completed child result. The Main Agent owns source/spec
+  judgment, final main-source decisions, `spec.md`, and user-facing alignment.
+- `reference_collector` is the always-on preservation child for homework
+  reconnaissance. It reads raw Canvas snapshots, narrows task-relevant source
+  evidence, downloads files, copies Canvas-native JSON verbatim, and writes
+  `references/REFERENCE_INDEX.md`.
+- The `reference_collector` dispatch must be recorded in
+  `stage_reviews/child_dispatch_ledger.json` with a real child identity. A
+  handwritten alias such as `reference_collector_<course>_<assignment>` is not
+  clean dispatch evidence. An empty dispatch ledger cannot prove
+  `reference_collector_used: true`.
+  The ledger row must include `"role": "reference_collector"` and either an
+  `"agent_id"` or `"transcript_handle"`.
+- `reference_collector` must not write terminal reconnaissance artifacts or
+  summarize source requirements as the evidence path. The Main Agent reads the
+  preserved references and terminal Canvas shells before writing terminal
+  reconnaissance artifacts.
+- Do not create `reading_plan.compact.json`.
+- Do not create `reading_plan.compact.approved.json`.
+- Do not create `source_findings.compact.md`.
+- Do not create `investigation/_appendix/source_index.json`.
+- Do not create `investigation/_appendix/body_evidence_fragments/`.
+- Do not create source-scout `investigation/_appendix/scout_receipts/`.
+  Stale copies are old source-scout artifacts and must not be read as the
+  source evidence interface.
+
+Available Main Agent domains and dispatchable Subagent roles are:
+
+- source/spec exploration domain: the Main Agent owns source/spec
+  reconnaissance, final main-source judgment, `spec.md`, and user-facing
+  alignment. It must not dispatch or accept a successful child named
+  `source_spec`;
+- reference_collector: preserve task-relevant original source evidence under
+  `references/`, including `references/REFERENCE_INDEX.md`,
+  `references/source_docs/`, `references/slides/`, `references/external/`, and
+  `references/canvas_native/**/source.json`;
 - artifact scout: inspect current user-visible drafts, source code, packages,
   generated media, reports, slides, notebooks, or demos;
 - codebase scout: inspect repository structure, scripts, dependencies, tests, and
@@ -157,21 +213,14 @@ capabilities are:
 - verification scout: run or inspect lightweight current checks needed to
   understand the planning surface before execution.
 
-When a scout is dispatched as a child subagent, it is part of the same runtime
+When a non-source explore Subagent is dispatched, it is part of the same runtime
 child evidence chain as executor and reviewer children. The coordinator records
-the scout dispatch in `stage_reviews/child_dispatch_ledger.json` with role
-`explore_scout`, scout type, prompt/brief path, receipt path, and timestamps.
-Scout receipts are written under:
-
-```text
-investigation/scout_results/<scout_type>_result.json
-```
-
-or an equivalent path named in `investigation/explore_manifest.json`. Skipped
-scouts are also explicit evidence: the manifest records `status: "SKIPPED"` and
-the reason. Scout children must follow the same identity, transcript,
-transport-recovery, single-writer ledger, and forbidden-read rules as later
-executor/reviewer children.
+the dispatch in `stage_reviews/child_dispatch_ledger.json` with `role:
+explore_scout`, `scout_type`, optional `scope`, prompt/brief path, receipt path,
+and timestamps. Skipped non-source scouts are also explicit evidence: the
+manifest records `status: "SKIPPED"` and the reason. Scout children must follow
+the same identity, transcript, transport-recovery, single-writer ledger, and
+forbidden-read rules as later executor/reviewer children.
 
 Explorer findings are consolidated into the stable current-run artifact:
 
@@ -187,8 +236,7 @@ spec.md                         # source/spec exploration result
 problem.md                      # legacy source/spec compatibility
 investigation/rubric.md          # assignment rubric or extracted criteria
 references/                     # fetched source materials
-                                # includes readable syllabus extract/text export
-                                # when syllabus is fetched
+                                # optional derived Canvas convenience exports
 investigation/repair_recon.md    # retained-artifact/progress-focused summary
 ```
 
@@ -199,6 +247,30 @@ require user alignment. Raw prior logs, archived transcripts, prior reviews, and
 old pipeline files do not become general task context just because an explorer
 inspected them. Executor and reviewer children receive raw prior process files
 only when the final execution plan explicitly justifies that narrow access.
+Main Agent remains the final reconnaissance judge: helper children can preserve,
+rank, and route sources, but they do not write final `spec.md`, final
+`review_a.json`, pipeline approval, or user-facing alignment decisions.
+Under the direct-source reference contract, `references/` is the source evidence
+interface and `canvas/` remains durable raw evidence. The Main Agent reads
+preserved references, `references/REFERENCE_INDEX.md`, and terminal Canvas
+shells before writing or revising `spec.md`. Reference collector notes are
+routing aids; they do not replace the preserved original source objects.
+
+A direct-spec strong match satisfies at least two of: task terms in the source
+name/title, assignment-linked or `required` source placement, and opening-body
+evidence of deliverable, format, deadline, sections, submission, grading, or
+prompt.
+
+Reconnaissance ends only after the coordinator passes a parent self-check.
+Collector output is not a terminal reconnaissance verdict:
+`references/REFERENCE_INDEX.md` does not replace `spec.md`,
+`investigation/rubric.md`, or `investigation/review_a.json`. If those terminal
+artifacts are missing, the coordinator must write a recover/blocking
+`review_a.json` or `stage_reviews/process_concerns.jsonl` that names the
+missing `spec.md`, `investigation/rubric.md`, or
+`investigation/review_a.json` artifact before it stops, asks for recovery,
+dispatches a replacement, or proceeds.
+Rule for automated checks: missing `spec.md`, `investigation/rubric.md`, or `investigation/review_a.json` must write a recover/blocking `review_a.json` or `stage_reviews/process_concerns.jsonl`.
 
 ### Alignment Contract
 
@@ -244,8 +316,8 @@ but it does not validate true scout/executor/reviewer isolation.
 
 This exception creates a second, development-only line around the normal runtime
 line. In real user-facing work there is only the Main Agent and its subagents:
-the Main Agent talks to the user during `do-homework [B]` and writes the
-confirmed `alignment_brief.md`. In development validation, the current session
+the Main Agent talks to the user during `alignment-planning.md [B]` and
+writes the confirmed terminal agreement. In development validation, the current session
 is outer Main Agent A, which launches coordinator B to simulate that real Main
 Agent. A may prepare clean startup evidence, inject B's stable id, bridge live
 simulated-user answers during `[B]`, export transcripts, and dispatch trajectory
@@ -297,6 +369,10 @@ receipt/transcript evidence supports the claimed final status. Otherwise the
 coordinator re-prompts, dispatches a replacement, or marks the stage `BLOCKED`.
 Transport recovery is acceptable for robustness, but clean validation should
 aim for normal `accepted` statuses.
+Filesystem receipts without transcript evidence are recovery evidence, not clean
+child-isolation validation. They may unblock a run when paired with explicit
+process concerns, but they cannot by themselves prove that the scout boundary was
+validated.
 
 Every receipt and dispatch record needs ordering evidence. Scout result
 receipts and stage result/review receipts use `created_at_utc` and
@@ -477,17 +553,24 @@ global safety rules.
 
 Runtime entry: the selected `sub-skills/tasks/<task>.md`.
 
-The Main Agent owns the task lifecycle. For `do-homework`, this means:
+The Main Agent owns the task lifecycle. For `do-homework`, this means only:
 
 - resolve the course and assignment;
 - create or resume the workbench;
-- coordinate Canvas reconnaissance;
-- summarize findings and ask the user for supplements;
-- write the task-level plan;
-- create stage briefs;
-- dispatch executor and reviewer subagents;
-- aggregate verification evidence;
-- ask the user whether to review, revise, or submit.
+- write or accept `prelaunch_startup_inventory.json`;
+- select exactly one first-stage route;
+- hand off to `background-recon.md` or `existing-work-recon.md`.
+
+First-stage task files own first-stage evidence:
+
+- `background-recon.md` owns clean-start background reconnaissance,
+  terminal source artifacts, and the recon briefing/source confirmation.
+- `existing-work-recon.md` owns retained, repair, and continue current
+  work/state reconnaissance before planner handoff.
+
+`alignment-planning.md [B]` writes the alignment agreement after first-stage
+handoff, and `alignment-planning.md [C]` writes the user-reviewed execution
+plan. `task-orchestrator.md` executes only an approved plan.
 
 The task skill is written for the Main Agent, not for subagents.
 
@@ -496,7 +579,8 @@ The task skill is written for the Main Agent, not for subagents.
 Primary runtime contracts:
 
 - `sub-skills/tools/canvascli-api.md`
-- `sub-skills/tools/assignment-recon.md`
+- `sub-skills/tasks/background-recon.md`
+- `sub-skills/tasks/existing-work-recon.md`
 - the current assignment workbench
 
 The Main Agent may perform reconnaissance directly or dispatch a focused
@@ -505,29 +589,86 @@ reconnaissance helper, but the output contract is stable:
 ```text
 work_dir/
 ├── canvas/
+│   ├── assignment.json
+│   ├── rubric.json
+│   ├── syllabus.json
+│   ├── modules.json
+│   ├── module-items.json
+│   └── announcements.json
 ├── spec.md
 ├── problem.md                  # compatibility only
 ├── references/
-│   └── *syllabus*              # readable syllabus extract/text export when fetched
+│   ├── REFERENCE_INDEX.md
+│   ├── source_docs/            # PDFs and source-adjacent text/link companions
+│   ├── slides/                 # PPTX decks and extracted slide text
+│   ├── external/               # fetched external text exports
+│   ├── canvas_native/          # verbatim Canvas-native source objects
+│   └── pdf_links.json          # optional aggregate of PDF link annotations
 └── investigation/
     ├── rubric.md
     ├── unreachable.txt
     └── review_a.json
 ```
 
-`spec.md` is the factual source of truth for the assignment. It must be grounded
-in Canvas sources and fetched references, not in the assignment title. Raw
-Canvas syllabus JSON belongs under `canvas/`, but if syllabus is fetched the
-reconnaissance must also write a readable syllabus extract or text export under
-`references/` so later executor/reviewer children and humans can audit
-syllabus-derived constraints without parsing raw Canvas JSON.
+`spec.md` is the factual decision report for the assignment. It must be grounded
+in Canvas sources and fetched references, not in the assignment title. For
+Canvas-native bodies such as assignment, syllabus, front page, announcements,
+and pages, raw Canvas JSON under `canvas/` is durable raw evidence. Task-relevant
+Canvas-native source objects are also copied verbatim under
+`references/canvas_native/**/source.json`, with `source.txt` and `ORIGIN.md`
+when available. `references/` is the source evidence interface for downstream
+source reads; `canvas/` remains the durable raw snapshot store. Announcement
+snapshots live at `canvas/announcements.json`.
+
+Every `references/canvas_native/<slug>/` directory left at collector completion
+must contain `source.json`, `source.txt`, and `ORIGIN.md`. Delete candidate or
+renamed Canvas-native directories that do not contain the complete three-file
+set; empty `references/canvas_native/*` directories are not valid reference
+artifacts and must not be left for the Main Agent or user to inspect.
+
+Announcement arrays are collection snapshots, not source objects. Do not copy the
+full `canvas/announcements.json` array into
+`references/canvas_native/announcements/source.json`. Each retained announcement
+must be a screened, task-relevant object copied verbatim to
+`references/canvas_native/announcement-<id-or-slug>/source.json`, and
+`references/REFERENCE_INDEX.md` must point to `canvas/announcements.json#id=...`
+for that object.
+
+Fetched PDFs are rich source objects, not just text files. The visible text layer
+does not necessarily contain URLs behind linked words. Reconnaissance must
+preserve PDF link annotations by writing `references/*.pdf.links.json` or
+`references/**/*.pdf.links.json` beside spec/rubric/input PDFs, using generic
+fields such as source PDF path, page, anchor text, URI, and rectangle. Later
+stages may decide which URLs matter, but the reconnaissance layer must not drop
+them while converting PDFs into text.
+
+Do not require `references/*syllabus*` as the evidence gate for Canvas-native
+syllabus evidence. If a readable syllabus note exists, treat it as a derived
+index into `canvas/syllabus.json`, not a replacement for the raw source.
+Do not create `reading_plan.compact.json`.
+Do not create `source_findings.compact.md`.
+Do not create `investigation/_appendix/source_index.json`.
+Do not create `investigation/_appendix/body_evidence_fragments/`.
+Do not create source-scout `investigation/_appendix/scout_receipts/`. If stale
+source-scout artifacts from older runs exist, ignore them during standard
+reconnaissance; they are recovery, migration, or debug evidence only, not the
+Main Agent read interface.
+
+The Main Agent reads preserved references and terminal Canvas shells, not old
+source-scout compact findings. `references/` is the source evidence interface.
+`canvas/` remains durable raw evidence. For every required or high-signal source
+that will influence assignment understanding, `references/REFERENCE_INDEX.md`
+must point to the complete original source body, source-adjacent extracted text,
+PDF link manifest, or Canvas-native verbatim copy that the Main Agent should
+read; a paraphrase-only note is not enough.
 
 ### Phase 3: User Alignment
 
 Superpowers reference: `brainstorming`.
 
-AutoStudy translation: after reconnaissance, the Main Agent runs the
-`do-homework [B]` alignment loop.
+AutoStudy translation: after `background-recon.md` or
+`existing-work-recon.md` has written terminal first-stage artifacts and handed
+off, the Main Agent runs the `alignment-planning.md [B]` alignment loop.
 
 The purpose is not generic conversation and not rigid task classification. It is
 to decide whether the current Canvas facts plus user intent are sufficient to
@@ -535,12 +676,14 @@ start the project without guessing the user's core direction or project
 skeleton. Simple assignments may need one confirmation. Open-ended assignments
 require as many focused rounds as needed before planning starts.
 
-The first user-facing message is a recon summary: a compact explanation of what
-`spec.md`, `investigation/rubric.md`, `investigation/review_a.json`,
-`investigation/unreachable.txt`, `references/`, `problem.md`, and the
-preliminary output-mode line in `pipeline_design.md` prove. It is not a second
-investigation and not a design proposal; it tells the user which facts are fixed
-by Canvas and which decisions still need alignment.
+The first alignment message is not the first full reconnaissance-results
+briefing. For clean starts, that briefing and source-understanding confirmation
+already happened in `background-recon.md`. For retained or repair starts,
+current work/state reconnaissance already happened in `existing-work-recon.md`.
+The planner reads those terminal artifacts, asks the smallest user-intent
+question needed to avoid guessing, and must not repeat the full source-category
+evidence map. If the required first-stage artifacts are missing, that is a
+blocker, not permission for the planner to silently run first-stage recon.
 
 Before each user question, the Main Agent performs an internal alignment audit:
 
@@ -596,10 +739,10 @@ also new dimensions introduced, approach implications, and skeleton gaps still
 open. This makes the loop extend from the user's answer rather than walking a
 fixed checklist.
 
-Before the terminal brief for an open-ended task, the Main Agent must present
+Before the terminal agreement for an open-ended task, the Main Agent must present
 2-3 viable approaches with trade-offs and a recommendation when meaningful, then
 preview the design skeleton. The user approves or corrects that skeleton before
-the terminal `alignment_brief.md` is written.
+the terminal agreement is written.
 
 Process notes from each round go to:
 
@@ -615,14 +758,16 @@ coordinator records a delegated decision rather than treating it as a user-state
 fact.
 
 When the Main Agent has no necessary alignment question left, it writes the
-terminal brief:
+terminal agreement:
 
 ```text
-investigation/alignment_brief.md
+investigation/alignment_brief.md  # clean-start assignment
+repair_plan.md                    # retained-artifact change request
 ```
 
-`alignment_brief.md` is the stable post-recon agreement for the task. It is
-written only at the terminal alignment step, not after every round. It records:
+The terminal agreement is the stable post-recon or retained-artifact agreement
+for the task. It is written only at the terminal alignment step, not after every
+round. It records:
 
 - assignment understanding;
 - user intent;
@@ -640,40 +785,44 @@ stage design.
 
 The Main Agent then summarizes the brief and asks the user to confirm. If the
 user corrects it, the Main Agent appends another `user_notes.md` round, replaces
-`alignment_brief.md`, and asks again. Planning cannot start until the user has
-confirmed `alignment_brief.md`.
+the terminal agreement, and asks again. Planning cannot start until the user has
+confirmed `investigation/alignment_brief.md` or `repair_plan.md`.
 
 ### Phase 4: Task-Level Planning
 
 Superpowers reference: `writing-plans`.
 
-AutoStudy translation: `pipeline_design.md`.
+AutoStudy translation: the current execution plan.
 
-`pipeline_design.md` is the total plan for the current task. It is written by
-the Main Agent after reading:
+The current execution plan is `pipeline_design.md` for clean-start assignments
+or `repair_pipeline_design.md` for retained-artifact repair/change entries. It
+is written by `alignment-planning.md [C]` after the Main Agent reads:
 
 - `spec.md`
 - `investigation/rubric.md`
-- `investigation/alignment_brief.md`
+- `investigation/alignment_brief.md` or `repair_plan.md`
 - `investigation/user_notes.md`
 - `investigation/user_scope.md`, if present
 - `sub-skills/tools/_index.md`
 - relevant top-level tool contracts
 
-No confirmed `investigation/alignment_brief.md` means no final
-`pipeline_design.md`. A final `pipeline_design.md` still does not authorize
+No confirmed terminal agreement means no final execution plan. A final
+`pipeline_design.md` or `repair_pipeline_design.md` still does not authorize
 execution until the user reviews it and `Pipeline Review Status.status` becomes
 `approved_for_orchestration`.
 
-`pipeline_design.md` is for the Main Agent and Stage Coordinator phase. It is
-not the executor subagent's direct instruction file.
+The execution plan is for the Main Agent and Stage Coordinator phase. It is not
+the executor subagent's direct instruction file.
 
 Required responsibilities:
 
 - name the output mode and final deliverables;
 - list constraints and rubric-derived quality requirements;
 - define ordered stages;
-- map each stage to a top-level tool skill;
+- map each stage to one `primary_tool` and an ordered `tools` list of all
+  top-level tool skills required by that stage;
+- normalize legacy `tool: <path>` as `primary_tool: <path>` plus
+  `tools: [<path>]`;
 - declare stage reads and writes;
 - declare verification criteria;
 - declare whether the stage needs review;
@@ -681,15 +830,17 @@ Required responsibilities:
 - include `Pipeline Review Status`, initially `awaiting_user_review`, with
   approval fields that must be populated before `task-orchestrator.md` runs.
 
-After writing `pipeline_design.md`, the planner stops for user review. Stage
-brief generation is a separate `task-orchestrator.md` phase.
+After writing `pipeline_design.md` or `repair_pipeline_design.md`,
+`alignment-planning.md [C]` stops for user review. Stage brief generation is a
+separate `task-orchestrator.md` phase.
 
 ### Phase 5: Stage Brief Generation
 
 Superpowers reference: subagent implementer prompt with curated context.
 
-AutoStudy translation: the Main Agent converts each `pipeline_design.md` stage
-into precise executor and reviewer stage briefs.
+AutoStudy translation: after `Pipeline Review Status.status` is
+`approved_for_orchestration`, `task-orchestrator.md` converts each current
+execution-plan stage into precise executor and reviewer stage briefs.
 
 Recommended structure:
 
@@ -733,7 +884,9 @@ One-stage objective in concrete terms.
 - exact/output/path: expected content
 
 ## Tool Guidance
-- top-level tool skill path
+- primary top-level tool skill path
+- ordered top-level tool skill paths for the stage
+- role of each selected tool in this stage
 - appendix skill paths, if already selected by the Main Agent
 
 ## Quality Criteria
@@ -976,7 +1129,7 @@ data/homework/<COURSE>/<HWID>/
 ├── spec.md
 ├── problem.md
 ├── references/
-│   └── *syllabus*              # readable syllabus evidence when fetched
+│   └── <fetched external/source materials>
 ├── investigation/
 │   ├── rubric.md
 │   ├── unreachable.txt
@@ -984,7 +1137,9 @@ data/homework/<COURSE>/<HWID>/
 │   ├── alignment_brief.md
 │   ├── user_notes.md
 │   └── user_scope.md
+├── repair_plan.md                 # retained-artifact agreement, optional
 ├── pipeline_design.md
+├── repair_pipeline_design.md      # retained-artifact execution plan, optional
 ├── stage_briefs/
 ├── stage_results/
 ├── stage_reviews/
@@ -1000,7 +1155,7 @@ data/homework/<COURSE>/<HWID>/
 For course-level tasks, `data/courses/<COURSE>/` has a different shape, but the
 same principle applies: persistent source archive first, then derived outputs.
 
-### `pipeline_design.md`
+### `pipeline_design.md` / `repair_pipeline_design.md`
 
 Task-level plan owned by the Main Agent.
 
@@ -1012,7 +1167,13 @@ Example stage:
 ```markdown
 ### Stage 1 - Notebook Execution
 - id: stage_01_notebook
-- tool: sub-skills/tools/code-writer.md
+- primary_tool: sub-skills/tools/code-writer.md
+- tools:
+  - sub-skills/tools/code-writer.md
+  - sub-skills/tools/test-runner.md
+- tool_roles:
+  - code-writer: produce the notebook/source artifact
+  - test-runner: execute notebook/tests and write verification evidence
 - delegate: subagent
 - review:
   - spec_compliance: true
@@ -1203,9 +1364,14 @@ repair before handoff.
 
 ## 8. Forbidden Context Rules
 
+Committed root `AGENTS.md` and `CLAUDE.md` files are bootstrap pointers to
+`skill.md`; they may be read by agent runtimes before AutoStudy routing starts,
+but they do not replace `skill.md` and do not authorize preloading task files.
+
 Runtime agents should not read these as task instructions:
 
-- `AGENTS.md`
+- local ignored developer overrides at the repo root
+- `docs/DEVELOPMENT.md`
 - `docs/ROADMAP.md`
 - `docs/COLLABORATION.md`
 - `docs/progress/agent-progress.md`
@@ -1229,9 +1395,12 @@ This protocol should eventually drive these updates:
 
 - `skill.md`: stay as runtime entry and safety router; do not grow into a
   development history document.
-- `do-homework.md`: become the Main Agent coordinator contract.
-- `task-orchestrator.md`: become the Main Agent stage-brief and subagent-review
-  loop contract.
+- `do-homework.md`: stay the router/preflight/first-stage route contract.
+- `background-recon.md` and `existing-work-recon.md`: own first-stage
+  reconnaissance contracts.
+- `alignment-planning.md`: own alignment and execution-plan contracts.
+- `task-orchestrator.md`: own stage-brief, execution, and subagent-review loop
+  contracts for approved plans.
 - `docs/skills-architecture-spec.md`: reference this protocol for stage brief
   and review design.
 - `docs/ROADMAP.md`: point to this protocol as the current M3.5 execution

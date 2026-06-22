@@ -2,7 +2,7 @@
 
 > 默认入口：中文完整版见 [README.md](./README.md)。英文完整版见 [README.en.md](./README.en.md)。
 
-AutoStudy 是 HKUST(GZ) Canvas 本地学业助手。它跑在 Claude Code / Codex 这类
+AutoStudy 是本地 Canvas LMS 学业助手，已在 HKUST(GZ) 的 Canvas 实例上验证。它跑在 Claude Code / Codex 这类
 agent 环境里，帮你同步作业、规划 ddl、侦查作业要求、生成本地草稿、整理课件和课程笔记。
 
 一句话记住：
@@ -34,14 +34,32 @@ data/runs/<date>/pending_assignments.json
 帮我完成 DSAA2011 Project，先生成本地草稿，不提交
 ```
 
+用户侧作业入口仍然只有 `do-homework`。内部现在由 `do-homework.md` 做
+router/preflight/route selection：clean start 进入
+`assignment-source-intake.md` 做 source/spec intake；已有草稿或反馈进入
+`assignment-workflow-planner.md`，再调用 `current-state-intake.md`，最后写
+`repair_plan.md` / `repair_pipeline_design.md`。
+
 会生成单作业工作台：
 
 ```text
 data/homework/<COURSE>/<HWID>/
-├── spec.md
+├── canvas/
+│   └── announcements.json
+├── prelaunch_startup_inventory.json
 ├── references/
+│   ├── REFERENCE_INDEX.md
+│   ├── source_docs/
+│   └── canvas_native/
+│       └── announcement-<id-or-slug>/source.json
+├── spec.md
+├── investigation/explore_context.md
+├── investigation/explore_manifest.json
+├── investigation/review_a.json
 ├── investigation/alignment_brief.md
 ├── pipeline_design.md
+├── repair_plan.md
+├── repair_pipeline_design.md
 ├── draft/
 ├── verification.log
 └── result.json
@@ -65,7 +83,22 @@ data/courses/<COURSE>/
 
 ## 第一次使用
 
-AutoStudy 要作为一个独立仓库运行，不是只复制一个 `skill.md`。推荐让 agent clone 到一个固定文件夹：
+AutoStudy 要作为一个独立仓库运行，不是只复制一个 `skill.md`。推荐先在 Claude Code / Codex 里打开一个准备用来放 AutoStudy 的空白项目文件夹，然后说：
+
+```text
+请把 https://github.com/Aurorra1123/autoust-dev clone 到当前空白文件夹，
+读取里面的 skill.md，并按步骤帮我完成初始化。
+```
+
+agent 应该先确认当前目录是空目录，再执行：
+
+```bash
+git clone https://github.com/Aurorra1123/autoust-dev.git .
+```
+
+如果当前目录不是空的，或当前工作区不明确，agent 应该先问你要放到哪里。不要让它默默默认到 `~/workspace`、桌面或下载目录。
+
+你也可以明确指定一个固定文件夹：
 
 ```text
 请把 https://github.com/Aurorra1123/autoust-dev clone 到 ~/workspace/autoust-dev，
@@ -89,7 +122,7 @@ cd ~/workspace/autoust-dev
 Canvas 登录：
 
 ```bash
-.venv/bin/canvascli init
+.venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
 ```
 
 检查登录态：
@@ -112,7 +145,9 @@ Canvas 登录：
 
 - `sync-status` 只规划，不自动做作业。
 - AutoStudy 不会自动提交 Canvas。
-- 作业草稿来自 `spec.md + alignment_brief.md + pipeline_design.md`，不是来自标题脑补。
+- clean-start 作业草稿来自 `spec.md + alignment_brief.md + pipeline_design.md`；
+  retained draft / feedback 来自 `current-state-intake.md + repair_plan.md +
+  repair_pipeline_design.md`，不是来自标题脑补。
 - group 信息、partner 名字、dataset、personal experience、video URL 等必须由用户提供或标记为 human review item。
 - 产物都在本地 `data/`，你需要审核后再决定是否提交。
 
@@ -124,7 +159,8 @@ Canvas 登录：
 
 - Canvas 状态同步和计划生成。
 - Canvas-grounded 作业侦查。
-- 本地草稿生成和验证日志。
+- `do-homework` public 入口下的 clean-start source/spec intake、alignment/planning、
+  retained current-state exploration、本地草稿生成和验证日志。
 - 课程资料同步。
 - 课程笔记生成。
 

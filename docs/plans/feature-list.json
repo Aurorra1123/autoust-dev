@@ -7,7 +7,7 @@
     "acceptance": [
       "canvascli 是独立 git 仓库（~/workspace/canvascli/）",
       "提供 11 个 typer 顶层命令（init/version/whoami/courses/assignments/assignment/announcements/files/folders/download/submit）",
-      "默认 JSON 输出，--pretty 切换人类可读",
+      "data-returning commands 默认 JSON 输出，--pretty 切换人类可读；version/init 是非 JSON 例外",
       "Playwright 一次性 SSO 登录 + cookie 持久化，不存明文密码",
       "AutoStudy .venv pip install -e canvascli 后命令可用",
       "AutoStudy 删除自带 scraper/，所有 sub-skills 引用 canvascli 命令",
@@ -17,7 +17,9 @@
       "AutoStudy commit 90072ac",
       "canvascli commit 0385f54",
       "sub-skills/tools/canvascli-setup.md + canvascli-api.md",
-      "2026-06-01 login/session docs clarified: init is refresh, whoami is health check, remember-login is separate from state.json generation"
+      "2026-06-01 login/session docs clarified: init is refresh, whoami is health check, remember-login is separate from state.json generation",
+      "2026-06-15 canvascli HEAD fd7a9a8 includes announcement scope/error follow-ups; AutoStudy docs synced announcements --course-id, --start-date/--end-date, latest-active-term term-date snapshot with course-date fallback, Canvas default window only when both date sources are incomplete, stdout/stderr/exit-code contract, and concise no-Traceback failures",
+      "2026-06-15 AutoStudy venv editable canvascli verification: announcements --help exposed --course-id/--start-date/--end-date; course 2799 returned 23 announcements; forbidden 2177 exited 2 with empty stdout, concise 403 stderr, and no Traceback"
     ],
     "status": "passing"
   },
@@ -40,7 +42,8 @@
       "独立 agent session 验证截图（用户口头确认）",
       "PITFALLS.md #1-#3, #11-#14",
       "2026-06-01 docs sync with canvascli latest-active-term contract",
-      "2026-06-01 real Canvas rerun: default flow 7 Spring courses / 57 assignments / 5 announcements; explicit --term Spring 7 courses / 57 assignments"
+      "2026-06-01 real Canvas rerun: default flow 7 Spring courses / 57 assignments / 5 announcements; explicit --term Spring 7 courses / 57 assignments",
+      "2026-06-11 fresh-user clone target protocol: current empty project folder takes precedence; ask before choosing any implicit path such as ~/workspace"
     ],
     "status": "passing",
     "notes": "Term-scope behavior now lives in canvascli; AutoStudy sync-status uses the simple CLI flow and passes on real Canvas after session refresh."
@@ -419,7 +422,7 @@
     "acceptance": [
       "五条设计理念写入 COLLABORATION.md Design Principles 小节",
       "ROADMAP.md M3.5 设计理念小节覆盖五条原则",
-      "AGENTS.md 引用设计理念摘要",
+      "docs/DEVELOPMENT.md 引用设计理念摘要",
       "canvas-pilot-reference.md 包含 Copilot 完整 11 阶段对比表和架构差异表"
     ],
     "evidence": [
@@ -615,6 +618,31 @@
     "notes": "Status remains in-progress. DSAA2011 full-flow validation is largely functional with complete ordinary-spawn transcript export, and the 2026-06-10 fresh-user sync-status-to-do-homework run validated the public entry path through scan-plan, direct graded-assignment resolution, source-spec scout, executor/reviewer children, and D/E transcript audits. DSAA2011 repair-flow validation now covers both report-depth repair and experiment-iteration repair with complete D/E transcript audit coverage. The docs now frame full_flow and repair_flow as compatibility presets over one shared startup inventory, explore, alignment, execution, and review runtime. Clean PASS still requires tighter coordinator identity propagation, less startup/plugin scope noise, direct or cleaner transcript export, and narrower Canvas reconnaissance."
   },
   {
+    "id": "M3.5-GENERIC-CANVAS-INSTANCE",
+    "category": "data-layer",
+    "priority": "P0",
+    "description": "将 Canvas 实例从 HKUST(GZ) 硬编码扩展为单用户可配置的通用 Canvas LMS 实例",
+    "acceptance": [
+      "canvascli 支持保存 Canvas web_base / api_base 配置",
+      "canvascli init 支持 --canvas-url，接受 Canvas 登录页或 /api/v1 URL",
+      "CanvasClient 和 login 流程使用已配置实例，不再依赖 hkust-gz 常量作为运行时真相源",
+      "AutoStudy setup skill 首次运行询问学校/域名/Canvas URL，并把 URL 传给 canvascli",
+      "AutoStudy 当前产品文案改为通用 Canvas LMS，保留 HKUST(GZ) validated evidence 表述",
+      "scripts/write_scan_plan.py 将 html_url 传入 plan.json，scripts/select_plan_item.py 不再在 html_url 缺失时拼 HKUST(GZ) URL",
+      "do-homework 输出模板使用 Canvas 提供的 html_url 或 not available，不再展示固定 HKUST(GZ) URL"
+    ],
+    "evidence": [
+      "docs/superpowers/specs/2026-06-14-generic-canvas-instance-design.md",
+      "docs/superpowers/plans/2026-06-14-generic-canvas-instance.md",
+      "canvascli commits: c13de5b feat: add Canvas instance configuration; 750128b feat: route Canvas requests through configured instance; 0d1ea8d docs: describe canvascli as generic Canvas LMS client; 7ecac35 fix: preserve saved Canvas API base; 0100caf fix: keep Canvas instance changes atomic",
+      "AutoStudy commits: 0857dea fix: preserve Canvas URLs in plan handoff; d5a5470 docs: add generic Canvas setup contract; 87a6e9d docs: position AutoStudy as generic Canvas assistant; 2975d7e docs: remove residual HKUST-only positioning",
+      "Automated verification: canvascli unittest 10 tests, compileall, init --help with --canvas-url, git diff --check; AutoStudy unittest 3 tests, feature-list JSON parse, script compileall, forbidden HKUST-only grep, git diff --check",
+      "Real flow verification: temporary CANVASCLI_CONFIG_DIR with .venv/bin/canvascli init --canvas-url https://hkust-gz.instructure.com completed browser SSO and whoami; copied temp state plus https://hkust-gz.instructure.com/api/v1 config also completed whoami"
+    ],
+    "status": "passing",
+    "notes": "This slice supports one configured Canvas instance per local installation. Multi-profile switching and broader non-HKUST term-name heuristics remain future work."
+  },
+  {
     "id": "M4-SYNC-COURSE",
     "category": "skill-task",
     "priority": "P1",
@@ -631,10 +659,11 @@
       "2026-06-04 commit b8493af registers sync-course in skill.md and _index.md",
       "2026-06-04 commit 34119c2 fixes DSAA2011 real Canvas classification issues (-L/_L patterns, name vs display_name)",
       "2026-06-04 DSAA2011 acceptance: 70 files synced (14 lectures, 8 readings, 48 other)",
-      "2026-06-11 AIAA2711 acceptance: Canvas course 2799 synced with 39 files downloaded (11 lectures, 1 reading, 27 other), 0 failed downloads; installed canvascli lacks modules command and this drift is recorded in modules.json"
+      "2026-06-11 AIAA2711 acceptance: Canvas course 2799 synced with 39 files downloaded (11 lectures, 1 reading, 27 other), 0 failed downloads; installed canvascli lacks modules command and this drift is recorded in modules.json",
+      "2026-06-15 sync-course docs now archive announcements via canvascli announcements --course-id \"$COURSE_ID\" and merge existing ids, avoiding global announcements plus Python course filtering"
     ],
     "status": "passing",
-    "notes": "This is course-level archive infrastructure, separate from sync-status homework planning."
+    "notes": "This is course-level archive infrastructure, separate from sync-status homework planning. Announcement scope is delegated to canvascli's course/date contract rather than reimplemented in AutoStudy."
   },
   {
     "id": "M4-WRITE-COURSE-NOTES",
@@ -704,9 +733,9 @@
     "id": "DOCS-HARNESS-LIGHT",
     "category": "docs-foundation",
     "priority": "P1",
-    "description": "采用 harness-best-practice 的最小切片（AGENTS.md + progress + feature-list）",
+    "description": "采用 harness-best-practice 的最小切片（docs/DEVELOPMENT.md + progress + feature-list）",
     "acceptance": [
-      "AGENTS.md 开发者视角入口",
+      "docs/DEVELOPMENT.md 开发者视角入口",
       "docs/progress/agent-progress.md 会话交接日志",
       "docs/plans/feature-list.json 结构化 backlog"
     ],

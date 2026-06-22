@@ -7,6 +7,18 @@
 
 ## 环境 & Claude Code 通道
 
+### 0. 新用户初始化不要把示例路径当默认路径
+
+**现象**：用户为了模拟首次体验，先在 Claude Code / Codex 里打开了一个空白项目文件夹，然后要求下载并初始化 AutoStudy。agent 没有把这个空白文件夹理解为用户选定的落点，而是按 README 示例把仓库 clone 到 `~/workspace/autoust-dev`。
+
+**根因**：入口文档只强调"dedicated clone"，并给了 `~/workspace/autoust-dev` 示例，但没有明确 clone 落点选择协议。agent 容易把示例路径升级成默认路径。
+
+**规则**：
+- 当前 agent workspace 是用户为初始化打开的空白文件夹时，优先 `git clone https://github.com/Aurorra1123/autoust-dev.git .`。
+- 当前目录已经是 AutoStudy 仓库时，直接在该目录初始化。
+- 当前目录非空且不是 AutoStudy 仓库，或当前工作区不明确时，先问用户目标目录。
+- `~/workspace/autoust-dev`、桌面、下载目录等只能在用户明确指定时使用，不能作为静默默认值。
+
 ### 1. `! ` 前缀 Bash 没有 TTY，`input()` 立刻 EOF
 
 **现象**：脚本里有 `input("Press Enter...")`，在 Claude Code 提示框里用 `! .venv/bin/python xxx.py` 跑，立刻报 `EOFError: EOF when reading a line`。
@@ -70,6 +82,26 @@ courses = [c for c in all_courses
            if c.get("workflow_state") == "available"]
 ```
 
+### 5b. Announcements 有隐式日期窗口，不要在 AutoStudy 里重写 REST
+
+**现象**：Canvas announcements API 默认会套一个日期窗口。AutoStudy 如果直接调
+REST 或先抓全局公告再在 Python 里按 course_id 过滤，可能只拿到 Canvas 默认窗口，
+漏掉当前学期早期公告。
+
+**根因**：公告范围需要结合 Canvas term/course dates。fixed `canvascli` 已把这件事
+收在 CLI contract 里：`announcements --course-id <cid>` 默认先用
+`term.start_at` / `term.end_at` 推导 latest active term 的完整 snapshot；term dates
+不完整时再 fallback 到 course `start_at` / `end_at`；只有 term 和 course dates 都不完整时，
+才让 Canvas 使用默认 announcements window。
+
+**规则**：
+- AutoStudy skill/task 文档只依赖 `canvascli announcements --course-id <cid>`、
+  `--start-date`、`--end-date`、`--term` 这些 CLI contract。
+- 不要在 AutoStudy 里复制 Canvas REST workaround、拼 date range、或恢复"全局
+  announcements 后 Python 过滤"的流程。
+- 用户不需要知道 Canvas internal course id；agent 先用 `courses` 解析课程名/代码，
+  再把解析出的 id 传给 `--course-id`。
+
 ### 6. 不能假设每门课都开了 Canvas 全部功能
 
 **现象**：拉 `/api/v1/courses/:id/quizzes` 时大部分课返回 **404**，不是空数组。
@@ -115,9 +147,43 @@ except RuntimeError as e:
 
 真题（5 道证明题 + 数学定义 + recurrence）在 `DSAA2043_Assignment_1.pdf` 里。Agent 第一轮把 `description` 当题目读，结果只看到一个文件链接，写出来的就是把作业标题换种说法。后来又遇到 DSAA2011 Project：assignment description 是空的，真正项目说明在 module item PDF 里；UCUG1505 FINAL project 则是 assignment description 和 Week 4 module item 都指向同一个 Google Doc spec。
 
-**正确做法**：`do-homework.md [A3]` 必须调 agent-led `tools/assignment-recon.md`，按 Canvas Copilot `canvas-generic` Stage 1-5 逐源查看 assignment、rubric、front page、syllabus、modules、module-items、pages、files、external URLs。产出 `spec.md` 作为标准化侦查报告，不是 raw dump；`references/` 保存完整来源文本和文件；`investigation/rubric.md` / `review_a.json` 记录评分标准和侦查充分性；`pipeline_design.md` 记录输出模式。`problem.md` 只是旧工具兼容层。下游不准直接读 `assignment.description` 当题目，也不准让独立脚本代替 agent 判断主 spec 或写最终侦查报告。
+**正确做法**：`do-homework.md` routes clean starts to
+`background-recon.md`. That first-stage flow fetches broad Canvas raw snapshots,
+including announcements, then always runs `reference_collector` to preserve
+task-relevant original source evidence under `references/`. The Main Agent
+reads complete preserved references and writes terminal reconnaissance artifacts
+before source confirmation and the planner handoff.
+Do not revive `metadata_scout -> reading_plan.compact.json -> content_scout ->
+source_findings.compact.md`.
 
 **规则强化**（写进 `skill.md` Safety #7 + `do-homework.md` Safety #7）：deliverable 文件里**禁止出现** `[PROBLEM N]` / `[TODO: align...]` / `[此处由小组成员填入...]` 这种占位符。只允许 `[CITATION NEEDED: ...]` 和 `[CLARIFICATION NEEDED: ...]` 两种 marker，且都要在 do-homework `[E]` 一次性回流给用户。
+
+### 6b-2. proposal framework is not complete reconnaissance
+
+**现象**：开放式 proposal / research project 作业里，Canvas 可能直接给一个
+proposal template 或 final project 文件。Agent 如果只读这两个文件，通常只能拿到
+交付物框架，却不知道老师在课堂材料里怎么讲选题、research question、literature
+review、field research、questionnaire、timeline、topic scope，最后写出来的方案会
+有结构但没有课程方法论。
+
+**根因**：proposal/research/open-ended 作业的完整 spec 往往是组合型的：
+assignment shell 定义提交物，proposal/final-project 文件定义框架，methods 或
+topic-selection 课件定义如何选择课堂相关主题和研究路径，同周主题材料提供可选的
+supporting context。只读 proposal framework 会把“文件格式”误当成“作业理解”。
+
+**正确做法**：`background-recon.md` fetches broad Canvas raw snapshots, including
+announcements, then runs `reference_collector`. The collector preserves
+assignment/spec evidence, methods/topic-selection evidence, and any relevant
+syllabus, page, announcement, PDF, deck, or external source under `references/`
+with `references/REFERENCE_INDEX.md` as the source evidence interface.
+Canvas-native requirements must be copied verbatim under
+`references/canvas_native/` or pointed back to the raw `canvas/*.json` snapshot.
+proposal/research/open-ended 任务在 `review_a.json.verdict == "proceed"` 前，必须有
+assignment/spec body evidence，并且要有 methods/topic-selection evidence，或者明确记录课程
+没有可用方法指导。主代理完整读取 preserved references 和 direct-spec strong match，然后自己写
+`review_a.json` 做 parent self-check，不靠临时手动补读救场。Do not recreate
+`metadata_scout`, compact reading plans, `content_scout`, or compact source
+findings as the normal source interface.
 
 ### 6c. Notebook 有图、report 没图：这是工具接口断裂
 
@@ -176,7 +242,7 @@ cluster 图从 page 2 底部开始，被页面边界裁掉；下一页只看到�
 - 群组作业 (UCUG) 通常附件是题目说明 + rubric；lab 类作业附件是数据集 + 题目
 - 极少有老师把题目正文直接粘到 Canvas WYSIWYG 里
 
-启示：**没有 Copilot 式 assignment-recon 这一步，整个 do-homework 就是个 pipeline demo**，不是真能做作业的工具。
+启示：**没有 Copilot 式 background recon 这一步，整个 homework flow 就是个 pipeline demo**，不是真能做作业的工具。
 
 ### 7. Canvas REST API 直接带 cookie 调，不用 OAuth token
 

@@ -14,10 +14,13 @@ Keep the user-facing runtime line separate from the development-validation line.
 They share the same task artifacts, but they do not have the same actors.
 
 In the real user line, the current Claude Code Main Agent is the runtime Main
-Agent. It reads `skill.md`, routes to `do-homework.md`, performs
-reconnaissance, runs the `[B]` alignment loop directly with the user, writes
-`alignment_brief.md`, plans `pipeline_design.md`, dispatches normal stage
-workers as needed, and hands the draft back at `[E]`.
+Agent. It reads `skill.md`, routes to the public `do-homework` task, lets
+`do-homework.md` perform router/preflight/route selection, then follows the
+selected first-stage runtime file. Clean starts use `background-recon.md` for
+background recon plus source confirmation. Retained, repair, and continue starts
+use `existing-work-recon.md` for current work/state recon. The first-stage file
+then reveals `alignment-planning.md`, which owns alignment and pipeline
+planning before `task-orchestrator.md` executes an approved plan.
 
 In the development-validation line, the current session is Main Agent A: an
 outer test harness, not the runtime coordinator being tested. A prepares a
@@ -43,8 +46,9 @@ For `[B]` alignment-loop validation, use this bridge rule:
 6. A forwards B's final brief summary to the human reviewer for confirmation.
    Only after the reviewer confirms may B enter `[C]`.
 
-This lets development testing exercise the real `do-homework [B]` behavior
-without letting the outer developer session pre-solve the alignment problem.
+This lets development testing exercise the real `alignment-planning.md`
+alignment behavior reached through the `do-homework.md` router without letting
+the outer developer session pre-solve the alignment problem.
 
 When the run uses a live simulated user instead of a fully specified startup
 prompt, the coordinator prompt must require an explicit pause protocol:
@@ -173,8 +177,8 @@ The structured inventory should include:
   "removed_stale_evidence": [],
   "forbidden_context": ["archive/", "old transcripts/", "old stage reviews/"],
   "allowlisted_history_files": [],
-  "explore_scout_inputs": {
-    "source_spec": true,
+  "reference_collector_required": true,
+  "non_source_scout_inputs": {
     "artifact": false,
     "codebase": false,
     "history": false,
@@ -302,6 +306,12 @@ The runtime coordinator must receive only:
 - explicit user supplements that would normally be provided at `[B]`;
 - `skill.md`;
 - `sub-skills/tasks/do-homework.md`;
+- `sub-skills/tasks/background-recon.md` for clean-start background recon when
+  the router selects that path;
+- `sub-skills/tasks/existing-work-recon.md` for retained, repair, or continue
+  current work/state recon when the router selects that path;
+- `sub-skills/tasks/alignment-planning.md` only after the first-stage tail
+  handoff reveals it;
 - `sub-skills/tasks/task-orchestrator.md`;
 - top-level tool contracts that a real AutoStudy runtime could progressively
   load.
@@ -342,18 +352,19 @@ coordinator identity in development validation evidence.
 
 ## Explore And Change-Request Contract
 
-The coordinator must begin every run with exploration, then write the terminal
-agreement for the current request. For clean starts this usually means source
-exploration that writes `spec.md`, `problem.md`, references, and
-`investigation/explore_context.md`. For retained-artifact starts this means
-current-state exploration that may also write `repair_request.md` and
-`investigation/repair_recon.md`.
+The coordinator must begin every run with the routed first-stage task, then
+write the terminal agreement for the current request through
+`alignment-planning.md`. For clean starts, `do-homework.md` routes to
+`background-recon.md`, which writes `spec.md`, `problem.md`, references,
+`investigation/explore_context.md`, and the source confirmation checkpoint
+before tail handoff. For retained-artifact starts, `do-homework.md` routes to
+`existing-work-recon.md`, which writes current-state recon artifacts such as
+`investigation/repair_recon.md` before tail handoff to the planner.
 
-For non-trivial runs, B should dispatch read-only scout children with isolated
-prompts, each limited to one evidence class:
+For non-trivial retained-artifact or verification runs,
+`existing-work-recon.md` may dispatch read-only non-source scout children with
+isolated prompts, each limited to one evidence class:
 
-- source/spec scout: Canvas assignment facts, linked specs, rubrics, references,
-  and required deliverables;
 - artifact scout: current user-visible artifacts and source/package state, only
   when retained artifacts exist;
 - codebase scout: repository layout, dependencies, scripts, tests, and local app
@@ -363,39 +374,69 @@ prompts, each limited to one evidence class:
 - verification scout: lightweight current checks that reveal the planning
   surface, only when checks can run without doing the actual task.
 
-Scout children are runtime children, not informal helper notes. When B
-dispatches a scout, it must record the dispatch in
+For clean-start proposal/research/open-ended homework, source/spec evidence is
+complete only when:
+
+- raw Canvas snapshots include assignment, rubric, syllabus, modules,
+  module-items, assignment files, pages when relevant, file metadata, and
+  announcements;
+- `reference_collector` has produced `references/REFERENCE_INDEX.md`;
+- task-relevant Canvas-native evidence is copied verbatim under
+  `references/canvas_native/`;
+- announcement evidence is not a full `canvas/announcements.json` mirror:
+  relevant announcements are screened and preserved one object per
+  `references/canvas_native/announcement-<id-or-slug>/source.json`, with
+  `REFERENCE_INDEX.md` origins such as `canvas/announcements.json#id=26545`;
+- fetched PDFs include original file, extracted text, and link annotation
+  manifest;
+- the `reference_collector` dispatch has a
+  `stage_reviews/child_dispatch_ledger.json` row with `"role":
+  "reference_collector"` and either `"agent_id"` or `"transcript_handle"`;
+- Main Agent `review_a.json` records `reference_collector_used: true` and
+  `source_scout_pipeline_used: false`.
+
+If `reference_collector` cannot preserve a reachable task-relevant source, B may
+continue only as a recovery path. Main Agent inline recovery must be recorded as
+recovery evidence, and the validation result is not clean child-isolation
+evidence.
+
+Non-source scout children are runtime children, not informal helper notes. When
+B dispatches a non-source scout, it must record the dispatch in
 `stage_reviews/child_dispatch_ledger.json` with role `explore_scout` and a
-scout type such as `source_spec`, `artifact`, `codebase`, `process_history`, or
-`verification`. Each completed scout writes a machine-readable receipt under:
+scout type such as `artifact`, `codebase`, `process_history`, or
+`verification`. Each completed non-source scout writes a machine-readable
+receipt under:
 
 ```text
-investigation/scout_results/<scout_type>_result.json
+investigation/_appendix/scout_receipts/<scout_type>_result.json
 ```
 
 or an equivalent path listed in `investigation/explore_manifest.json`. A skipped
-scout must be represented in the manifest with `status: "SKIPPED"` and a
-specific reason. Scout prompts follow the same identity, timestamp,
-transport-recovery, transcript-export, and scope-hygiene rules as executor and
-reviewer children. In particular, a process-history scout may read only the
-`allowlisted_history_files` named in the accepted startup inventory, and no
-scout may use `archive/`, old transcripts, old trajectory reviews, or prior
-diagnostics as hidden task evidence.
+non-source scout must be represented in the manifest with `status: "SKIPPED"`
+and a specific reason. Non-source scout prompts follow the same identity,
+timestamp, transport-recovery, transcript-export, and scope-hygiene rules as
+executor and reviewer children. In particular, a process-history scout may read
+only the `allowlisted_history_files` named in the accepted startup inventory,
+and no scout may use `archive/`, old transcripts, old trajectory reviews, or
+prior diagnostics as hidden task evidence.
 
-The coordinator consolidates scout outputs into
+The coordinator or `existing-work-recon.md` consolidates scout outputs into
 `investigation/explore_context.md` and `investigation/explore_manifest.json`
-before writing the terminal agreement. For retained-artifact starts, it may also
-write `investigation/repair_recon.md` as a compatibility summary. These files
-are the bridge between raw inputs and current planning: they may summarize
-previous decisions, passed checks, failed checks, and known risks, but they must
-also label stale or forbidden context. Runtime executor/reviewer children should
-receive the explore context and final plan, not raw old logs or archived process
-files, unless the final plan explicitly grants a narrow read for a stage.
+before the terminal agreement. For retained-artifact starts, the tool may also
+write `investigation/repair_recon.md` as a compatibility summary, then the
+planner reads those current-state artifacts before writing `repair_plan.md` or
+`repair_pipeline_design.md`. These files are the bridge between raw inputs and
+current planning: they may summarize previous decisions, passed checks, failed
+checks, and known risks, but they must also label stale or forbidden context.
+Runtime executor/reviewer children should receive the explore context and final
+plan, not raw old logs or archived process files, unless the final plan
+explicitly grants a narrow read for a stage.
 
 When feedback or project intent is open-ended, ambiguous, or creative, the
 coordinator must not collapse directly from exploration to final plan. It must
-run an alignment loop, bridged by A in the same spirit as `do-homework [B]`:
-ask one necessary question at a time, wait with a clear marker such as
+run an alignment loop through `alignment-planning.md`, bridged by A in
+the same spirit as the public homework flow: ask one necessary question at a
+time, wait with a clear marker such as
 `WAITING_FOR_SIMULATED_USER_B_ROUND_<N>` or
 `WAITING_FOR_REPAIR_ALIGNMENT_ROUND_<N>`, record the forwarded answer in
 current-run notes, and continue only until it can plan without guessing intent.
@@ -571,15 +612,21 @@ preserving transcript-body evidence.
 Every iteration must review the process, not just the artifact quality:
 
 - Did the coordinator follow the declared entry preset and startup inventory?
-- Did the coordinator enable and skip explore scouts according to the startup
-  inventory, and did it record scout results or skip reasons in
+- Did the coordinator enable and skip non-source explore scouts according to the
+  startup inventory, and did it record scout results or skip reasons in
   `investigation/explore_manifest.json` before alignment?
-- Did every dispatched pre-alignment scout appear in
+- Did every dispatched non-source pre-alignment scout appear in
   `stage_reviews/child_dispatch_ledger.json`, have a receipt under
-  `investigation/scout_results/` or an equivalent manifest-listed path, and feed
-  only distilled findings into `investigation/explore_context.md`?
+  `investigation/_appendix/scout_receipts/` or an equivalent manifest-listed
+  appendix path, and feed only distilled findings into
+  `investigation/explore_context.md`?
 - Did any retained startup file leak previous conclusions or receipts?
 - Did child subagent trajectories match their declared stage and role?
+- Was the `reference_collector` dispatch recorded in
+  `stage_reviews/child_dispatch_ledger.json` with a real child identity? A
+  handwritten alias such as `reference_collector_<course>_<assignment>` is not
+  clean evidence. An empty dispatch ledger cannot prove
+  `reference_collector_used: true`.
 - Did any child write to coordinator-owned ledgers or other forbidden files?
 - Did any transport recovery occur, and if so was it justified by receipt plus
   transcript evidence rather than accepted from a final message alone?

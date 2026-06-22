@@ -1,13 +1,13 @@
 ---
 name: autostudy
-description: HKUST(GZ) Canvas study assistant. Sync Canvas status, plan next actions, investigate assignments, draft local deliverables, archive course materials, and generate notes with user checkpoints.
+description: Local Canvas LMS study assistant, validated on HKUST(GZ). Sync Canvas status, plan next actions, investigate assignments, draft local deliverables, archive course materials, and generate notes with user checkpoints.
 ---
 
 # AutoStudy
 
-AutoStudy is a local academic assistant skill for HKUST(GZ) students using
-Canvas (`hkust-gz.instructure.com`). It depends on `canvascli` for Canvas data
-access and uses this repository's Markdown task/tool files as the runtime
+AutoStudy is a local academic assistant skill for students using Canvas LMS,
+validated on HKUST(GZ)'s Canvas instance. It depends on `canvascli` for Canvas
+data access and uses this repository's Markdown task/tool files as the runtime
 contract.
 
 ## Loading Model
@@ -16,8 +16,23 @@ AutoStudy is meant to run from a dedicated clone of this repository. The
 repository root is the working directory: `.venv/`, `data/`, `scripts/`, and
 `sub-skills/` are all resolved relative to it.
 
-For a first-time user, clone the repository into a normal local folder, then
-open the agent there or ask the agent to use that folder's `skill.md`:
+For first-time setup, choose the clone location from the user's current agent
+workspace before using any sample path:
+
+- If the current agent workspace is an empty folder chosen by the user for this
+  setup, clone AutoStudy into that folder with `git clone <repo> .`, then run
+  setup there.
+- If the current directory is already an AutoStudy clone, run setup in that
+  directory.
+- If the current directory is non-empty and not an AutoStudy clone, or if the
+  current workspace is unclear, ask the user where to put the repository before
+  cloning.
+- Do not silently default to `~/workspace`, Desktop, Downloads, or any other
+  machine-specific location. Example paths are examples only.
+
+If the user wants to choose a folder manually, clone the repository into a
+normal local folder, then open the agent there or ask the agent to use that
+folder's `skill.md`:
 
 ```bash
 git clone https://github.com/Aurorra1123/autoust-dev.git ~/workspace/autoust-dev
@@ -70,8 +85,8 @@ test -d .venv && .venv/bin/canvascli version > /dev/null 2>&1 \
 
 Important login model:
 
-- `canvascli init` opens a browser for HKUST(GZ) SSO and refreshes the saved
-  session.
+- `canvascli init` opens a browser for the configured Canvas SSO and refreshes
+  the saved session.
 - It is not a health check. Use `.venv/bin/canvascli whoami` for that.
 - The saved session lives at `~/Library/Application Support/canvascli/state.json`
   on macOS. Treat it as a credential.
@@ -84,14 +99,16 @@ Important login model:
 skill.md
 ├── sub-skills/tasks/
 │   ├── sync-status.md          # Canvas snapshot -> assistant plan
-│   ├── do-homework.md          # Assignment workbench + alignment + draft flow
-│   ├── task-orchestrator.md    # Stage execution/review from pipeline_design.md
+│   ├── do-homework.md          # Router / preflight / first-stage route selection
+│   ├── background-recon.md     # Clean-start homework background recon
+│   ├── existing-work-recon.md  # Retained draft / repair / continue recon
+│   ├── alignment-planning.md   # User alignment, brainstorm, pipeline planning
+│   ├── task-orchestrator.md    # Stage execution/review from approved execution plan
 │   ├── sync-course.md          # Persistent course material archive
 │   └── write-course-notes.md   # Notes from synced lecture PDFs
 ├── sub-skills/tools/
 │   ├── canvascli-setup.md
 │   ├── canvascli-api.md
-│   ├── assignment-recon.md
 │   ├── _index.md
 │   ├── code-writer.md
 │   ├── writing-helper.md
@@ -131,16 +148,28 @@ selector has returned an exact object.
 ### Homework / Drafting
 
 For "do this assignment" style requests, read `sub-skills/tasks/do-homework.md`.
+Runtime homework files map to the staged route as:
+
+```text
+do-homework.md = router/preflight/first-stage route selection
+background-recon.md = clean-start task background recon plus recon briefing/source confirmation
+existing-work-recon.md = retained/repair/continue current work recon
+alignment-planning.md = user alignment, brainstorming, pipeline planning after first-stage confirmation
+```
+
 The required source-of-truth chain is:
 
 ```text
 prelaunch_startup_inventory.json
--> investigation/explore_context.md
 -> investigation/explore_manifest.json
+-> references/REFERENCE_INDEX.md
+-> references/source_docs/, references/slides/, references/external/
+-> references/canvas_native/
 -> spec.md
 -> investigation/rubric.md
--> references/
 -> investigation/review_a.json
+-> investigation/recon_summary.md
+-> investigation/explore_context.md
 -> investigation/alignment_brief.md or repair_plan.md
 -> pipeline_design.md or repair_pipeline_design.md
 -> stage_briefs/
@@ -151,24 +180,54 @@ prelaunch_startup_inventory.json
 -> result.json
 ```
 
+Standard homework reconnaissance always uses `reference_collector` after the
+Canvas raw snapshot. The collector narrows task-relevant sources and preserves
+complete original evidence under `references/`. It may download files, extract
+PDF text, preserve PDF link annotations, and copy Canvas-native source JSON
+blocks verbatim into `references/canvas_native/`.
+Announcement arrays are collection snapshots, not source objects. Do not copy the
+full `canvas/announcements.json` array into `references/canvas_native/`; preserve
+only task-relevant announcement objects, one object per
+`references/canvas_native/announcement-<id-or-slug>/source.json`, with
+`REFERENCE_INDEX.md` raw origins such as `canvas/announcements.json#id=26545`.
+
+The collector must not interpret the assignment, summarize requirements as the
+only evidence path, or write final reconnaissance artifacts. The Main Agent
+reads `references/REFERENCE_INDEX.md`, preserved reference files, and
+Canvas-native `source.json` / `source.txt` copies before writing `spec.md`,
+`rubric.md`, `review_a.json`, `recon_summary.md`, and `explore_context.md`.
+
+Do not create `reading_plan.compact.json`, `reading_plan.compact.approved.json`,
+`source_findings.compact.md`, source index appendix files, source body fragments,
+or source scout receipts in standard runs.
+
 Never draft from just the assignment title, Canvas description, or a single
 link. Canvas assignment descriptions are often empty or incomplete. The
 `problem.md` file is compatibility only; it is not the primary source.
+For Canvas-native bodies such as assignment, syllabus, front page, and pages,
+raw Canvas JSON remains durable backing evidence, but the normal Main Agent
+read interface is the verbatim preserved copy under `references/canvas_native/`.
+Derived summaries are not authoritative sources. Downstream stages that need
+Canvas-native constraints should read the preserved `source.json` / `source.txt`
+copies; raw `canvas/*.json` reads are recovery or explicit fallback exceptions.
 
 The user-facing checkpoints are:
 
-1. After exploration, summarize what was found and run the alignment loop.
-2. After draft generation and verification, ask what the user wants to do next,
+1. After exploration, present the reconnaissance briefing and ask the user to confirm the source understanding.
+2. After reconnaissance confirmation, run the alignment loop.
+3. After draft generation and verification, ask what the user wants to do next,
    including whether to submit.
 
 For open-ended or creative work, keep the alignment loop alive until you can
 write a concrete `alignment_brief.md` with selected approach, design skeleton,
 constraints, delegated decisions, human review items, and stop conditions.
 
-For retained drafts or user feedback, treat the run as a retained-artifact
-start: preserve only user-visible artifacts declared in startup inventory,
-write a current `repair_plan.md`, then plan through
-`repair_pipeline_design.md` when appropriate.
+For retained drafts or user feedback, `do-homework.md` routes first to
+`existing-work-recon.md`, which owns current work/state reconnaissance and
+writes the terminal retained-work context before tail handoff. Preserve only
+user-visible artifacts declared in startup inventory, write a current
+`repair_plan.md`, then plan through `repair_pipeline_design.md` when
+appropriate.
 
 ## Safety Rules
 
@@ -207,6 +266,19 @@ When finishing a task, keep the handoff compact:
 - where the main artifact lives;
 - what remains for the user, if anything;
 - whether Canvas submission happened.
+
+For the background-recon reconnaissance confirmation checkpoint, do not use the
+generic artifact handoff shape. Use the conclusion-first recon briefing required
+by `sub-skills/tasks/background-recon.md`: lead with the assignment
+conclusion, source-category findings, deliverables, grading signals, conflicts
+or gaps, and the source-confirmation question. File paths are only a short
+optional audit appendix after the briefing.
+
+For the later homework `alignment-planning.md [B]` checkpoint, assume the
+source understanding has already been confirmed. Ask the smallest user-intent
+question needed to avoid guessing; do not repeat the full reconnaissance
+briefing unless it is needed to frame the alignment question or explain a
+blocker.
 
 Examples:
 

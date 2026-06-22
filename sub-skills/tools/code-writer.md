@@ -81,7 +81,7 @@ input/output pairs.
 
 | Appendix | When to load |
 |---|---|
-| [code-writer-python.md](./code-writer-python.md) | When `lang: python` or default (always for HKUST(GZ) labs) |
+| [code-writer-python.md](./code-writer-python.md) | When `lang: python`, or when the spec/starter files indicate Python |
 | `code-writer-cpp.md` (future) | When `lang: cpp` |
 
 Read this parent file first, then load the matching language appendix for

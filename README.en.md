@@ -1,6 +1,6 @@
 # AutoStudy
 
-> Local HKUST(GZ) Canvas study-assistant skill.
+> Local Canvas LMS study-assistant skill, validated on HKUST(GZ)'s Canvas instance.
 > Sync Canvas, plan deadlines, investigate assignments, draft reviewable
 > artifacts, archive course materials, and generate course notes.
 
@@ -9,9 +9,10 @@ Other versions:
 - [Default Chinese README](./README.md)
 - [Quick Chinese README](./README.quick.md)
 
-AutoStudy is a **local skill package** for Claude Code / Codex-style agentic
-coding environments. You ask in natural language; the agent reads `skill.md`,
-calls the local `canvascli` data layer, writes evidence and artifacts into this
+AutoStudy is a **local Canvas LMS skill package** for Claude Code /
+Codex-style agentic coding environments, validated on HKUST(GZ)'s Canvas
+instance. You ask in natural language; the agent reads `skill.md`, calls the
+local `canvascli` data layer, writes evidence and artifacts into this
 repository, and asks before key actions.
 
 It is not a web app, hosted service, or hidden automation bot. It is closer to a
@@ -53,8 +54,26 @@ stage-level review, and resumable local workbenches.
 ### 1. Load The Skill
 
 AutoStudy is a full local repository, not a standalone `skill.md` file. On a
-first run, ask the agent to clone it into a dedicated folder, for example
-`~/workspace/autoust-dev`:
+first run, the safest flow is to open an empty project folder in Claude Code /
+Codex, then ask the agent to clone AutoStudy into the current directory:
+
+```text
+Clone https://github.com/Aurorra1123/autoust-dev into the current empty folder,
+then read skill.md and help me initialize it.
+```
+
+The agent should confirm the current directory is empty, then run the equivalent
+of:
+
+```bash
+git clone https://github.com/Aurorra1123/autoust-dev.git .
+```
+
+If the current directory is not empty, or if no clear project folder is open,
+the agent should ask where to place the repository instead of silently choosing
+`~/workspace`, Desktop, Downloads, or another implicit location.
+
+You can also provide an explicit folder:
 
 ```text
 Clone https://github.com/Aurorra1123/autoust-dev into ~/workspace/autoust-dev,
@@ -75,7 +94,7 @@ Then tell the agent from that directory:
 Use the AutoStudy skill in the current directory. Read skill.md and help me initialize it.
 ```
 
-`~/workspace/autoust-dev` is only a suggested location; any local folder is fine.
+`~/workspace/autoust-dev` is only an example location, not a default. Any local folder is fine.
 The important part is that AutoStudy stays as its own repository folder because
 `.venv/`, `data/`, `scripts/`, and `sub-skills/` are all used relative to it. The
 agent should read `skill.md`, check the environment, and install missing
@@ -84,10 +103,11 @@ dependencies into the local `.venv/`.
 ### 2. Complete Canvas Login Once
 
 AutoStudy uses the separate [`canvascli`](https://github.com/Aurorra1123/canvascli)
-data layer. The first run opens a browser for HKUST(GZ) SSO:
+data layer. On the first run, the agent confirms your Canvas school/domain or
+login page, then opens a browser for that Canvas SSO:
 
 ```bash
-.venv/bin/canvascli init
+.venv/bin/canvascli init --canvas-url "https://canvas.example.edu"
 ```
 
 The saved Canvas session is stored locally:
@@ -133,8 +153,18 @@ AutoStudy does not generate from the assignment title. The current homework
 contract is:
 
 ```text
-Canvas sources
+do-homework.md router/preflight/route selection
+├── clean start -> assignment-source-intake.md
+│   -> Canvas/source/spec intake
+└── retained draft or feedback -> assignment-workflow-planner.md
+    -> current-state-intake.md
+    -> repair_plan.md / repair_pipeline_design.md
+
+Canvas raw snapshots, including canvas/announcements.json
+-> references/REFERENCE_INDEX.md
+-> references/source_docs/ and references/canvas_native/
 -> spec.md
+-> investigation/rubric.md and investigation/review_a.json
 -> investigation/explore_context.md
 -> investigation/alignment_brief.md or repair_plan.md
 -> pipeline_design.md or repair_pipeline_design.md
@@ -145,25 +175,43 @@ Canvas sources
 -> result.json
 ```
 
+The public user-facing task remains `do-homework`. `assignment-source-intake.md`,
+`assignment-workflow-planner.md`, and `current-state-intake.md` are internal
+routing files, not separate commands users need to call directly.
+
 In plain language:
 
-1. **Explore**: inspect assignment page, rubric, course front page, syllabus,
-   modules, module items, files, pages, and external links through `canvascli`.
-2. **Write the spec**: summarize the real assignment requirements in `spec.md`;
-   put fetched PDFs, Google Docs, starter code, datasets, and other source
-   material under `references/`.
-3. **Align with you**: ask only the questions needed to avoid guessing your
-   topic, group info, dataset, architecture, style, or scope.
-4. **Confirm the agreement**: write final task intent to
-   `investigation/alignment_brief.md` for a new assignment, or `repair_plan.md`
-   when improving an existing draft.
-5. **Design the pipeline**: write a custom `pipeline_design.md` from the spec
-   and confirmed intent. There is no fixed "paper pipeline" or "lab pipeline";
-   tools are composed per assignment.
-6. **Execute and review**: generate stage briefs, dispatch executors/reviewers
+1. **Route and preflight**: `do-homework.md` creates the workbench, records
+   startup inventory, and selects either clean-start source intake or
+   retained-artifact planning.
+2. **Explore**: clean starts go through `assignment-source-intake.md`, which
+   inspects assignment page, rubric, course front page, syllabus, modules,
+   module items, announcements, files, pages, and external links through
+   `canvascli`.
+3. **Preserve references**: `reference_collector` saves task-relevant original
+   evidence under `references/`, including PDF companions and screened
+   per-announcement
+   `references/canvas_native/announcement-<id-or-slug>/source.json` objects. It
+   must not copy the full `canvas/announcements.json` array into
+   `references/canvas_native/`.
+4. **Write the spec**: the Main Agent reads `references/REFERENCE_INDEX.md` and
+   preserved original evidence, then summarizes the real assignment requirements
+   in `spec.md` and writes `investigation/review_a.json`.
+5. **Align with you**: `assignment-workflow-planner.md` asks only the questions
+   needed to avoid guessing your topic, group info, dataset, architecture, style,
+   or scope.
+6. **Confirm the agreement**: write final task intent to
+   `investigation/alignment_brief.md` for a new assignment. For an existing
+   draft or feedback, `assignment-workflow-planner.md` invokes
+   `current-state-intake.md` before writing the current `repair_plan.md`.
+7. **Design the pipeline**: write a custom `pipeline_design.md` from the spec
+   and confirmed intent; retained flows write `repair_pipeline_design.md` when
+   appropriate. There is no fixed "paper pipeline" or "lab pipeline"; tools are
+   composed per assignment.
+8. **Execute and review**: generate stage briefs, dispatch executors/reviewers
    when useful, record receipts, run checks, and collect artifacts under
    `draft/`.
-7. **Ask before submission**: Canvas submission is never automatic.
+9. **Ask before submission**: Canvas submission is never automatic.
 
 This is why a complex project can produce a notebook, report PDF, slides,
 requirements file, source zip, verification log, and human review items in the
@@ -207,7 +255,6 @@ and writes structured Markdown notes under `notes/`.
 ```text
 AutoStudy/
 ├── skill.md                         # User-facing skill entry and routing
-├── AGENTS.md                        # Developer handoff and repo rules
 ├── README.md                        # Default Chinese README
 ├── README.en.md                     # English full README
 ├── README.quick.md                  # Chinese quick README
@@ -218,7 +265,9 @@ AutoStudy/
 ├── sub-skills/
 │   ├── tasks/
 │   │   ├── sync-status.md
-│   │   ├── do-homework.md
+│   │   ├── do-homework.md             # router / preflight / route selection
+│   │   ├── assignment-source-intake.md # clean-start source/spec intake
+│   │   ├── assignment-workflow-planner.md # alignment / planning / retained flow
 │   │   ├── task-orchestrator.md
 │   │   ├── sync-course.md
 │   │   └── write-course-notes.md
@@ -226,12 +275,14 @@ AutoStudy/
 │       ├── canvascli-setup.md
 │       ├── canvascli-api.md
 │       ├── assignment-recon.md
+│       ├── current-state-intake.md    # retained current-state exploration
 │       ├── code-writer.md
 │       ├── writing-helper.md
 │       ├── pdf-renderer.md
 │       ├── slide-maker.md
 │       └── ...
 ├── docs/
+│   ├── DEVELOPMENT.md
 │   ├── ROADMAP.md
 │   ├── COLLABORATION.md
 │   ├── runtime-agent-protocol.md
@@ -255,11 +306,14 @@ Passing and usable:
 
 - Canvas data layer via `canvascli`.
 - `sync-status` scan-plan flow.
-- `do-homework` workbench, reconnaissance, alignment, dynamic pipeline, and
-  local draft flow.
+- `do-homework` as the public homework entrypoint; internally it routes through
+  preflight, clean-start source intake, alignment/planning, retained current-state
+  exploration, and dynamic pipeline planning.
+- `task-orchestrator` local draft execution from an approved pipeline.
 - M3 tools: prose, code, figures, tests, slides, PDF rendering, humanizer.
 - Course material sync and course-note generation.
-- `result.json` receipts for skipped, draft-ready, submitted, and error states.
+- `result.json` receipts for skipped, `pipeline_ready`, `draft_ready`, submitted,
+  and error states.
 
 Still being hardened:
 
@@ -294,6 +348,6 @@ When unsure, AutoStudy should stop and explain uncertainty instead of guessing.
 
 ## Contributing
 
-For development work, start with [AGENTS.md](./AGENTS.md). It explains the
-boundary between AutoStudy and `canvascli`, the Canvas Copilot reference, branch
-policy, progress/backlog updates, and verification rules.
+For development work, start with [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md).
+It explains the boundary between AutoStudy and `canvascli`, the Canvas Copilot
+reference, branch policy, progress/backlog updates, and verification rules.

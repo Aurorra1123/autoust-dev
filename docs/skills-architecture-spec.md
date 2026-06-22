@@ -159,14 +159,14 @@ skill 可以在 Post-processing 中引用其他 skill。但不是硬编码调用
 
 ```markdown
 ## Post-processing
-- 如果 pipeline_design.md 声明了 `post-process: humanize`，
-  或用户在 [B] 要求降低 AI 味道，则读取 humanizer.md 并执行
+- 如果当前 execution plan 声明了 `post-process: humanize`，
+  或用户在 alignment-planning.md [B] 要求降低 AI 味道，则读取 humanizer.md 并执行
 - 否则跳过
 ```
 
 调用决策基于三个信息源：
-1. `pipeline_design.md` 中当前 stage 的声明
-2. 用户在 do-homework [B] 的补充要求
+1. 当前 execution plan 中当前 stage 的声明
+2. 用户在 alignment-planning.md [B] 的补充要求
 3. skill 自身的判断（如检测到长文输出）
 
 ### 4.2 共享模式
@@ -174,11 +174,11 @@ skill 可以在 Post-processing 中引用其他 skill。但不是硬编码调用
 以下模式是跨 skill 通用的，在各自 skill 文件中以引用方式描述：
 
 **约束提取（生成前）**：从 spec.md 提取可量化约束，
-写入 `pipeline_design.md` 的 constraints 部分。
+写入当前 execution plan 的 constraints 部分。
 
 **自检（生成后）**：每个 skill 完成后按自检清单逐项验证。
 
-**Sub-agent 审查（可选）**：pipeline_design.md 中按需声明
+**Sub-agent 审查（可选）**：当前 execution plan 中按需声明
 "此 stage 后需要审查"。当 review 启用时，Main Agent 先运行 spec
 compliance review，对比 artifact、`spec.md`、rubric、user notes 和 stage
 brief；spec compliance 通过后，才运行 artifact-specific quality review。
@@ -205,8 +205,13 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ## 5. Pipeline Design 格式
 
-`pipeline_design.md` 由 do-homework [C] 在侦查 + 用户确认
-`alignment_brief.md` 后写。
+`pipeline_design.md` 或 `repair_pipeline_design.md` 由
+alignment-planning.md [C] 在 first-stage recon 完成并经用户确认终端协议后写。
+`alignment-planning.md` 只负责 alignment 与 planning：clean start 的首次完整
+侦查 briefing/source confirmation 属于 `background-recon.md`，retained/repair
+的 current work/state recon 属于 `existing-work-recon.md`。如果 first-stage
+终端产物缺失，planner 必须停下返回路由或 first-stage task，不能在 `[B]`
+重复 full source-category evidence map 或静默补跑首次侦查。
 格式示例：
 
 ```markdown
@@ -236,7 +241,13 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ### Stage 1 — 核心算法实现
 - id: stage_01_notebook
-- tool: sub-skills/tools/code-writer.md
+- primary_tool: sub-skills/tools/code-writer.md
+- tools:
+  - sub-skills/tools/code-writer.md
+  - sub-skills/tools/test-runner.md
+- tool_roles:
+  - code-writer: 生成 notebook/source artifacts
+  - test-runner: 执行测试或 notebook 验证并保存证据
 - delegate: subagent
 - lang: python
 - review:
@@ -247,20 +258,29 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
   - spec.md
   - investigation/rubric.md
   - investigation/alignment_brief.md
-  - references/project_announce.pdf
+  - references/REFERENCE_INDEX.md
+  - references/source_docs/project-brief/project-brief.pdf
+  - references/canvas_native/announcement-deadline-update/source.json
 - writes:
   - draft/notebook.ipynb
   - draft/requirements.txt
   - draft/metrics.json
+  - test_report.md
+  - test_report.json
 - quality_criteria:
   - notebook 能从 clean kernel 从头运行无报错
+  - test_report.json 记录验证命令、退出码和 pass/fail 状态
   - 报告引用的 metrics 必须来自实际执行输出
 - human_blockers:
   - dataset choice if the spec allows multiple datasets and user has not chosen
 
 ### Stage 2 — 实验报告
 - id: stage_02_report
-- tool: sub-skills/tools/writing-helper.md
+- primary_tool: sub-skills/tools/writing-helper.md
+- tools:
+  - sub-skills/tools/writing-helper.md
+- tool_roles:
+  - writing-helper: 根据 spec、rubric、用户意图和实验指标写报告草稿
 - delegate: subagent
 - type: report
 - lang: en
@@ -283,7 +303,11 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ### Stage 3 — 渲染 PDF
 - id: stage_03_pdf
-- tool: sub-skills/tools/pdf-renderer.md
+- primary_tool: sub-skills/tools/pdf-renderer.md
+- tools:
+  - sub-skills/tools/pdf-renderer.md
+- tool_roles:
+  - pdf-renderer: 将报告源文件渲染为最终 PDF 并记录渲染证据
 - delegate: subagent
 - review:
   - spec_compliance: true
@@ -305,7 +329,11 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 ### Stage 4 — Presentation
 - id: stage_04_slides
-- tool: sub-skills/tools/slide-maker.md
+- primary_tool: sub-skills/tools/slide-maker.md
+- tools:
+  - sub-skills/tools/slide-maker.md
+- tool_roles:
+  - slide-maker: 生成演示文稿源文件和 slides PDF
 - delegate: subagent
 - review:
   - spec_compliance: true
@@ -336,7 +364,12 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 每个 stage 可包含：
 - `id`：稳定 stage id，例如 `stage_01_report`
-- `tool`：调用的顶层 skill
+- `primary_tool`：主顶层 skill，决定此 stage 的主要产物契约和执行责任
+- `tools`：此 stage 必须读取并应用的全部顶层 skill，有顺序，允许一个或多个
+- `tool_roles`：说明每个 tool 在本 stage 中承担的职责，防止 supporting tool
+  被漏掉或只写进 prose
+- `tool`：旧格式兼容字段，只等价于 `primary_tool: <path>` 和
+  `tools: [<path>]`；新 pipeline 应写 expanded fields
 - `delegate`：`main-agent` 或 `subagent`
 - `lang`：覆盖默认语言（code-writer 读取）
 - `type`：覆盖默认类型（writing-helper 读取）
@@ -363,18 +396,18 @@ pdf-renderer 读取 draft/report.md 渲染成 draft/report.pdf
 
 | 层级 | 来源 | 存储位置 | 状态 |
 |---|---|---|---|
-| **任务级** | do-homework [B] 对齐循环 | `investigation/alignment_brief.md` -> `pipeline_design.md` stage 声明 | ✅ 当前实现方式 |
+| **任务级** | alignment-planning.md [B] 对齐循环 | `investigation/alignment_brief.md` 或 `repair_plan.md` -> 当前 execution plan stage 声明 | ✅ 当前实现方式 |
 | **课程级** | 跨作业积累的课程偏好 | `data/course-overrides/<COURSE>.md` | 🔲 待实现 |
 | **用户级** | 用户主动声明或推断 | Claude Code 项目 memory | 🔲 待实现 |
 
 ### 6.1 任务级偏好（当前实现）
 
-agent 在写 `pipeline_design.md` 时，根据侦查结果和 [B] 结束时确认的
-`investigation/alignment_brief.md`，在每个 stage 中声明具体参数：
+agent 在写当前 execution plan 时，根据侦查/当前状态结果和 [B] 结束时确认的
+`investigation/alignment_brief.md` 或 `repair_plan.md`，在每个 stage 中声明具体参数：
 
 ```
-Stage 1: code-writer, lang: python
-Stage 2: writing-helper, type: report, lang: en
+Stage 1: primary_tool: code-writer, tools: [code-writer, test-runner], lang: python
+Stage 2: primary_tool: writing-helper, tools: [writing-helper], type: report, lang: en
 ```
 
 这些信息来自：
@@ -416,6 +449,13 @@ skill 文件中声明的默认值：
 ## 7. 当前文件结构
 
 ```text
+sub-skills/tasks/
+├── do-homework.md                 # router / preflight / first-stage route
+├── background-recon.md            # clean-start background recon + source confirmation
+├── existing-work-recon.md         # retained/repair/continue current work recon
+├── alignment-planning.md          # alignment-only + pipeline planning
+└── task-orchestrator.md           # approved execution plan runtime
+
 sub-skills/tools/
 ├── _index.md                     # 能力菜单（只列顶层 skill）
 ├── code-writer.md                # 代码生成：通用原则 + 加载语言附录
@@ -430,7 +470,6 @@ sub-skills/tools/
 ├── paper-search.md               # 文献搜索（已有）
 ├── figure-maker.md               # 数据可视化（已有）
 ├── test-runner.md                # 测试执行（已有）
-├── assignment-recon.md          # Canvas Generic 侦查（已有）
 └── canvascli-api.md              # Canvas CLI 参考（已有）
 ```
 

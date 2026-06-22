@@ -183,6 +183,8 @@ def bucket_for(due_at: dt.datetime | None, now: dt.datetime) -> tuple[str, float
 def action_for(item: dict[str, Any], result: dict[str, Any] | None) -> tuple[str, str]:
     if result:
         status = result.get("status")
+        if status == "pipeline_ready":
+            return "review_or_execute", "local pipeline is ready; user should review/approve before orchestration"
         if status == "draft_ready":
             return "review_or_submit", "local draft is ready; user should review or submit"
         if status == "revision_needed":
@@ -230,7 +232,7 @@ def due_label(due_at: dt.datetime | None, hours_left: float | None) -> str:
 
 
 def priority_for(bucket: str, action: str) -> str:
-    if action == "review_or_submit":
+    if action in {"review_or_execute", "review_or_submit"}:
         return "high"
     if bucket in {"overdue", "urgent"}:
         return "high"
@@ -322,6 +324,7 @@ def build_plan(pending: list[dict[str, Any]]) -> dict[str, Any]:
                 "course_name": item["course_name"],
                 "assignment_id": item["assignment_id"],
                 "assignment_name": item["assignment_name"],
+                "html_url": item.get("html_url"),
                 "due_at": item["due_at"],
                 "due_at_local": item["due_at_local"],
                 "hours_left": item["hours_left"],

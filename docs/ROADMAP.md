@@ -1,9 +1,9 @@
 # AutoStudy Roadmap
 
-> Goal: let an HKUST(GZ) student load one local skill in an agentic coding
-> environment and get a Canvas-grounded study assistant: status planning,
-> assignment reconnaissance, draft production, course-material archiving, notes,
-> and eventually tutoring and reminders.
+> Goal: let a Canvas LMS student load one local skill in an agentic coding
+> environment and get a Canvas-grounded study assistant, validated on HKUST(GZ):
+> status planning, assignment reconnaissance, draft production,
+> course-material archiving, notes, and eventually tutoring and reminders.
 
 AutoStudy is deliberately local. It has no hosted backend and no project-owned
 API key. Canvas access is handled by the separate `canvascli` CLI, while this
@@ -31,6 +31,7 @@ patterns into local runtime artifacts:
 | Workflow Need | AutoStudy Artifact |
 |---|---|
 | understand the real assignment | `spec.md`, `references/`, `investigation/rubric.md` |
+| route homework startup state | `do-homework.md`, `prelaunch_startup_inventory.json` |
 | clarify user intent | `investigation/user_notes.md`, `investigation/alignment_brief.md` |
 | plan execution | `pipeline_design.md` or `repair_pipeline_design.md` |
 | isolate work | `stage_briefs/`, executor receipts, reviewer receipts |
@@ -108,7 +109,9 @@ assignments:
 
 The M3 tools remain active:
 
-- `assignment-recon`
+- `background-recon`
+- `existing-work-recon`
+- `alignment-planning`
 - `writing-helper`
 - `paper-search`
 - `figure-maker`
@@ -147,10 +150,19 @@ data/homework/<COURSE>/<HWID>/
 ├── spec.md
 ├── problem.md
 ├── references/
+│   ├── REFERENCE_INDEX.md
+│   ├── source_docs/
+│   ├── slides/
+│   ├── external/
+│   └── canvas_native/
+│       └── announcement-<id-or-slug>/
+│           ├── source.json
+│           ├── source.txt
+│           └── ORIGIN.md
 ├── investigation/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
-│   ├── scout_results/
+│   ├── recon_summary.md
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -173,17 +185,23 @@ data/homework/<COURSE>/<HWID>/
 
 `spec.md` is the source-grounded assignment report. `problem.md` remains only
 for compatibility with older tools.
+Legacy source-scout artifacts such as `reading_plan.compact.json`,
+`source_findings.compact.md`, `investigation/_appendix/source_index.json`,
+`body_evidence_fragments/`, and source-scout receipts are stale/recovery/debug
+only, not normal workbench outputs.
 
 ### 2. Unified Runtime Flow
 
 The current runtime model is:
 
 ```text
-archive/preflight
+do-homework.md router/preflight/route selection
 -> startup inventory
--> explore stage
--> alignment contract
--> execution plan
+-> clean start: background-recon.md background recon + source confirmation
+-> retained artifact: existing-work-recon.md current work/state recon
+   -> repair_plan.md / repair_pipeline_design.md
+-> alignment-planning.md [B] alignment contract
+-> alignment-planning.md [C] execution plan
 -> executor/reviewer runtime
 -> verification and result receipt
 ```
@@ -197,19 +215,36 @@ archive/preflight
 
 The runtime branches on startup inventory, not hard-coded mode logic.
 
+`do-homework` remains the public homework command. The split files are internal
+runtime contracts:
+
+- `do-homework.md`: router, preflight, and route selection.
+- `background-recon.md`: clean-start background recon plus recon briefing/source confirmation.
+- `existing-work-recon.md`: retained/repair/continue current work recon.
+- `alignment-planning.md`: alignment-only user loop and pipeline planning after first-stage confirmation.
+
 ### 3. Canvas Generic Reconnaissance
 
-Official `do-homework` reconnaissance is agent-led. It inspects all likely
-Canvas sources through atomic `canvascli` commands:
+For clean starts, `do-homework.md` routes to `background-recon.md` for
+agent-led reconnaissance. Stage 1 fetches likely Canvas source surfaces through
+atomic `canvascli` commands. Then the always-on `reference_collector` child
+preserves task-relevant original evidence under `references/`, and the Main
+Agent reads `references/REFERENCE_INDEX.md`, preserved source files, and
+Canvas-native source copies before writing terminal reconnaissance artifacts:
 
 - assignment page and attachments;
 - Canvas rubric;
 - course front page;
 - syllabus;
 - modules and every module item;
+- announcements as a raw `canvas/announcements.json` collection snapshot;
 - Canvas pages;
 - files;
 - external URLs such as Google Docs.
+
+For announcements, `references/canvas_native/` stores only screened relevant
+objects, one per `announcement-<id-or-slug>/source.json`; it must not mirror the
+full `canvas/announcements.json` array.
 
 The output is not a raw dump. It is a structured judgment:
 
@@ -222,7 +257,8 @@ The output is not a raw dump. It is a structured judgment:
 
 ### 4. User Alignment
 
-After reconnaissance, the agent must align with the user before execution.
+After first-stage reconnaissance and source/current-state confirmation,
+`alignment-planning.md [B]` aligns with the user before execution planning.
 
 For simple tasks this can be one confirmation. For open-ended assignments, the
 agent asks one drift-reducing question at a time, compares approaches when
@@ -238,11 +274,16 @@ For retained-artifact repairs, the equivalent terminal agreement is usually:
 repair_plan.md
 ```
 
+That retained route is `do-homework.md` router ->
+`existing-work-recon.md` -> `alignment-planning.md` ->
+`repair_plan.md` / `repair_pipeline_design.md`.
+
 No confirmed terminal agreement means no final execution plan and no draft run.
 
 ### 5. Dynamic Pipeline And Review
 
-`pipeline_design.md` is written after the confirmed agreement. It declares:
+`pipeline_design.md` or `repair_pipeline_design.md` is written after the
+confirmed agreement. It declares:
 
 - output mode and deliverables;
 - constraints from spec/rubric/user intent;
@@ -340,6 +381,6 @@ use the data layer. M5 is mostly about subagent dispatch and reminder mechanics.
 - central backend or database;
 - multi-user collaboration;
 - automatic course registration or enrollment changes;
-- generic multi-school support in this repo;
+- hosted multi-account or multi-instance Canvas management;
 - direct OJ/external-site submission without explicit user approval and a
   separate safety review.

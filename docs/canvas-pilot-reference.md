@@ -1,7 +1,7 @@
 # Canvas Pilot 项目设计发现与 AutoStudy 开发建议
 
 > 基于 canvas_copilot（下称 Canvas Pilot）项目的深度调查，提炼出对 AutoStudy 有参考价值的设计思想。
-> Canvas Pilot 是一个面向通用 Canvas 学校的作业自动化框架，定位与 AutoStudy 不同（通用 turnkey 产品 vs HKUST(GZ) 专用 skill），但在工程设计和架构思路上有不少值得借鉴的地方。
+> Canvas Pilot 是一个面向通用 Canvas 学校的作业自动化框架，定位与 AutoStudy 不同（通用 turnkey 产品 vs 本地 Canvas LMS assistant skill，当前已在 HKUST(GZ) 验证），但在工程设计和架构思路上有不少值得借鉴的地方。
 > 本文不建议照搬其架构，而是提炼思想、结合 AutoStudy 的 5 模块愿景和现有 ROADMAP 讨论后续开发方向。
 
 ---
@@ -40,7 +40,7 @@ Canvas Pilot 有一个叫 **canvas-generic** 的核心编排器。它的设计�
 
 #### 对 AutoStudy 的启发
 
-AutoStudy MVP 时的 `assignment-recon` 主要看 `assignment.json.description`
+AutoStudy MVP 时的早期作业侦查主要看 `assignment.json.description`
 里的附件链接，然后下载附件、提取文本。对于"作业要求都写在附件里"的
 场景，这能跑通 demo，但不够稳定。
 
@@ -66,13 +66,26 @@ AutoStudy MVP 时的 `assignment-recon` 主要看 `assignment.json.description`
 
 **AutoStudy skill 侧**（当前批准方向）：
 
-- `assignment-recon.md` 正式采用 agent-led Canvas Generic Stage 1-5。
+- `background-recon.md` 正式承接 agent-led Canvas Generic Stage 1-5 和
+  clean-start recon briefing/source confirmation。
 - 不保留脚本化 spec 生成路径；原子 CLI 只提供来源读取能力，主 spec 判断、`spec.md`、`review_a.json` 和 output mode 必须由 agent 逐源阅读后写入。
 - `spec.md` 是标准化侦查报告，不是 source dump。
 - `problem.md` 只是旧工具兼容层，长期会继续缩薄。
-- `do-homework [B]` 必须向用户汇报侦查结果并运行 alignment loop，即使 `review_a.json.verdict == "proceed"`。简单作业少问几轮，开放性作业持续追问，直到 Main Agent 能不靠脑补开始执行。
-- `do-homework [B]` 的多轮过程写入 `investigation/user_notes.md`；只有当 Main Agent 判断没有必须继续问的问题时，才写 `investigation/alignment_brief.md` 并请求用户确认。
-- `do-homework [C]` 在确认后的 `alignment_brief.md` 基础上完成 `pipeline_design.md`，然后 `task-orchestrator` 按这个文件执行。
+- `do-homework.md` 现在是 public router / preflight / first-stage route
+  selection；clean start 只进入 `background-recon.md`，retained draft /
+  feedback / repair / continue 只进入 `existing-work-recon.md`。两个
+  first-stage 文件完成终端侦查产物后，才通过 tail handoff reveal
+  `alignment-planning.md`。
+- `background-recon.md [A5]` 必须向用户汇报首次完整侦查结果并确认 source
+  understanding，即使 `review_a.json.verdict == "proceed"`。
+- `alignment-planning.md [B]` 是 alignment-only：它假设首次侦查 briefing
+  已确认，只问避免脑补所需的最小用户意图问题，不重复 full source-category
+  evidence map。简单作业少问几轮，开放性作业持续追问，直到 Main Agent 能不靠脑补开始执行。
+- `alignment-planning.md [B]` 的多轮过程写入
+  `investigation/user_notes.md`；只有当 Main Agent 判断没有必须继续问的问题时，才写 `investigation/alignment_brief.md` 或 `repair_plan.md` 并请求用户确认。
+- `alignment-planning.md [C]` 在确认后的终端协议基础上完成
+  `pipeline_design.md` 或 `repair_pipeline_design.md`，然后
+  `task-orchestrator` 按这个文件执行。
 
 #### 真实例子：DSAA2011 和 UCUG1505
 
@@ -206,9 +219,9 @@ lab    → write_code → run_tests → write_essay → render_pdf
 列表启动。当前方向是：
 
 ```text
-spec.md + rubric.md + references/ + confirmed alignment_brief.md
-  -> do-homework [C] writes pipeline_design.md
-  -> task-orchestrator executes pipeline_design.md
+spec.md + rubric.md + references/ + confirmed terminal agreement
+  -> alignment-planning.md [C] writes the execution plan
+  -> task-orchestrator executes pipeline_design.md or repair_pipeline_design.md
   -> tools read the workbench and write draft/ + verification artifacts
 ```
 
@@ -269,7 +282,7 @@ Canvas Pilot 用几个 JSON 文件来记录运行状态，让 agent 能跨 sessi
 当前 AutoStudy 没有结构化的运行状态：
 
 - `sync-status` 每次都是全量同步，没有"已处理"概念
-- `do-homework` 的中间产物（`spec.md`、`pipeline_design.md`、各种 draft）存在 `data/homework/` 下，但没有一个统一的"这个作业做到哪了"的状态记录
+- homework workbench 的阶段产物（`spec.md`、`pipeline_design.md`、各种 draft）存在 `data/homework/` 下，但没有一个统一的"这个作业做到哪了"的状态记录
 - 跨 session 恢复靠 `agent-progress.md` 的自然语言交接日志，agent 需要读完整个文件才能推断状态
 
 这不止影响 do-homework，更影响 AutoStudy.pdf 里的模块 2（Proactive Task Reminder）。要实现"DDL 提醒、优先级排序、进度追踪"，前提是有结构化的状态记录——否则 agent 无法判断"哪些作业已经做了、哪些还没开始、哪些快到期了"。
@@ -509,7 +522,7 @@ Hook 的实现很简单：在 `.claude/settings.json` 的 `hooks` 字段下配�
 AutoStudy 当前的 MVP（M3）已经验证了核心作业辅助能力。从 Canvas Pilot 的调查中，最值得吸收的不是代码或架构，而是四个设计思想：
 
 1. **深度侦查再动手** — 不只看附件，从 Canvas 的多个信息源完整获取作业 spec；`spec.md` 是标准化判断报告，不是 raw dump。
-2. **用 `pipeline_design.md` 现场设计执行** — 不从 `task_profile.yaml` 或固定 scenario chain 启动，而是让 do-homework 在用户确认 `alignment_brief.md` 后写出单作业计划，orchestrator 执行它。
+2. **用 `pipeline_design.md` 现场设计执行** — 不从 `task_profile.yaml` 或固定 scenario chain 启动，而是让 `alignment-planning.md [C]` 在用户确认 `alignment_brief.md` 后写出单作业计划，orchestrator 执行它。
 3. **结构化状态记录** — 用 `result.json` 记录每个作业的状态，让 agent 跨 session 恢复，支撑模块 2 的进度追踪。
 4. **关键路径代码强制** — 用 2-3 个 hooks 把最重要的安全规则从 prose 变成代码强制执行。
 
@@ -528,8 +541,8 @@ Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3
 | 2 | find-rubric | 4 层搜索 → `investigation/rubric.md` | ✅ 已验证 |  |
 | 3 | locate-inputs | 下载文件 → `references/` + `unreachable.txt` | ✅ 已验证 |  |
 | 4 | Sub-agent A: review investigation | 完整性审查 → `review_a.json` | ⚠️ 已做但仅 cold self-review | 后续升级为独立 sub-agent |
-| 5 | classify-output | 判断输出模式 → 写 `pipeline_design.md` 第一行 | ✅ 已验证 | AutoStudy 后续将输出模式 skills 化 |
-| **6** | **design-pipeline** | 根据输出模式设计管线阶段 | ⚠️ 在 do-homework [C] 完成 | AutoStudy 的管线设计强调动态 skills 组合，不绑固定 pipeline |
+| 5 | classify-output | 判断输出模式 → 写入 `recon_summary.md` / `explore_context.md` | ✅ 已验证 | AutoStudy 后续将输出模式 skills 化 |
+| **6** | **design-pipeline** | 根据输出模式设计管线阶段 | ⚠️ 在 `alignment-planning.md [C]` 完成 | AutoStudy 的管线设计强调动态 skills 组合，不绑固定 pipeline |
 | **7** | **generate** | 执行管线，产出 `draft/` | ❌ 待开发 | AutoStudy 强调多轮迭代：单次做不好可以继续打磨 |
 | **8** | **Sub-agent B: design verification checklist** | 从 rubric 设计可量化验证清单 | ❌ 待开发 | 后续加入 |
 | **9** | **verify + retry loop** | 运行验证，失败则重回 Stage 7（最多 3 次） | ❌ 待开发 | AutoStudy 的迭代不限于 3 次，支持跨轮次持续优化 |
@@ -551,7 +564,7 @@ Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3
 
 - **固定 pipeline 模板**：Copilot 为每种输出模式定义了固定阶段序列。AutoStudy 选择更灵活的动态组合，因为 Claude Code 的 agent 能力足够强，不需要预先枚举所有可能。
 - **单次 batch execute**：Copilot 的 `canvas-execute` 一次性分发所有审批项。AutoStudy 的 `do-homework` 只处理用户选择的单项，保留助手式的节奏控制。
-- **Humanizer（硬编码强制）**：Copilot 在 essay/doc_prose 模式中硬编码调用 humanizer。AutoStudy 保留 humanizer 作为可选后处理 skill（用户在 [B] 要求或 pipeline_design.md 声明时才调用），不作为默认行为。
+- **Humanizer（硬编码强制）**：Copilot 在 essay/doc_prose 模式中硬编码调用 humanizer。AutoStudy 保留 humanizer 作为可选后处理 skill（用户在 `alignment-planning.md [B]` 要求或 execution plan 声明时才调用），不作为默认行为。
 - **Stop hook 强锁**：Copilot 用 Stop hook 阻止 session 在未完成所有作业时结束。AutoStudy 是助手，不应该阻止用户随时离开。
 - **重 overlay 体系**：Copilot 每种 skill 配套 100-300 行 overlay。AutoStudy 用三层偏好体系替代（渐进实现），不需要用户手动编写 overlay。
 
@@ -590,7 +603,8 @@ Canvas Copilot 的 `canvas-generic` 共有 **11 个 Stage（0-11）**，包含 3
 
 4. **Overlay 加载**：每个 skill 第一步读 overlay 获取课程级知识。
    AutoStudy 的实现：三层偏好系统（当前只实现了任务级，通过
-   `alignment_brief.md` 和 `pipeline_design.md` stage 声明传递）。
+   `alignment_brief.md` / `repair_plan.md` 和 execution plan stage 声明传递）。
 
 5. **Stage-by-stage 校准**：首次运行逐阶段审查。AutoStudy 的实现：
-   do-homework [B] 的 alignment brief + pipeline_design.md 的 review 声明。
+   `alignment-planning.md [B]` 的 terminal agreement + execution plan
+   review 声明。

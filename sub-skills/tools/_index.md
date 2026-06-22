@@ -10,23 +10,29 @@ available tools and their contracts. Each tool's full guidance lives in
 `sub-skills/tools/<name>.md`.
 
 **For pipeline design guidance** (common pipeline shapes, tool chaining),
-see `sub-skills/tasks/do-homework.md [C]`.
+see `sub-skills/tasks/alignment-planning.md [C]`.
 
 ## Tool registry
 
 | Tool | File | One-line capability | Inputs | Outputs |
 |---|---|---|---|---|
-| **assignment-recon** | [assignment-recon.md](./assignment-recon.md) | Canvas Generic Stage 1-5 reconnaissance → spec.md + rubric + references | course_id, assignment_id, work_dir | spec.md, investigation/, references/, problem.md |
 | **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | Markdown → PDF (Chinese, LaTeX math, code, callouts) | markdown file, options | PDF file |
-| **writing-helper** | [writing-helper.md](./writing-helper.md) | Structured academic prose (essay/report/reflection) | spec.md, pipeline_design.md, rubric, references | draft.md |
+| **writing-helper** | [writing-helper.md](./writing-helper.md) | Structured academic prose (essay/report/reflection) | spec.md, execution plan, rubric, references | draft.md |
 | **paper-search** | [paper-search.md](./paper-search.md) | Literature search via arxiv → bib + json | keywords, max_results | references.bib, references.json |
 | **figure-maker** | [figure-maker.md](./figure-maker.md) | Charts/plots via matplotlib | figure_spec dict | fig_N.pdf/png |
-| **code-writer** | [code-writer.md](./code-writer.md) | Source code from spec (Python/C++/etc.) | spec.md, pipeline_design.md, references | src/*.py + tests |
+| **code-writer** | [code-writer.md](./code-writer.md) | Source code from spec (Python/C++/etc.) | spec.md, execution plan, references | src/*.py + tests |
 | **test-runner** | [test-runner.md](./test-runner.md) | pytest execution + report | work_dir/src/ | test_report.md/json |
-| **slide-maker** | [slide-maker.md](./slide-maker.md) | Presentation slides (guizang HTML or beamer) | spec.md, pipeline_design.md | slides.pdf |
+| **slide-maker** | [slide-maker.md](./slide-maker.md) | Presentation slides (guizang HTML or beamer) | spec.md, execution plan | slides.pdf |
 | **humanizer** | [humanizer.md](./humanizer.md) | Post-processing: reduce AI-detectable patterns | draft text | revised text |
 
-> Loading order: read this file first → read the matched tool's .md → if tool lists appendices, load relevant appendix on demand.
+> Loading order: read this file first → read every matched top-level tool's .md
+> from the stage `tools` list → if a tool lists appendices, load relevant
+> appendix files on demand. For legacy single-tool stages, `tool` means
+> `tools: [tool]`.
+> `primary_tool` is the stage ownership/lead contract; `tools` is the complete
+> ordered list of top-level tool contracts the stage must preserve.
+> Retained-artifact reconnaissance is a routed task stage, not a tool registry
+> entry. Start from `sub-skills/tasks/do-homework.md`.
 
 ## Task registry
 
@@ -39,7 +45,6 @@ see `sub-skills/tasks/do-homework.md [C]`.
 
 | Verb | Meaning |
 |---|---|
-| `assignment_recon` | Canvas reconnaissance → spec.md |
 | `render_pdf` | Markdown → PDF |
 | `render_slides` | Slides (HTML/PDF) |
 | `search_papers` | Literature search → bib |

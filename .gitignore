@@ -2,9 +2,11 @@
 .auth/
 .state/
 .claude/
+.serena/
 data/
 __pycache__/
 *.pyc
+.DS_Store
 
 # Reference checkouts (not part of AutoStudy)
 pku3b/

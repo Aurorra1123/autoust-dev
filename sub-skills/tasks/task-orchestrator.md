@@ -1,17 +1,17 @@
 ---
 name: task-orchestrator
-description: Execute an approved per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and a user-approved execution plan. Use after do-homework has produced and the user has approved pipeline_design.md.
+description: Execute an approved per-assignment pipeline from a workbench containing spec.md, explore_context.md, a terminal agreement, and a user-approved execution plan. Use after alignment-planning has produced and the user has approved pipeline_design.md or repair_pipeline_design.md.
 ---
 
 # task-orchestrator
 
 The core M3.5 execution coordination mechanism. This task is written for the
-Claude Code Main Agent. It runs only after `do-homework.md` has produced a
-pipeline and the user has approved it. It reads the current execution plan,
-creates bounded stage briefs, dispatches executor and reviewer subagents when a
-stage is delegated, executes simple `delegate: main-agent` stages inline only
-when the approved plan explicitly permits that mode, and aggregates evidence for
-final verification.
+Claude Code Main Agent. It runs only after `alignment-planning.md` has produced
+`pipeline_design.md` or `repair_pipeline_design.md` and the user has approved
+that plan. It reads the current execution plan, creates bounded stage briefs,
+dispatches executor and reviewer subagents when a stage is delegated, executes
+simple `delegate: main-agent` stages inline only when the approved plan
+explicitly permits that mode, and aggregates evidence for final verification.
 
 This task does **not** infer the assignment from raw Canvas fields and does
 **not** consume `task_profile.yaml`. The source of truth is:
@@ -22,11 +22,11 @@ work_dir/
 ├── spec.md
 ├── problem.md
 ├── references/
-│   └── *syllabus*        # readable syllabus evidence when fetched
 ├── investigation/
 │   ├── explore_context.md
 │   ├── explore_manifest.json
-│   ├── scout_results/    # optional receipts from pre-alignment explore scouts
+│   ├── _appendix/
+│   │   └── scout_receipts/    # optional receipts from non-source explore scouts
 │   ├── rubric.md
 │   ├── unreachable.txt
 │   ├── review_a.json
@@ -41,10 +41,12 @@ work_dir/
 
 `spec.md` is the standardized Canvas/source exploration report.
 `investigation/explore_context.md` is the shared exploration summary.
-`references/` contains readable source materials; raw Canvas snapshots stay
-under `canvas/`. If syllabus was fetched and used or judged for relevance,
-`references/` should include a readable syllabus extract/text export so stage
-briefs do not need to pass raw `canvas/syllabus.json` as hidden background.
+`references/` contains the normal downstream source interface; raw Canvas
+snapshots stay under `canvas/` as durable backing evidence. For Canvas-native
+bodies such as assignment, syllabus, front page, announcements, and pages,
+stage briefs should read preserved `references/canvas_native/**/source.json` /
+`source.txt` paths first. Raw `canvas/*.json` reads are fallback exceptions that
+must be named and justified when no preserved copy exists.
 The terminal agreement is usually `investigation/alignment_brief.md` for an
 initial assignment and may be `repair_plan.md` for a retained-artifact change.
 The execution plan is usually `pipeline_design.md` and may be
@@ -54,23 +56,22 @@ context, the terminal agreement, and the execution plan first.
 
 ## When To Invoke
 
-Only after `do-homework` has:
+Only after `alignment-planning.md` has:
 
-1. Resolved `course_id` and `assignment_id`.
-2. Built the workbench.
-3. Completed the explore stage and wrote `investigation/explore_context.md`, or
-   explicitly recorded that the task was tiny enough for inline exploration.
-4. Completed the alignment loop and confirmed a terminal agreement with the
+1. Received terminal first-stage artifacts from `background-recon.md` or
+   `existing-work-recon.md`.
+2. Completed the alignment loop and confirmed a terminal agreement with the
    user: `investigation/alignment_brief.md` for initial assignments or
    `repair_plan.md` for retained-artifact change requests.
-5. Written or updated the current execution plan from that agreement:
+3. Written or updated the current execution plan from that agreement:
    `pipeline_design.md` or compatibility `repair_pipeline_design.md`.
-6. Presented the execution plan to the user and recorded
+4. Presented the execution plan to the user and recorded
    `Pipeline Review Status.status: approved_for_orchestration` inside the
    current execution plan.
 
 End users do not call this as the first step. They start with `do-homework`;
-this task is the second step after pipeline review approval.
+this task is reached after first-stage recon, alignment planning, and pipeline
+review approval.
 
 ## Required Workbench
 
@@ -80,7 +81,6 @@ work_dir/
 ├── spec.md
 ├── problem.md
 ├── references/
-│   └── *syllabus*                  # readable syllabus evidence when fetched
 ├── investigation/
 │   ├── rubric.md
 │   ├── unreachable.txt
@@ -108,10 +108,11 @@ Before executing, check:
 - `investigation/explore_context.md` exists for non-trivial runs, or the Main
   Agent explicitly recorded that the task was tiny enough for inline
   exploration. When present, read it before generating stage briefs.
-- If `investigation/explore_manifest.json` names dispatched scout children,
-  their scout receipt paths exist under `investigation/scout_results/` or the
-  manifest-listed equivalent. The orchestrator does not rerun scouts, but later
-  trajectory review depends on this evidence.
+- If `investigation/explore_manifest.json` names dispatched non-source scout
+  children, their scout receipt paths exist under
+  `investigation/_appendix/scout_receipts/` or another manifest-listed appendix
+  path. The orchestrator does not rerun scouts, but later trajectory review
+  depends on this evidence.
 - `spec.md` exists and clearly states deliverables.
 - A terminal agreement exists and was confirmed by the user:
   `investigation/alignment_brief.md` for initial assignments, or `repair_plan.md`
@@ -136,9 +137,19 @@ Before executing, check:
 - `references/` contains required reachable materials, or
   `investigation/unreachable.txt` explains missing resources.
 - If `investigation/review_a.json` says syllabus was available and checked,
-  `references/` contains a readable syllabus extract/text export, or
-  `investigation/unreachable.txt` / process concerns explains why it could not
-  be written.
+  `spec.md`, `investigation/rubric.md`, `review_a.json`, or
+  `references/REFERENCE_INDEX.md` cites preserved
+  `references/canvas_native/**/source.json` / `source.txt` pointers, or records
+  why raw `canvas/syllabus.json` fallback was required.
+- If `investigation/rubric.md`, `spec.md`, or `review_a.json` uses Canvas-native
+  assignment/page/syllabus body details, later stage briefs must explicitly
+  allow the relevant preserved source or `canvas/*.json` reads; summary-only
+  helper output must return to `do-homework` for recovery.
+- If a stage depends on assignment source details, include the relevant
+  preserved reference paths from `references/REFERENCE_INDEX.md` in the stage
+  brief: `references/source_docs/**`, `references/slides/**`,
+  `references/external/**`, or `references/canvas_native/**/source.json`. Do not
+  rely on `source_findings.compact.md` or old source-scout appendix files.
 
 If these checks fail, return to `do-homework` with `status: failed`. Do not run
 tools against an ungrounded assignment.
@@ -148,13 +159,16 @@ tools against an ungrounded assignment.
 `pipeline_design.md` follows the stage-based format defined in
 `docs/skills-architecture-spec.md §5`. It must include
 `## Pipeline Review Status` with `approved_for_orchestration` before this task
-runs. Each stage declares `id`, `tool`, `delegate`, `reads`, `writes`,
-`review.spec_compliance`, `review.quality`, `max_retries`, `quality_criteria`,
-and `human_blockers`. Stages may also declare `lang`, `type`, `post-process`,
-`fallback`, `min_quality`, and `required_spec_constraints`.
+runs. Each stage declares `id`, `primary_tool`, `tools`, `tool_roles`,
+`delegate`, `reads`, `writes`, `review.spec_compliance`, `review.quality`,
+`max_retries`, `quality_criteria`, and `human_blockers`. Stages may also declare
+`lang`, `type`, `post-process`, `fallback`, `min_quality`, and
+`required_spec_constraints`. For legacy plans, `tool: <path>` is shorthand for
+`primary_tool: <path>` plus `tools: [<path>]`; normalize it before generating
+stage briefs.
 
-The format is written by `do-homework [C]` — the orchestrator reads and executes it.
-Do not redesign the format here.
+The format is written by `alignment-planning.md [C]` — the
+orchestrator reads and executes it. Do not redesign the format here.
 
 ## Execution Flow
 
@@ -185,7 +199,9 @@ investigation/review_a.json
 investigation/user_notes.md      # if present
 investigation/user_scope.md      # if present
 problem.md                       # compatibility only
-references/*syllabus*            # if syllabus was fetched and relevant or judged
+canvas/assignment.json           # if assignment shell details matter
+canvas/syllabus.json             # if syllabus details matter
+canvas/page-*.json               # if Canvas page bodies matter
 SKILLS_DIR/_index.md          # path discovered above
 ```
 
@@ -194,11 +210,14 @@ metadata only.
 
 ### Step 2 - Map Stages To Tools
 
-Use the current execution plan's "Tool Mapping" plus `sub-skills/tools/_index.md`.
+Use the current execution plan's tool declarations plus
+`sub-skills/tools/_index.md`. A stage has one `primary_tool` for ownership and
+an ordered `tools` list for every top-level tool skill the executor must read and
+apply. Do not drop supporting tools when generating briefs.
 
 Common mappings:
 
-| Stage kind | Tool |
+| Stage kind | Common tool(s) |
 |---|---|
 | literature search / references | `paper-search.md` |
 | prose / report / reflection | `writing-helper.md` |
@@ -208,7 +227,19 @@ Common mappings:
 | tests / execution report | `test-runner.md` |
 | slides / deck | `slide-maker.md` |
 
-If a mapped tool does not exist, stop and return:
+Planning rule: split independent artifact boundaries into separate stages, but
+combine multiple tools in one stage when one executor must produce one coherent
+artifact or one stage receipt from multiple capabilities. Examples:
+
+- code stage that must both write and run a notebook:
+  `primary_tool: code-writer.md`, `tools: [code-writer.md, test-runner.md]`;
+- report stage that must draft and humanize prose:
+  `primary_tool: writing-helper.md`, `tools: [writing-helper.md, humanizer.md]`;
+- figure-heavy report stage that must create figures before embedding them:
+  include both `figure-maker.md` and `writing-helper.md`, unless figures are a
+  separate artifact stage with its own receipt.
+
+If any declared tool does not exist, stop and return:
 
 ```yaml
 status: failed
@@ -227,6 +258,13 @@ Before generating any stage brief, build a `hard_requirement_inventory` from
 constraints, and rubric-critical conditions. Then diff it against
 `required_spec_constraints` in the execution plan.
 Use this exact gate: diff it against `required_spec_constraints`.
+When a requirement came from source context, follow
+`references/REFERENCE_INDEX.md` back to the preserved reference path before
+adding it to the inventory. Reference collector notes are routing hints, not
+source evidence. Stage briefs must carry the same preserved source paths forward,
+such as `references/source_docs/**`, `references/slides/**`,
+`references/external/**`, or `references/canvas_native/**/source.json`. Raw
+`canvas/*.json` fallback reads must be explicitly justified.
 
 If a hard requirement appears in `hard_requirement_inventory` but is absent or
 weakened in `required_spec_constraints`, stop and record `FAIL | spec
@@ -252,22 +290,26 @@ Each executor brief must include:
 - concrete one-stage task;
 - required reads;
 - allowed reads;
+- required/allowed reads must include the preserved reference paths for
+  constraints indexed by `reference_collector`; raw `canvas/*.json` fallback
+  reads must be named and justified when no preserved copy exists;
 - forbidden reads;
 - forbidden writes, including `stage_reviews/child_dispatch_ledger.json`,
   other stages' receipts, trajectory audit files, and archive evidence unless
   explicitly declared;
 - declared writes;
-- selected tool skill paths;
+- selected tool skill paths, including `primary_tool`, every item in `tools`,
+  and each `tool_roles` entry;
 - relevant user intent, confirmed decisions, delegated decisions, and
   non-negotiables from the terminal agreement;
 - applicable `required_spec_constraints`, including source, requirement,
   applies_to, required_evidence, status, blocker type when blocked, and
   `fallback_allowed_for_final`;
   Required fields: source, requirement, applies_to, required_evidence, status.
-- applicable tool contracts copied from the selected tool skill, not merely the
-  tool filename. Include `allowed_renderer_paths`, the selected `renderer_path`
-  when known, required source artifacts, required verification evidence, and
-  fallback limits.
+- applicable tool contracts copied from every selected top-level tool skill, not
+  merely the filenames. Include `allowed_renderer_paths`, the selected
+  `renderer_path` when known, required source artifacts, required verification
+  evidence, and fallback limits.
 - measurable quality criteria;
 - review criteria;
 - context from previous stages;
@@ -305,10 +347,10 @@ Each executor brief must include:
 
 Tool Contract Preservation Gate:
 
-- A stage brief that names a tool skill must preserve that tool's non-negotiable
-  output contract. The orchestrator may specialize the contract for the current
-  assignment, but it must not drop required source artifacts, renderer choices,
-  validation commands, or fallback limits.
+- A stage brief that names one or more tool skills must preserve every named
+  tool's non-negotiable output contract. The orchestrator may specialize the
+  contracts for the current assignment, but it must not drop required source
+  artifacts, renderer choices, validation commands, or fallback limits.
 - For slides, copy the slide-maker renderer contract into the brief:
   `allowed_renderer_paths: [guizang, beamer]`, the selected `renderer_path` if
   chosen by the plan, required `render_command_or_script`, source artifact
@@ -694,9 +736,12 @@ Generic examples:
    brief, executor, reviewer, or verification tool runs.
 2. **Do not invent missing source material.** If `spec.md` or `references/` is
    incomplete, return to `do-homework`.
-3. **Do not pass raw syllabus as hidden background.** Use distilled constraints
-   from `spec.md` / `rubric.md` / `review_a.json` and readable
-   `references/*syllabus*` evidence when syllabus matters.
+3. **Do not pass Canvas source bodies as hidden background.** If assignment,
+   syllabus, front-page, announcement, or page body details matter, list the
+   relevant preserved `references/canvas_native/**/source.json` paths in the
+   stage brief's allowed reads. Raw `canvas/*.json` fallback reads must be named
+   and justified when no preserved copy exists. Summary-only output is not
+   enough.
 4. **Do not use `assignment.description` as the prompt.**
 5. **Do not silently alter deliverables.** The approved execution plan controls
    the target artifacts.
@@ -710,7 +755,8 @@ Generic examples:
 ## Pitfalls
 
 1. **Don't make this a free-form classifier again.** Classification happens in
-   assignment-recon Stage 5 and is finalized by `do-homework [C]`.
+   clean-start background recon and is finalized by
+   `alignment-planning.md [C]`.
 2. **Don't resurrect `task_profile.yaml`.** It was a transitional idea; the
    workbench plus current execution plan is the contract.
 3. **Don't bake course-specific logic here.** Course quirks belong in `spec.md`,

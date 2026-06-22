@@ -2,6 +2,84 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-16 - Homework staged recon routing
+
+Refined the homework router split into progressive-disclosure stages:
+`do-homework.md` now routes only to `background-recon.md` for clean starts or
+`existing-work-recon.md` for retained/repair/continue starts. The shared
+`alignment-planning.md` stage is revealed only by the first-stage tail handoff,
+so runtime agents do not preload alignment before source or existing-work recon
+is complete.
+
+## 2026-06-15 — reference_collector announcement boundary tightened
+
+Tightened the homework reconnaissance contract after a UCUG1808 replay showed
+`references/canvas_native/announcements/source.json` mirroring the full
+`canvas/announcements.json` collection. The corrected contract is: Stage 1 keeps
+the complete raw announcement snapshot; Stage 2 preserves only screened
+task-relevant announcement objects under
+`references/canvas_native/announcement-<id-or-slug>/source.json`, with
+`REFERENCE_INDEX.md` origins such as `canvas/announcements.json#id=...`.
+
+Also clarified that `reference_collector_used: true` must be backed by a real
+`stage_reviews/child_dispatch_ledger.json` row, not a handwritten alias or an
+empty ledger. Policy tests now cover both boundaries.
+
+## 2026-06-15 — canvascli announcement contract synced into AutoStudy
+
+Synchronized AutoStudy application-layer docs with fixed `canvascli` HEAD
+`fd7a9a8`, whose history includes `21a39a7` for the announcements default
+date-scope and concise CLI error behavior plus follow-up download/error/docs
+commits. AutoStudy now documents the CLI boundary instead of copying Canvas
+REST workarounds: announcements use `--course-id`, optional `--start-date` /
+`--end-date`, latest-active-term complete snapshots from term dates first,
+course dates second, Canvas default-window fallback only when both are
+incomplete, and concise stderr / exit-code handling.
+
+Verification installed `/Users/deepwisdom/Desktop/project/canvascli` into the
+AutoStudy venv as editable. `.venv/bin/canvascli announcements --help` showed
+`--course-id`, `--start-date`, and `--end-date`; live Canvas
+`.venv/bin/canvascli announcements --course-id 2799` returned 23 items; forbidden
+course 2177 exited 2 with empty stdout, concise `403 Forbidden` stderr, and no
+Traceback. AutoStudy checks passed:
+`.venv/bin/python -m pytest tests/test_source_body_audit_policy.py tests/test_pipeline_ready_scan_flow.py -q`
+reported 13 passed, and `git diff --check` passed.
+
+## 2026-06-14 — Generic Canvas instance support implemented
+
+Implemented the first generic Canvas instance slice across `canvascli` and
+AutoStudy. `canvascli init --canvas-url` now stores a web/API base pair and
+keeps instance changes atomic on login failure; AutoStudy setup/API docs ask
+for school/domain/Canvas URL, plan handoff preserves Canvas `html_url`, and
+product positioning is generic Canvas LMS with HKUST(GZ) validation evidence.
+Verification passed for both repos' unit/compile/help/json/diff checks, plus a
+real browser login using a temporary `CANVASCLI_CONFIG_DIR` and HKUST(GZ) Canvas
+web/API URL forms.
+
+## 2026-06-13 — Pipeline-ready handoff and developer-entry boundary
+
+Tightened homework reconnaissance docs after DSAA2011 runtime review: fetched
+syllabus now must have raw JSON under `canvas/` plus a readable extract/text
+export under `references/` when available, so downstream children and humans do
+not need to parse Canvas JSON or rely only on compressed relevance notes.
+Recorded `pipeline_ready` as the review-before-orchestration result state in
+scan-plan tooling and moved developer-only guidance out of root `AGENTS.md`
+into `docs/DEVELOPMENT.md`, leaving root `AGENTS.md` ignored for local overrides
+so user-mode runtime agents do not load developer instructions.
+
+## 2026-06-11 — Fresh-user clone target protocol
+
+Fixed a fresh-user onboarding gap exposed by testing from an empty Codex project
+folder: the prior quick start treated `~/workspace/autoust-dev` as the visible
+example, which let an agent ignore the already-open empty workspace. `skill.md`,
+README variants, and `PITFALLS.md` now require current-empty-folder clone first,
+ask-before-clone when the target is unclear or non-empty, and treat
+`~/workspace/autoust-dev` as an explicit example only. Next: rerun the public
+fresh-start prompt from a new empty folder to confirm the agent chooses `git
+clone ... .` or asks before choosing a different path. Changes are left
+uncommitted for user review because this session requested bug analysis and a
+targeted docs fix, not a commit.
+
 ## 2026-06-11 — Homework reconnaissance docs hardened
 
 Cleaned runtime skill docs so homework reconnaissance no longer uses real
@@ -25,7 +103,7 @@ not a development commit.
 
 ## 2026-06-11 — README quick-start path cleanup
 
-Updated `skill.md` and all README variants for beginner users: clarified that AutoStudy runs from a dedicated clone of this repository, not from a copied standalone `skill.md` or a machine-specific absolute path. Quick starts now recommend cloning to a local folder such as `~/workspace/autoust-dev`, entering that folder, and asking the agent to read the repo-local `skill.md`. Verification: stale path/prompt scan passes and diff whitespace checks pass.
+Updated `skill.md` and all README variants for beginner users: clarified that AutoStudy runs from a dedicated clone of this repository, not from a copied standalone `skill.md` or a machine-specific absolute path. At that point, quick starts still used `~/workspace/autoust-dev` as the visible example; the follow-up entry above supersedes that with the current-empty-folder-first protocol. Verification: stale path/prompt scan passes and diff whitespace checks pass.
 
 ## 2026-06-10 — Fresh-user sync-status to DSAA2011 validation
 
@@ -74,10 +152,10 @@ evidence under `data/runs/<date>/raw/`.
 
 Removed the obsolete standalone reconnaissance script and scrubbed active docs
 of its path so runtime agents have only one homework reconnaissance contract:
-agent-led `assignment-recon.md` over atomic `canvascli` sources. Historical
+agent-led assignment reconnaissance over atomic `canvascli` sources. Historical
 progress wording was generalized where needed to avoid search-result confusion.
 Renamed the former homework reconnaissance tool doc to
-`sub-skills/tools/assignment-recon.md` and updated tool registry, task docs,
+the assignment reconnaissance tool doc and updated tool registry, task docs,
 runtime docs, README variants, and backlog references so the name matches its
 current role: assignment reconnaissance rather than problem extraction.
 
@@ -989,7 +1067,7 @@ Verification used existing real recon workbenches copied to `/tmp/autoust-result
 
 ## 2026-06-02 — Transitional recon helper + post-recon user supplement gate
 
-Turned the Copilot-style reconnaissance template into a transitional helper for early validation. This direction was later superseded by the agent-led `assignment-recon.md` workflow, and the helper has since been removed so runtime agents do not confuse it with the production path. `do-homework.md [B]` explicitly performs a mandatory reconnaissance summary + user supplement checkpoint even when `review_a.json.verdict == "proceed"`; user supplements now flow through `investigation/user_notes.md` and the confirmed alignment contract.
+Turned the Copilot-style reconnaissance template into a transitional helper for early validation. This direction was later superseded by the agent-led assignment reconnaissance workflow, and the helper has since been removed so runtime agents do not confuse it with the production path. `do-homework.md [B]` explicitly performs a mandatory reconnaissance summary + user supplement checkpoint even when `review_a.json.verdict == "proceed"`; user supplements now flow through `investigation/user_notes.md` and the confirmed alignment contract.
 
 Real Canvas verification used `/tmp/autoust-recon-script-verify/`: DSAA2011 Project produced `spec.md` 66,322 B / `problem.md` 155,415 B, inspected 4 modules and 69 module items, confirmed assignment description 0 B, downloaded `DSAA2011-26sp-project_announce-L01.pdf` plus nearby module PDFs, and `review_a` returned `proceed`. UCUG1505 FINAL project produced `spec.md` 22,527 B / `problem.md` 14,274 B, inspected 14 modules and 64 module items, recorded the Final project Google Doc plus Week 9 slides, skipped front-page GIF media as inspected-not-downloaded, and `review_a` returned `proceed`. A canvascli retry bug surfaced during `whoami` (`requests.SSLError` should be `requests.exceptions.SSLError`) and was fixed in the canvascli repo.
 
@@ -1003,7 +1081,7 @@ Reviewed Canvas Copilot's real DSAA2011 Project run at `/Users/deepwisdom/Deskto
 
 The data-layer direction is now explicitly Copilot-style atomic commands, not `assignment-context`: `assignment`, `rubric`, `front-page`, `syllabus`, `modules`, `module-items`, `page`, `file`, and `assignment-files`. DSAA2011 Project and UCUG1505 FINAL project are the two required real verification cases for the upcoming AutoStudy integration. Backlog now has M3.5 items for atomic context, workdir structure, deep recon, and result.json.
 
-Implemented the AutoStudy documentation side of that migration: `canvascli-api.md`, `assignment-recon.md`, `do-homework.md`, `task-orchestrator.md`, `_index.md`, `skill.md`, and `PITFALLS.md` now describe the spec-first workbench. Verification used the script template copied from `assignment-recon.md` into `/tmp/autoust-recon-verify/assignment_recon_probe.py` and ran real Canvas cases: DSAA2011 Project produced a 45,709 B `spec.md`, inspected module 12955, and downloaded the project announcement PDF; UCUG1505 FINAL project produced a 19,771 B `spec.md`, found the Google Doc spec in both assignment description and Week 4 module item, and listed Week 9 slides as project context. One design correction from verification: inspect every module item, but only download likely assignment-context files instead of every course file.
+Implemented the AutoStudy documentation side of that migration: `canvascli-api.md`, the assignment reconnaissance doc, `do-homework.md`, `task-orchestrator.md`, `_index.md`, `skill.md`, and `PITFALLS.md` now describe the spec-first workbench. Verification used the copied probe template under `/tmp/autoust-recon-verify/assignment_recon_probe.py` and ran real Canvas cases: DSAA2011 Project produced a 45,709 B `spec.md`, inspected module 12955, and downloaded the project announcement PDF; UCUG1505 FINAL project produced a 19,771 B `spec.md`, found the Google Doc spec in both assignment description and Week 4 module item, and listed Week 9 slides as project context. One design correction from verification: inspect every module item, but only download likely assignment-context files instead of every course file.
 
 ## 2026-06-01 — Clarified Canvas login/session mental model
 

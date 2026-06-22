@@ -10,14 +10,14 @@
 
 Short version:
 
-> AutoStudy is a local HKUST(GZ) Canvas study assistant for agentic coding
-> environments. It scans deadlines, investigates assignments, asks for your
-> intent, drafts local artifacts, and keeps verification evidence before you
-> decide what to submit.
+> AutoStudy is a local Canvas LMS study assistant for agentic coding
+> environments, validated on HKUST(GZ)'s Canvas instance. It scans deadlines,
+> investigates assignments, asks for your intent, drafts local artifacts, and
+> keeps verification evidence before you decide what to submit.
 
 One-sentence Chinese version:
 
-> AutoStudy 是跑在 Claude Code / Codex 里的 HKUST(GZ) 学业助手：同步 Canvas、规划 ddl、侦查作业要求、生成可审核草稿、整理课件和笔记，全程保留用户确认点。
+> AutoStudy 是跑在 Claude Code / Codex 里的本地 Canvas LMS 学业助手，已在 HKUST(GZ) 的 Canvas 实例上验证：同步 Canvas、规划 ddl、侦查作业要求、生成可审核草稿、整理课件和笔记，全程保留用户确认点。
 
 What makes it different:
 
@@ -187,15 +187,15 @@ This makes the product feel honest and safer.
 
 Primary:
 
-- HKUST(GZ) undergraduates using Canvas.
+- Students using Canvas LMS who want a local, source-grounded agent workflow.
 - Students who already use AI tools but want deeper file-aware workflows.
 - Students overloaded by deadlines, course PDFs, reports, projects, and group
   deliverables.
 
 Secondary:
 
-- HKUST(GZ) graduate students with course or TA workloads.
-- Students at other Canvas-based schools who may adapt the data layer.
+- HKUST(GZ) students, where the current workflow has real validation evidence.
+- Students at other Canvas-based schools using one configured Canvas instance.
 - Agent / skill ecosystem users interested in local workflow design.
 
 ---
@@ -265,7 +265,7 @@ End line:
 - No login.
 - No review needed.
 - Compliance with every course policy by default.
-- Generic support for all Canvas schools without adaptation.
+- Guaranteed compatibility with every Canvas school or SSO configuration.
 
 ---
 

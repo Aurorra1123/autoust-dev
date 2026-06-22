@@ -150,6 +150,7 @@ Selector actions:
 | `recommended_action` | Behavior |
 |---|---|
 | `recon` | Start `do-homework.md` with the selected identifiers. |
+| `review_or_execute` | Read `existing_result_path` / `suggested_work_dir` and help the user review or approve the existing `pipeline_ready` pipeline before handing off to `task-orchestrator.md`. Do not rerun reconnaissance by default. |
 | `review_or_submit` | Read `existing_result_path` / `suggested_work_dir` and help the user review or submit the existing draft instead of re-running reconnaissance by default. |
 | `continue` | Inspect the previous `result.json` error or revision-needed state and ask the user whether to retry. |
 | `manual_review` | Tell the user the item likely needs manual Canvas interaction; do not treat it like a normal draftable homework item. |
