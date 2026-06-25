@@ -199,7 +199,7 @@ data/homework/<COURSE>/<HWID>/
 MVP 阶段 `task-orchestrator.md` 的编排是**固定流水线**模式：
 
 ```
-paper  → search_papers → make_figure → write_essay → render_pdf
+paper  → search_literature → make_figure → write_essay → render_pdf
 slides → make_figure → render_slides
 math   → write_essay → render_pdf
 lab    → write_code → run_tests → write_essay → render_pdf
@@ -231,7 +231,7 @@ spec.md + rubric.md + references/ + confirmed terminal agreement
 
 具体来说：
 
-**保持现有 tools 不变**——paper-search、figure-maker、writing-helper、
+**保持现有 tools 不变**——literature-search、figure-maker、writing-helper、
 pdf-renderer、code-writer、test-runner、slide-maker 各自仍然是独立的 skill
 文件，各自定义清楚输入输出。
 

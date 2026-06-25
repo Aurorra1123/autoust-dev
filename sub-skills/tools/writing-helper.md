@@ -23,7 +23,9 @@ has explicit format requirements, follow the spec.
   - `problem.md` (compatibility; read after spec.md)
   - `investigation/user_notes.md` (optional)
   - `investigation/user_scope.md` (optional)
-  - `references.bib` (optional, from paper-search)
+  - `literature/references.bib` (optional, from literature-search)
+  - `literature/literature_search_report.md` (optional, from literature-search)
+  - `references.bib` (optional compatibility copy)
   - `draft/figures/*.{pdf,png}` or `figures/*.{pdf,png}` (optional, from code
     or figure-maker stages)
   - `draft/*.{pdf,png}` (compatibility scan only; prefer organized figures)
@@ -57,11 +59,16 @@ Take from spec/pipeline_design/rubric:
 - `citation_style: IEEE` → in-text `[1]`, end `## References`
 - `citation_style: none` → no citations; don't fake them
 
-### Use references.bib if available
+### Use literature references if available
 
-If `references.bib` exists, pull citations from it. Don't invent references.
-If you need a reference not in the bib, write `[CITATION NEEDED: <description>]`
-inline — surfaced at do-homework [E].
+Prefer `literature/references.bib` and
+`literature/literature_search_report.md` when they exist. Use the report's
+access-depth notes to avoid treating metadata or abstracts as full-text
+evidence. Root-level `references.bib` is a compatibility fallback.
+
+If a usable BibTeX file exists, pull citations from it. Don't invent
+references. If you need a reference not in the bib, write
+`[CITATION NEEDED: <description>]` inline — surfaced at do-homework [E].
 
 ### Embed figures
 
@@ -153,7 +160,8 @@ Quality bar:
 - [ ] Draft engages with specific content from spec/references (not generic)
 - [ ] Word count within ±10% of requirement (if specified)
 - [ ] All rubric criteria addressed in draft
-- [ ] No fabricated citations — only `references.bib` entries or `[CITATION NEEDED]`
+- [ ] No fabricated citations — only `literature/references.bib`,
+      compatibility `references.bib`, or `[CITATION NEEDED]`
 - [ ] No `[PROBLEM N]` / `[TODO]` / `[此处填入...]` placeholders
 - [ ] Language matches spec requirements (en/zh)
 - [ ] Figures referenced and cited in-text (if any exist)

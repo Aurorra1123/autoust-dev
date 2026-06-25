@@ -18,7 +18,7 @@ see `sub-skills/tasks/alignment-planning.md [C]`.
 |---|---|---|---|---|
 | **pdf-renderer** | [pdf-renderer.md](./pdf-renderer.md) | Markdown → PDF (Chinese, LaTeX math, code, callouts) | markdown file, options | PDF file |
 | **writing-helper** | [writing-helper.md](./writing-helper.md) | Structured academic prose (essay/report/reflection) | spec.md, execution plan, rubric, references | draft.md |
-| **paper-search** | [paper-search.md](./paper-search.md) | Literature search via arxiv → bib + json | keywords, max_results | references.bib, references.json |
+| **literature-search** | [literature-search.md](./literature-search.md) | Scholarly source discovery with provider fallback, access-depth reporting, and BibTeX output | assignment context, query angles, provider availability | literature/*, references.bib |
 | **figure-maker** | [figure-maker.md](./figure-maker.md) | Charts/plots via matplotlib | figure_spec dict | fig_N.pdf/png |
 | **code-writer** | [code-writer.md](./code-writer.md) | Source code from spec (Python/C++/etc.) | spec.md, execution plan, references | src/*.py + tests |
 | **test-runner** | [test-runner.md](./test-runner.md) | pytest execution + report | work_dir/src/ | test_report.md/json |
@@ -47,7 +47,7 @@ see `sub-skills/tasks/alignment-planning.md [C]`.
 |---|---|
 | `render_pdf` | Markdown → PDF |
 | `render_slides` | Slides (HTML/PDF) |
-| `search_papers` | Literature search → bib |
+| `search_literature` | Scholarly source discovery → audit report + bib |
 | `make_figure` | Charts/plots |
 | `write_essay` | Structured academic prose |
 | `write_code` | Source code + tests |

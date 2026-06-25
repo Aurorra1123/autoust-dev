@@ -113,7 +113,7 @@ The M3 tools remain active:
 - `existing-work-recon`
 - `alignment-planning`
 - `writing-helper`
-- `paper-search`
+- `literature-search`
 - `figure-maker`
 - `code-writer`
 - `test-runner`

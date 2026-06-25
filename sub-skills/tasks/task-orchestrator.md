@@ -219,7 +219,7 @@ Common mappings:
 
 | Stage kind | Common tool(s) |
 |---|---|
-| literature search / references | `paper-search.md` |
+| literature search / references | `literature-search.md` |
 | prose / report / reflection | `writing-helper.md` |
 | chart / figure | `figure-maker.md` |
 | markdown or LaTeX to PDF | `pdf-renderer.md` |
@@ -770,7 +770,7 @@ The old fixed chains validated AutoStudy's tool base:
 
 | type | Assignment | Tool chain | Deliverable |
 |---|---|---|---|
-| `paper` | DLED3020 Paper Critique | paper-search -> writing-helper -> pdf-renderer | `final.pdf` |
+| `paper` | DLED3020 Paper Critique | literature-search -> writing-helper -> pdf-renderer | `final.pdf` |
 | `slides` | UCUG1077 Group presentation | slide-maker | `slides.pdf` |
 | `math` | DSAA2043 Lab-Assignment 1 | writing-helper -> pdf-renderer | `solution.pdf` |
 | `lab` | DSAA2012 Project Report | code-writer -> test-runner -> writing-helper -> pdf-renderer | `src/` + `report.pdf` |

@@ -467,7 +467,7 @@ sub-skills/tools/
 ├── humanizer.md                  # 降低 AI 味道（待写）
 ├── pdf-renderer.md               # Markdown → PDF（已稳定）
 ├── slide-maker.md                # Slides（已有）
-├── paper-search.md               # 文献搜索（已有）
+├── literature-search.md          # 文献搜索（已有）
 ├── figure-maker.md               # 数据可视化（已有）
 ├── test-runner.md                # 测试执行（已有）
 └── canvascli-api.md              # Canvas CLI 参考（已有）

@@ -106,18 +106,19 @@
     "status": "passing"
   },
   {
-    "id": "M3-PAPER-SEARCH",
+    "id": "M3-LITERATURE-SEARCH",
     "category": "skill-tool",
     "priority": "P1",
-    "description": "paper-search.md：文献搜索 + 引用条目生成",
+    "description": "literature-search.md：统一文献搜索 + 访问深度记录 + 引用条目生成",
     "acceptance": [
-      "sub-skills/tools/paper-search.md spec",
-      "用 arxiv API 生成 BibTeX（不抓全文）",
-      "输出标准 bib 条目供 writing-helper 引用"
+      "sub-skills/tools/literature-search.md spec",
+      "统一入口按 provider 可用性自动降级，arXiv 只是内部 provider",
+      "输出 literature_search_report.md/json、access_blockers.md 和标准 bib 条目供 writing-helper 引用"
     ],
     "evidence": [
-      "sub-skills/tools/paper-search.md",
-      "DLED3020 paper-critique/scripts/run_paper_search.py + references.bib (5 arxiv 条目, mongeon2016concentration / kenna2010normalization 等被 draft.md 引用)"
+      "sub-skills/tools/literature-search.md",
+      "sub-skills/tools/paper-search.md compatibility alias",
+      "tests/test_literature_search_policy.py"
     ],
     "status": "passing"
   },
@@ -145,7 +146,7 @@
     "acceptance": [
       "选一个真实 HKUST(GZ) 作业（DLED3020 Assessment Task 3 已验）",
       "全程只在 [B][E] 两点 AskUserQuestion",
-      "orchestrator 调度 paper-search → writing-helper → figure-maker → pdf-renderer",
+      "orchestrator 调度 literature-search → writing-helper → figure-maker → pdf-renderer",
       "用户审核草稿满意",
       "canvascli submit 接口已在代码层验证（见 M3-SUBMIT）"
     ],
@@ -338,7 +339,7 @@
       "do-homework [C] 在用户确认 alignment_brief.md 后完成 pipeline_design.md，而不是写 task_profile.yaml",
       "pipeline_design.md 明确 output mode、deliverables、sub-pipelines、tool mapping、verification plan、human review items",
       "task-orchestrator 只从 workbench 读取 spec.md、alignment_brief.md、pipeline_design.md、investigation/rubric.md、references/ 和 problem.md 兼容摘要",
-      "writing-helper / code-writer / slide-maker / paper-search 从 spec.md + alignment_brief.md + pipeline_design.md 获取任务约束，不再要求 task_profile.yaml",
+      "writing-helper / code-writer / slide-maker / literature-search 从 spec.md + alignment_brief.md + pipeline_design.md 获取任务约束，不再要求 task_profile.yaml",
       "DSAA2011 Project 能生成 mixed pipeline：code/notebook、report、presentation、requirements、package",
       "UCUG1505 FINAL project 能生成 mixed pipeline：code/source zip、documentation、video demo human review item",
       "至少完成一次真实 flow 连通测试，证明 task-orchestrator 可以按 pipeline_design.md 执行或清晰返回 human review blockers"
@@ -346,7 +347,7 @@
     "evidence": [
       "2026-06-02 docs pivot: do-homework.md [C] now writes pipeline_design.md and explicitly says not to write task_profile.yaml",
       "2026-06-02 task-orchestrator.md now consumes spec.md + pipeline_design.md and warns not to resurrect task_profile.yaml",
-      "2026-06-02 tools/_index.md, writing-helper.md, code-writer.md, slide-maker.md, and paper-search.md updated to read the workbench and pipeline_design.md",
+      "2026-06-02 tools/_index.md, writing-helper.md, code-writer.md, slide-maker.md, and paper-search.md updated to read the workbench and pipeline_design.md; 2026-06-25 paper-search became a compatibility alias for literature-search",
       "2026-06-02 DSAA2011 pipeline_design.md validated: Output mode mixed (code + doc_prose + slides + package), deliverables notebook/report PDF/presentation PDF/requirements/zip, registered tools mapped, orchestrator dry-run stopped on human blockers for group/dataset/style files instead of fabricating outputs",
       "2026-06-02 UCUG1505 pipeline_design.md validated: Output mode mixed (code + doc_prose + video_manual + package), deliverables documentation/code zip/video URL, registered tools mapped for automatable parts, orchestrator dry-run stopped on human blockers for partner/concept/code/video details",
       "2026-06-02 verification_checklist.md and verification.log written for both local workbenches; result.json intentionally not written because no user-approved draft/submission terminal state occurred",

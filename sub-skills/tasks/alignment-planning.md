@@ -506,7 +506,7 @@ composes freely based on the actual assignment, not a fixed chain.
 
 | Scenario | type | Typical tool chain | Final deliverable |
 |---|---|---|---|
-| **paper** | `paper` | paper-search → figure-maker (opt) → writing-helper → pdf-renderer | `final.pdf` |
+| **paper** | `paper` | literature-search → figure-maker (opt) → writing-helper → pdf-renderer | `final.pdf` |
 | **slides** | `slides` | figure-maker (opt) → slide-maker | `slides.pdf` |
 | **math** | `math` | writing-helper (LaTeX math) → pdf-renderer | `solution.pdf` |
 | **lab** | `lab` | code-writer → test-runner → writing-helper → pdf-renderer | `src/` + `report.pdf` |

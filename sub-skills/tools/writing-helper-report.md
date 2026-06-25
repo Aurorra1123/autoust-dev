@@ -18,7 +18,8 @@ When the task type is `report`, use this section structure as a reference:
    execution results, not estimates or fabricated values.**
 5. **Discussion** — interpret results, compare with expectations, limitations
 6. **Conclusion** — summary of findings, future work
-7. **References** — only entries from `references.bib`
+7. **References** — prefer entries from `literature/references.bib`; root
+   `references.bib` is compatibility fallback only
 
 Not every report needs all sections. Follow spec/pipeline_design/rubric for
 which sections are required and their relative weight.

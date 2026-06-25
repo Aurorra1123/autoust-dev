@@ -2,6 +2,15 @@
 
 > Session-by-session handoff log. Newest entries on top. Anyone (including a future Claude session) reading this should be able to pick up cleanly.
 
+## 2026-06-25 - Unified literature-search tool contract
+
+Replaced the active arXiv-only `paper-search` contract with a unified
+`literature-search` tool contract. The new tool records provider attempts and
+fallbacks in `literature/search_log.jsonl`, writes auditable candidate/include/
+exclude JSON plus `literature_search_report.md`, marks access depth per source,
+and uses automatic fallback plus parallel Subagent search for thin or blocked
+topics. `paper-search.md` remains only as a compatibility alias.
+
 ## 2026-06-16 - Homework staged recon routing
 
 Refined the homework router split into progressive-disclosure stages:
