@@ -24,7 +24,11 @@ reporting search sources and strategies. Cochrane guidance emphasizes planning
 the search process, documenting sources searched, terms used, screening
 decisions, and access limits. Modern open scholarly APIs split coverage across
 OpenAlex, Crossref, Semantic Scholar, PubMed/PMC, CORE, Europe PMC, ERIC, and
-identifier-based metadata import workflows such as Zotero.
+identifier-based metadata import workflows such as Zotero. These providers do
+not have the same authentication model: some are usable without keys, some use
+optional keys for rate limits, and some require keys for normal API access.
+AutoStudy must treat authentication as provider capability metadata, not an
+implementation detail.
 
 ## Goals
 
@@ -50,8 +54,9 @@ identifier-based metadata import workflows such as Zotero.
   content_scout -> source_findings.compact.md` standard interface.
 - Do not make Subagents write final `spec.md`, final literature conclusions, or
   final citation claims.
-- Do not require API keys for the first implementation slice unless the chosen
-  provider cannot function without one.
+- Do not assume every named provider works without an API key. The first slice
+  should run with no configured keys by using no-key or optional-key providers,
+  and should mark key-required providers as unavailable until configured.
 
 ## Proposed Tool Shape
 
@@ -118,6 +123,25 @@ pipelines:
 | `manual_broad` | when APIs underperform or the task is open-ended | parallel Subagents using web and preserved course sources | Emphasize search log and blockers over false completeness. |
 
 The tool may search more than one profile when the topic crosses fields.
+
+## Provider Authentication Matrix
+
+The implementation must keep provider authentication explicit. Current expected
+status:
+
+| Provider | Auth status | Use without configured key |
+|---|---|---|
+| arXiv API | none required | Yes, with polite rate limiting. |
+| Crossref REST API | none required for public access; `mailto` strongly recommended | Yes, use `mailto`/User-Agent when configured. |
+| PubMed/NCBI E-utilities | optional key increases rate limit | Yes, throttle to unauthenticated limits. |
+| Europe PMC | no key for article REST API | Yes, with polite rate limiting. |
+| ERIC API | no account in normal public API flow | Yes, but smoke-test during implementation. |
+| Semantic Scholar | optional key for reliability; some endpoints require auth | Yes only for endpoints that allow unauthenticated use; record degraded mode. |
+| OpenAlex | API key required for normal API use | No; skip or mark `blocked` until `OPENALEX_API_KEY` or equivalent is configured. |
+| CORE | API key required | No; skip or mark `blocked` until configured. |
+
+Provider configuration should be read from environment variables or a local
+ignored config file, never hard-coded in skill docs or workbench artifacts.
 
 ## Candidate Schema
 
@@ -233,9 +257,9 @@ unit test and one live smoke test with a small query in at least two profiles:
 
 ## Open Questions For Implementation
 
-1. Should the first slice use only no-key providers (`OpenAlex`, `Crossref`,
-   arXiv HTTP, PubMed E-utilities) and leave Semantic Scholar/CORE API-key
-   support for later?
+1. Should the first slice support optional provider keys for OpenAlex,
+   Semantic Scholar, and CORE, or explicitly defer all key-required provider
+   wiring until the no-key audit trail is stable?
 2. Should `literature/` live beside `draft/` in the workbench, or under
    `references/external/literature/` for stronger preservation semantics?
 3. Should `references.bib` remain at the workbench root for compatibility, or
@@ -245,6 +269,9 @@ unit test and one live smoke test with a small query in at least two profiles:
    to a follow-up?
 
 Recommended first slice: implement profile-aware metadata and abstract search
-with no-key providers, structured access statuses, blocker reporting, and
-writing-helper integration. Defer automatic full-text download/extraction until
-the audit trail is stable.
+with providers that work without configured keys (`arXiv`, `Crossref`,
+`PubMed/NCBI E-utilities`, `Europe PMC`, and ERIC if live smoke confirms the
+public endpoint), plus optional Semantic Scholar unauthenticated endpoints when
+available. Treat OpenAlex and CORE as key-required providers and report them as
+unavailable unless configured. Defer automatic full-text download/extraction
+until the audit trail is stable.
