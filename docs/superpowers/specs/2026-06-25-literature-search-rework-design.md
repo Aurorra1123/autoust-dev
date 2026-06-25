@@ -32,9 +32,10 @@ implementation detail.
 
 ## Goals
 
-1. Preserve the fast arXiv path for CS/AI/math/physics-style preprint searches.
-2. Add a general cross-disciplinary literature-search contract that can route
-   to different source profiles.
+1. Replace the narrow arXiv-only workflow with one unified
+   `literature-search` tool.
+2. Preserve the fast arXiv path as an internal provider option for
+   CS/AI/math/physics-style preprint searches.
 3. Require every candidate source to declare access depth:
    `metadata_only`, `abstract_read`, `outline_read`, `full_text_available`,
    `full_text_read`, `needs_manual_download`, or `blocked`.
@@ -60,27 +61,16 @@ implementation detail.
 
 ## Proposed Tool Shape
 
-### `paper-search-arxiv`
+Add one top-level `literature-search` tool for all scholarly source discovery.
+Do not expose separate discipline tools or profile names to the pipeline. The
+tool reads the assignment context, writes a search plan, chooses providers based
+on topic hints and available credentials, and records what it did.
 
-Rename or reposition the existing `paper-search` contract as the arXiv profile.
-It remains useful for:
+The existing `paper-search` name should become a compatibility alias or be
+retired after downstream docs move to `literature-search`. arXiv remains an
+internal provider, not a standalone user-facing tool.
 
-- CS, AI, ML, math, physics, statistics, quantitative methods;
-- quick preprint discovery;
-- simple BibTeX generation when the assignment only needs supporting citations.
-
-The updated contract must state:
-
-- output status is normally `metadata_only` or `abstract_read`, not
-  `full_text_read`;
-- arXiv is one provider, not the default answer for all disciplines;
-- if the `.venv` lacks `arxiv`, the stage either uses a documented HTTP fallback
-  or records a tool dependency blocker;
-- generated BibTeX must include identifier and provider provenance.
-
-### `literature-search`
-
-Add a new top-level tool for cross-disciplinary search. It should read:
+The tool should read:
 
 ```text
 spec.md
@@ -108,21 +98,29 @@ literature/
 The report is the Main Agent and writing-helper handoff. The JSON files are the
 machine-checkable audit trail.
 
-## Source Profiles
+## Provider Selection
 
-The first implementation should define profiles as guidance, not as hard-coded
-pipelines:
+Provider choice is internal to `literature-search`. The first implementation
+should use a simple ranked plan instead of separate profile contracts:
 
-| Profile | When to use | Primary sources | Notes |
-|---|---|---|---|
-| `cs_ai` | AI, CS, ML, systems, data science | arXiv, Semantic Scholar, OpenAlex, Crossref | Prefer DOI/published version when available. |
-| `general` | mixed academic topics | OpenAlex, Crossref, Semantic Scholar | Good default when discipline is unclear. |
-| `biomed` | medicine, health, biology, psychology adjacent to health | PubMed/NCBI E-utilities, PMC, Europe PMC, Crossref | Distinguish PubMed abstract from PMC full text. |
-| `education_social` | education, pedagogy, sport/social science, sociology, communication | ERIC, OpenAlex, Crossref, Semantic Scholar | ERIC is especially useful for education literature and reports. |
-| `humanities_policy` | history, literature, policy, area studies, professional practice | OpenAlex, Crossref, web search, library/manual blockers | Expect more books, chapters, reports, and paywalls. |
-| `manual_broad` | when APIs underperform or the task is open-ended | parallel Subagents using web and preserved course sources | Emphasize search log and blockers over false completeness. |
+1. Always start with broadly useful metadata sources that are available without
+   configured keys: Crossref plus one topic-sensitive provider when appropriate.
+2. Use arXiv when the assignment context contains CS, AI, ML, math, statistics,
+   physics, quantitative finance, or preprint-oriented language.
+3. Use PubMed/NCBI E-utilities and Europe PMC when the context is biomedical,
+   health, life-science, clinical, or psychology-adjacent.
+4. Use ERIC when the context is education, pedagogy, curriculum, student
+   learning, teaching, or education policy.
+5. Use Semantic Scholar only through endpoints that work in the current
+   authentication mode; record degraded mode when no key is configured.
+6. Use OpenAlex and CORE only when keys are configured; otherwise record them as
+   unavailable rather than silently depending on them.
+7. If API sources are thin or mismatched, use web search and parallel Subagents
+   as a fallback discovery path, with stronger blocker/access reporting.
 
-The tool may search more than one profile when the topic crosses fields.
+The generated `search_plan.md` must show which providers were selected, which
+were skipped, and why. This keeps the interface simple while preserving audit
+quality.
 
 ## Provider Authentication Matrix
 
@@ -191,8 +189,8 @@ used.
 
 ## Parallel Subagent Pattern
 
-For broad or non-CS topics, the stage may dispatch focused Subagents. Good
-splits:
+For broad or source-sparse topics, the stage may dispatch focused Subagents.
+Good splits:
 
 - theory/background literature;
 - empirical/domain studies;
@@ -239,12 +237,16 @@ source unless it records the substitution in the report.
 
 Add policy tests before implementation:
 
-- `paper-search`/`paper-search-arxiv` must declare arXiv as a profile, not a
-  universal search tool.
+- `_index.md` and pipeline guidance expose one `literature-search` tool, not a
+  family of discipline-specific search tools.
+- The legacy `paper-search` path must either point to `literature-search` as a
+  compatibility alias or be removed from active pipeline guidance.
+- `literature-search` must declare arXiv as one provider, not a universal
+  search backend.
 - Literature outputs must include access-depth vocabulary and forbid treating
   abstract/metadata as full-text evidence.
-- `literature-search` must define provider profiles for at least `cs_ai`,
-  `general`, `biomed`, `education_social`, and `manual_broad`.
+- `literature-search` must document provider selection, skipped providers, and
+  authentication state in `search_plan.md` or `search_log.jsonl`.
 - Manual blockers must be documented with `needs_manual_download`.
 - `writing-helper` must know to read `literature/references.bib` and the
   literature report when present.
@@ -252,8 +254,8 @@ Add policy tests before implementation:
   interface must remain valid.
 
 Implementation verification should include one no-network or mocked-provider
-unit test and one live smoke test with a small query in at least two profiles:
-`cs_ai` and `education_social` or `biomed`.
+unit test and one live smoke test with two small queries that exercise different
+provider choices, such as one CS/AI query and one education or biomedical query.
 
 ## Open Questions For Implementation
 
@@ -268,10 +270,10 @@ unit test and one live smoke test with a small query in at least two profiles:
    open-access URLs, or only record `full_text_available` and leave full reading
    to a follow-up?
 
-Recommended first slice: implement profile-aware metadata and abstract search
-with providers that work without configured keys (`arXiv`, `Crossref`,
-`PubMed/NCBI E-utilities`, `Europe PMC`, and ERIC if live smoke confirms the
-public endpoint), plus optional Semantic Scholar unauthenticated endpoints when
-available. Treat OpenAlex and CORE as key-required providers and report them as
-unavailable unless configured. Defer automatic full-text download/extraction
-until the audit trail is stable.
+Recommended first slice: implement one `literature-search` contract with
+metadata and abstract search through providers that work without configured keys
+(`arXiv`, `Crossref`, `PubMed/NCBI E-utilities`, `Europe PMC`, and ERIC if live
+smoke confirms the public endpoint), plus optional Semantic Scholar
+unauthenticated endpoints when available. Treat OpenAlex and CORE as
+key-required providers and report them as unavailable unless configured. Defer
+automatic full-text download/extraction until the audit trail is stable.
