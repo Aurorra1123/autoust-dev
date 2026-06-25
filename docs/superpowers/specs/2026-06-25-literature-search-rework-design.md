@@ -63,8 +63,9 @@ implementation detail.
 
 Add one top-level `literature-search` tool for all scholarly source discovery.
 Do not expose separate discipline tools or profile names to the pipeline. The
-tool reads the assignment context, writes a search plan, chooses providers based
-on topic hints and available credentials, and records what it did.
+tool reads the assignment context, chooses providers based on topic hints and
+available credentials, dispatches parallel search Subagents when useful, and
+records what it did.
 
 The existing `paper-search` name should become a compatibility alias or be
 retired after downstream docs move to `literature-search`. arXiv remains an
@@ -85,7 +86,6 @@ It should write:
 
 ```text
 literature/
-├── search_plan.md
 ├── search_log.jsonl
 ├── candidates.json
 ├── included_sources.json
@@ -101,7 +101,7 @@ machine-checkable audit trail.
 ## Provider Selection
 
 Provider choice is internal to `literature-search`. The first implementation
-should use a simple ranked plan instead of separate profile contracts:
+should use a simple fallback sequence instead of separate profile contracts:
 
 1. Always start with broadly useful metadata sources that are available without
    configured keys: Crossref plus one topic-sensitive provider when appropriate.
@@ -115,12 +115,13 @@ should use a simple ranked plan instead of separate profile contracts:
    authentication mode; record degraded mode when no key is configured.
 6. Use OpenAlex and CORE only when keys are configured; otherwise record them as
    unavailable rather than silently depending on them.
-7. If API sources are thin or mismatched, use web search and parallel Subagents
-   as a fallback discovery path, with stronger blocker/access reporting.
+7. If API sources are thin, mismatched, rate-limited, or blocked, automatically
+   fall back to web search and parallel Subagents, with stronger blocker/access
+   reporting.
 
-The generated `search_plan.md` must show which providers were selected, which
-were skipped, and why. This keeps the interface simple while preserving audit
-quality.
+`search_log.jsonl` and `literature_search_report.md` must show which providers
+were attempted, selected, skipped, degraded, or blocked, and why. This keeps the
+interface simple while preserving audit quality.
 
 ## Provider Authentication Matrix
 
@@ -226,9 +227,11 @@ When a candidate is likely useful but blocked:
 1. Add it to `access_blockers.md` with title, authors, DOI/URL, why it matters,
    and exactly what the user should provide.
 2. Mark the candidate `needs_manual_download`.
-3. Continue with other sources when enough evidence remains for a draft.
-4. If the assignment requires that exact source or the literature base is too
-   thin, pause and ask the user for the PDF or library export.
+3. Continue automatically with other providers, web search, and parallel
+   Subagent discovery.
+4. Only pause before drafting when every route fails and no minimally usable
+   source set remains. Otherwise produce the best-effort literature report and
+   list manual-download items as follow-up evidence gaps.
 
 The assistant must not silently replace a blocked required source with a weaker
 source unless it records the substitution in the report.
@@ -245,8 +248,9 @@ Add policy tests before implementation:
   search backend.
 - Literature outputs must include access-depth vocabulary and forbid treating
   abstract/metadata as full-text evidence.
-- `literature-search` must document provider selection, skipped providers, and
-  authentication state in `search_plan.md` or `search_log.jsonl`.
+- `literature-search` must document attempted providers, skipped providers,
+  degraded fallbacks, and authentication state in `search_log.jsonl` and the
+  literature report.
 - Manual blockers must be documented with `needs_manual_download`.
 - `writing-helper` must know to read `literature/references.bib` and the
   literature report when present.
@@ -257,23 +261,12 @@ Implementation verification should include one no-network or mocked-provider
 unit test and one live smoke test with two small queries that exercise different
 provider choices, such as one CS/AI query and one education or biomedical query.
 
-## Open Questions For Implementation
-
-1. Should the first slice support optional provider keys for OpenAlex,
-   Semantic Scholar, and CORE, or explicitly defer all key-required provider
-   wiring until the no-key audit trail is stable?
-2. Should `literature/` live beside `draft/` in the workbench, or under
-   `references/external/literature/` for stronger preservation semantics?
-3. Should `references.bib` remain at the workbench root for compatibility, or
-   should downstream tools move fully to `literature/references.bib`?
-4. Should the first implementation include automatic PDF text extraction for
-   open-access URLs, or only record `full_text_available` and leave full reading
-   to a follow-up?
-
 Recommended first slice: implement one `literature-search` contract with
 metadata and abstract search through providers that work without configured keys
 (`arXiv`, `Crossref`, `PubMed/NCBI E-utilities`, `Europe PMC`, and ERIC if live
 smoke confirms the public endpoint), plus optional Semantic Scholar
 unauthenticated endpoints when available. Treat OpenAlex and CORE as
-key-required providers and report them as unavailable unless configured. Defer
-automatic full-text download/extraction until the audit trail is stable.
+key-required providers and report them as unavailable unless configured. Use
+parallel Subagent search as the default robustness layer for broad or thin
+topics. Defer automatic full-text download/extraction until the audit trail is
+stable.
